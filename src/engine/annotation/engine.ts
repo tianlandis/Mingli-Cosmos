@@ -10,6 +10,7 @@ import { analyzePattern } from './pattern'
 import { analyzeDaYun, analyzeCurrentYear, analyzeMilestones } from './luckAnalysis'
 import { analyzeSpecialTopics } from './specialTopics'
 import { analyzeBranchRelations } from './branchRelations'
+import { analyzeShenSha } from '../rules/shenShaRules'
 import type {
   AnnotationResult,
   WuXingBalanceItem,
@@ -154,6 +155,12 @@ export function generateAnnotation(bazi: BaZiResult): AnnotationResult {
   // 7.5 地支关系分析（刑冲破害合空亡）
   const branchRelations = analyzeBranchRelations(bazi)
 
+  // 7.6 神煞分析
+  const shenSha = analyzeShenSha(bazi)
+
+  // 7.7 免责声明
+  const disclaimer = '以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考，不构成科学预测或人生决策建议。每个人的命运由多种因素共同决定，请理性看待，保持积极乐观的人生态度。'
+
   // 8. 总览
   const overview = generateOverview(
     bazi,
@@ -179,7 +186,9 @@ export function generateAnnotation(bazi: BaZiResult): AnnotationResult {
     patternAnalysis,
     luckAnalysis: { daYunList, currentYear, milestones },
     branchRelations,
+    shenSha,
     specialTopics,
+    disclaimer,
     comprehensiveAdvice,
   }
 }

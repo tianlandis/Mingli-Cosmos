@@ -4,4 +4,5 @@
 
 export { generateAnnotation } from './engine'
 export { analyzeBranchRelations } from './branchRelations'
+export { analyzeShenSha } from '../rules/shenShaRules'
 export * from './types'

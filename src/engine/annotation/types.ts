@@ -26,7 +26,11 @@ export interface YongShenResult {
 export interface StrengthAnalysis {
   strength: DayMasterStrength
   score: number              // 0-100 分
+  /** 置信度 0-1，分数越极端置信度越高 */
+  confidence: number
   reasons: string[]          // 判断依据
+  /** 经典引证（可空） */
+  classicReference: string[]
   components: {
     yueLing: number          // 月令得分
     diZhiGen: number         // 地支根气得
@@ -40,9 +44,15 @@ export interface StrengthAnalysis {
 export interface PatternAnalysis {
   patternType: PatternType
   patternName: string
+  /** 置信度 0-1，月令透出或条件明确则高 */
+  confidence: number
   conditions: string[]       // 成格条件
   quality: '上等' | '中等' | '平'  // 格局高低
   description: string        // 格局描述
+  /** 备选格局（如有争议） */
+  alternatives: { name: string; reason: string }[]
+  /** 经典引证 */
+  classicReference: string[]
 }
 
 /** 五行平衡项 */
@@ -93,6 +103,21 @@ export interface SpecialTopics {
   marriage: string[]
   health: string[]
   children: string[]
+}
+
+/** 神煞项 */
+export interface ShenShaItem {
+  name: string               // 神煞名称
+  type: '吉' | '凶' | '中性'
+  description: string
+  pillar: string             // 所在柱
+  classicRef: string         // 经典出处
+}
+
+/** 神煞分析 */
+export interface ShenShaAnalysis {
+  summary: string[]
+  items: ShenShaItem[]
 }
 
 /** ─── 地支关系分析 ─── */
@@ -148,7 +173,12 @@ export interface AnnotationResult {
 
   branchRelations: BranchRelationsAnalysis
 
+  shenSha: ShenShaAnalysis
+
   specialTopics: SpecialTopics
+
+  /** 免责声明 */
+  disclaimer: string
 
   comprehensiveAdvice: string[]
 }

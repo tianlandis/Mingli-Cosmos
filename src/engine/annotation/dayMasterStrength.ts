@@ -185,10 +185,27 @@ export function analyzeDayMasterStrength(bazi: BaZiResult): StrengthAnalysis {
 
   const strength = scoreToStrength(totalScore)
 
+  // 置信度：分数越极端置信度越高，中间地带偏低
+  const confidence = Math.min(1, Math.abs(totalScore - 50) / 40 + 0.3)
+
+  // 经典引证
+  const classicReference: string[] = []
+  if (monthPower === '旺') {
+    classicReference.push('《滴天髓》：「得时俱为旺论，失令便作衰看」')
+  }
+  if (rootBranches.length === 0) {
+    classicReference.push('《子平真诠》：「无根不受生，无根则漂」')
+  }
+  if (dayBranchState) {
+    classicReference.push('《渊海子平》：「坐下有根，如树有根，虽风雨不拔」')
+  }
+
   return {
     strength,
     score: totalScore,
+    confidence: Math.round(confidence * 100) / 100,
     reasons,
+    classicReference,
     components: {
       yueLing: yueLingScore,
       diZhiGen: diZhiGenScore,

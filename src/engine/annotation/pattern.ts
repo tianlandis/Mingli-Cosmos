@@ -65,6 +65,8 @@ export function analyzePattern(
 
   // 日主用神
   const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
+  const dayYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
+  const isSuperWeak = dayMasterStrength === '极弱'
 
   // 1. 检查月令藏干是否透出天干 → 正格
   const { revealed, shiShen } = isHiddenStemRevealed(monthHidden, allStems, bazi.dayMaster)
@@ -109,7 +111,6 @@ export function analyzePattern(
   } else {
     // 月令不透 → 取月令本气所对应的格局（隐性格局）
     const mainQiWx = monthMainQi
-    const dayYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
     const implShiShen = getShiShenName(dayMasterWx, dayYy, mainQiWx ?? '', '阳')
     patternName = SHISHEN_TO_PATTERN[implShiShen] ?? `${monthBranch}月${implShiShen}格`
     patternType = '正格'
@@ -119,8 +120,38 @@ export function analyzePattern(
     description = `格局${patternName}，月令藏干不透，格局层次一般，需看运助。`
   }
 
+  // 置信度：月令透出则高，不透则中等
+  let confidence = revealed.length > 0 ? 0.85 : 0.55
+  const alternatives: { name: string; reason: string }[] = []
+  const classicRefs: string[] = []
+
+  // 经典引证
+  if (revealed.length > 0) {
+    classicRefs.push('《子平真诠》：「八字用神，专求月令」')
+  }
+  if (shiShen === '正官' || shiShen === '正印' || shiShen === '食神' || shiShen === '正财') {
+    classicRefs.push('《渊海子平》：「吉神顺用，凶神逆用」')
+  }
+
+  // 构建备选格局
+  // 检查月令其余藏干是否也透出
+  if (monthHidden.length > 1) {
+    for (let i = 1; i < monthHidden.length; i++) {
+      if (allStems.includes(monthHidden[i])) {
+        const altWx = TIAN_GAN_WUXING[monthHidden[i]] ?? ''
+        const altYy = TIAN_GAN_YIN_YANG[monthHidden[i]] ?? '阳'
+        const altShiShen = getShiShenName(dayMasterWx, dayYy, altWx, altYy)
+        const altName = SHISHEN_TO_PATTERN[altShiShen] ?? altShiShen + '格'
+        alternatives.push({ name: altName, reason: `月令中气${monthHidden[i]}也透出天干，可取${altName}` })
+      }
+    }
+  }
+  // 检查是否有从格倾向作为备选
+  if (isSuperWeak) {
+    alternatives.push({ name: '从格', reason: '日主极弱无根，有从格倾向' })
+  }
+
   // 2. 检查从格（日主极弱且全局偏向）
-  const isSuperWeak = dayMasterStrength === '极弱'
   if (isSuperWeak) {
     const fromGe = checkCongGe(bazi)
     if (fromGe) {
@@ -129,6 +160,13 @@ export function analyzePattern(
       conditions = fromGe.conditions
       quality = fromGe.quality
       description = fromGe.description
+      confidence = 0.75
+      classicRefs.push('《滴天髓》：「从得真者只论从，从神又有吉和凶」')
+      // 正格作为备选
+      if (alternatives.length === 0) {
+        const implShiShen = getShiShenName(dayMasterWx, dayYy, monthMainQi ?? '', '阳')
+        alternatives.push({ name: SHISHEN_TO_PATTERN[implShiShen] ?? implShiShen + '格', reason: '亦可按月令取正格论' })
+      }
     }
   }
 
@@ -141,6 +179,8 @@ export function analyzePattern(
       conditions = [...conditions, ...specialGe.conditions]
       quality = specialGe.quality
       description = specialGe.description
+      confidence = 0.7
+      classicRefs.push('《渊海子平》：「建禄者，月建逢禄堂也」')
     }
   }
 
@@ -151,9 +191,12 @@ export function analyzePattern(
   return {
     patternType,
     patternName,
+    confidence: Math.round(confidence * 100) / 100,
     conditions,
     quality,
     description,
+    alternatives,
+    classicReference: classicRefs,
   }
 }
 
