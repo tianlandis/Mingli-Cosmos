@@ -53,6 +53,57 @@ export interface PatternAnalysis {
   alternatives: { name: string; reason: string }[]
   /** 经典引证 */
   classicReference: string[]
+
+  // ─── V2.0 新增字段 ───
+
+  /** 取格方法 */
+  method: string
+  /** 取格使用的藏干 */
+  sourceStem: string
+  /** 格局十神 */
+  shiShen: string
+  /** 格局吉凶属性 */
+  jiXiong: '吉' | '凶' | '中性'
+  /** 格局吉凶描述 */
+  jiXiongDesc: string
+
+  /** 格局组合（V2.0组合判定） */
+  combination: {
+    name: string
+    dominantPattern: string
+    keyCombination: string
+    keyStem: string
+    keyPosition: string
+    isPure: boolean
+  }
+
+  /** 破格风险 */
+  poGeRisks: {
+    type: string
+    description: string
+    severity: '高' | '中' | '低'
+    suggestion: string
+    mbtiAdjust: string
+  }[]
+
+  /** MBTI 分析 */
+  mbti: {
+    cognitiveFunctions: string
+    typicalTypes: string[]
+    traits: string
+    portrait: string
+    industrySuggestions: string[]
+    energyAdjustments: string[]
+  }
+
+  /** 月令分金详情（仅分金取格时有值） */
+  fenJinDetail?: {
+    qiYunDays: number
+    daYunForward: boolean
+    fenJinReverse: boolean
+    effectiveDays: number
+    steps: string[]
+  }
 }
 
 /** 五行平衡项 */
@@ -153,6 +204,10 @@ export interface AnnotationResult {
     pattern: string
     yongShen: string
     jiShen: string
+    /** MBTI 类型（V2.0新增） */
+    mbti?: string
+    /** 格局组合（V2.0新增） */
+    combination?: string
   }
 
   strengthAnalysis: StrengthAnalysis

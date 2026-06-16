@@ -102,16 +102,31 @@ export default function AnnotationPanel({ annotation }: Props) {
         {/* 格局分析 */}
         <div className={SECTION_CLASS}>
           <div className="text-amber-400/80 text-sm font-bold mb-3">格局分析</div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="bg-amber-900/40 text-amber-300 text-xs px-2 py-0.5 rounded">{patternAnalysis.patternType}</span>
             <span className="text-stone-200 font-bold text-base">{patternAnalysis.patternName}</span>
-            <span className={`text-xs ml-auto ${
+            <span className={`text-xs ${
               patternAnalysis.quality === '上等' ? 'text-yellow-400' :
               patternAnalysis.quality === '中等' ? 'text-stone-300' : 'text-stone-500'
             }`}>
               {patternAnalysis.quality}
             </span>
+            {/* V2.0: 吉凶标签 */}
+            <span className={`text-xs px-1.5 py-0.5 rounded ${
+              patternAnalysis.jiXiong === '吉' ? 'bg-green-900/40 text-green-400' :
+              patternAnalysis.jiXiong === '凶' ? 'bg-red-900/40 text-red-400' :
+              'bg-stone-700/50 text-stone-400'
+            }`}>{patternAnalysis.jiXiong}</span>
           </div>
+          {/* V2.0: 组合信息 */}
+          {patternAnalysis.combination.name && (
+            <div className="text-stone-300 text-xs mb-2">
+              格局组合：<span className="text-amber-400 font-bold">{patternAnalysis.combination.name}</span>
+              {patternAnalysis.combination.isPure && <span className="text-stone-500 ml-1">（纯格）</span>}
+            </div>
+          )}
+          {/* V2.0: 取格方法 */}
+          <div className="text-stone-500 text-xs mb-2">{patternAnalysis.method}</div>
           <p className="text-stone-400 text-xs leading-relaxed mb-2">{patternAnalysis.description}</p>
           <ul className="space-y-0.5">
             {patternAnalysis.conditions.map((c, i) => (
@@ -175,6 +190,71 @@ export default function AnnotationPanel({ annotation }: Props) {
           ))}
         </div>
       </div>
+
+      {/* ── V2.0 MBTI 分析 + 破格风险 并排 ── */}
+      {(patternAnalysis.mbti.typicalTypes.length > 0 || patternAnalysis.poGeRisks.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* MBTI 分析 */}
+          {patternAnalysis.mbti.typicalTypes.length > 0 && (
+            <div className={`${SECTION_CLASS} border-purple-700/30 bg-gradient-to-b from-purple-900/10 to-stone-900/60`}>
+              <div className="text-purple-400/80 text-sm font-bold mb-3">🧠 MBTI 人格画像</div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-purple-300 text-lg font-bold">
+                  {patternAnalysis.mbti.typicalTypes.join(' / ')}
+                </span>
+                <span className="text-stone-500 text-xs">（{patternAnalysis.mbti.cognitiveFunctions}）</span>
+              </div>
+              {patternAnalysis.mbti.traits && (
+                <p className="text-stone-400 text-xs mb-2">{patternAnalysis.mbti.traits}</p>
+              )}
+              {patternAnalysis.mbti.portrait && (
+                <p className="text-stone-500 text-xs leading-relaxed mb-2 italic">"{patternAnalysis.mbti.portrait}"</p>
+              )}
+              {patternAnalysis.mbti.industrySuggestions.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-stone-700/30">
+                  <div className="text-purple-400/60 text-xs font-bold mb-1">行业适配</div>
+                  {patternAnalysis.mbti.industrySuggestions.map((s, i) => (
+                    <p key={i} className="text-stone-500 text-xs">· {s}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 破格风险 */}
+          {patternAnalysis.poGeRisks.length > 0 && (
+            <div className={`${SECTION_CLASS} border-red-700/20 bg-gradient-to-b from-red-900/5 to-stone-900/60`}>
+              <div className="text-red-400/80 text-sm font-bold mb-3">⚠️ 格局风险</div>
+              <div className="space-y-3">
+                {patternAnalysis.poGeRisks.map((risk, i) => (
+                  <div key={i} className="bg-red-900/10 border border-red-700/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-red-300 text-sm font-bold">{risk.type}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${
+                        risk.severity === '高' ? 'bg-red-900/40 text-red-400' :
+                        risk.severity === '中' ? 'bg-yellow-900/40 text-yellow-400' :
+                        'bg-stone-700/30 text-stone-400'
+                      }`}>{risk.severity}风险</span>
+                    </div>
+                    <p className="text-stone-400 text-xs mb-1">{risk.description}</p>
+                    <p className="text-stone-500 text-xs mb-1">💡 {risk.suggestion}</p>
+                    <p className="text-purple-400/70 text-xs">🧠 MBTI补益：{risk.mbtiAdjust}</p>
+                  </div>
+                ))}
+              </div>
+              {/* 能量调整 */}
+              {patternAnalysis.mbti.energyAdjustments.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-stone-700/30">
+                  <div className="text-amber-400/60 text-xs font-bold mb-1">能量调整策略</div>
+                  {patternAnalysis.mbti.energyAdjustments.map((adj, i) => (
+                    <p key={i} className="text-stone-500 text-xs">· {adj}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── 大运流年 ── */}
       <div className={SECTION_CLASS}>

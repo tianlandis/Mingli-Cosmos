@@ -129,6 +129,9 @@ async function buildResult(
   // 大运
   const daYun = computeDaYun(eightChar, gender)
 
+  // 起运天数 & 大运方向（用于V2.0月令分金算法）
+  const { qiYunDays, daYunForward } = computeQiYunDays(solar, gender, yearStem)
+
   // 当前大运 & 流年按真实当前日期计算
   const { Solar: SolarClass } = await import('lunar-typescript')
   const now = new Date()
@@ -156,6 +159,8 @@ async function buildResult(
     daYun,
     currentDaYun: currentDaYun ?? null,
     currentYear,
+    qiYunDays,
+    daYunForward,
   }
 }
 
@@ -305,4 +310,41 @@ function getCurrentDaYun(daYun: DaYun[], currentSolar: Solar, birthSolar: Solar)
     }
   }
   return null
+}
+
+/**
+ * 计算起运天数（V2.0月令分金算法核心数据）
+ *
+ * 阳男阴女：大运顺排 → 顺数到下一个节气
+ * 阴男阳女：大运逆排 → 逆数到上一个节气
+ *
+ * @returns { qiYunDays: 起运天数, daYunForward: 大运是否顺排 }
+ */
+function computeQiYunDays(
+  solar: Solar,
+  gender: '男' | '女',
+  yearStem: string,
+): { qiYunDays: number; daYunForward: boolean } {
+  const yearYinYang = TIAN_GAN_YIN_YANG[yearStem] ?? '阳'
+  const daYunForward = (yearYinYang === '阳' && gender === '男') ||
+                       (yearYinYang === '阴' && gender === '女')
+
+  const lunar = solar.getLunar()
+
+  if (daYunForward) {
+    // 阳男阴女：顺数到下一个节气
+    const nextJie = lunar.getNextJie()
+    const jieSolar = nextJie.getSolar()
+    const birthJd = solar.getJulianDay()
+    const jieJd = jieSolar.getJulianDay()
+    // 处理同日情况，返回整数天数
+    return { qiYunDays: Math.max(1, Math.floor(jieJd - birthJd)), daYunForward }
+  } else {
+    // 阴男阳女：逆数到上一个节气
+    const prevJie = lunar.getPrevJie()
+    const jieSolar = prevJie.getSolar()
+    const birthJd = solar.getJulianDay()
+    const jieJd = jieSolar.getJulianDay()
+    return { qiYunDays: Math.max(1, Math.floor(birthJd - jieJd)), daYunForward }
+  }
 }

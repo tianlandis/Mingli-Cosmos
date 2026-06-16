@@ -65,6 +65,26 @@ export const WUXING_COLORS: Record<string, string> = {
 
 export const WUXING_LIST = ['金', '木', '水', '火', '土'] as const
 
+/** 藏干天数分段表（固定刻度尺，V2.0规则）
+ *  按照时间顺序排列：余气→中气→本气
+ *  每月固定30天，供月令分金算法使用
+ */
+export interface HiddenStemSegment { stem: string; days: number }
+export const HIDDEN_STEMS_DAYS: Record<string, HiddenStemSegment[]> = {
+  '子': [{ stem: '癸', days: 30 }],
+  '丑': [{ stem: '己', days: 15 }, { stem: '癸', days: 9 }, { stem: '辛', days: 6 }],
+  '寅': [{ stem: '戊', days: 4 },  { stem: '丙', days: 6 }, { stem: '甲', days: 20 }],
+  '卯': [{ stem: '乙', days: 30 }],
+  '辰': [{ stem: '乙', days: 9 },  { stem: '癸', days: 6 }, { stem: '戊', days: 15 }],
+  '巳': [{ stem: '戊', days: 4 },  { stem: '庚', days: 6 }, { stem: '丙', days: 20 }],
+  '午': [{ stem: '丁', days: 30 }],
+  '未': [{ stem: '丁', days: 9 },  { stem: '乙', days: 6 }, { stem: '己', days: 15 }],
+  '申': [{ stem: '戊', days: 4 },  { stem: '壬', days: 6 }, { stem: '庚', days: 20 }],
+  '酉': [{ stem: '辛', days: 30 }],
+  '戌': [{ stem: '辛', days: 9 },  { stem: '丁', days: 6 }, { stem: '戊', days: 15 }],
+  '亥': [{ stem: '戊', days: 2 },  { stem: '甲', days: 7 }, { stem: '壬', days: 21 }],
+}
+
 export type ShiShen =
   | '正官' | '偏官' | '正印' | '偏印'
   | '比肩' | '劫财' | '食神' | '伤官'
@@ -110,6 +130,10 @@ export interface BaZiResult {
   daYun: DaYun[]
   currentDaYun: DaYun | null
   currentYear: { stem: string; branch: string; ganZhi: string }
+  /** 起运天数（出生到最近节气的天数） */
+  qiYunDays: number
+  /** 大运是否顺排（阳男阴女为true，阴男阳女为false） */
+  daYunForward: boolean
 }
 
 // Reserved for a future manual fallback path; the current runtime path uses lunar-typescript.

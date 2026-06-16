@@ -77,20 +77,42 @@ function analyzeShiShenProfile(bazi: BaZiResult): ShiShenProfileItem[] {
 function generateOverview(
   bazi: BaZiResult,
   strength: string,
-  pattern: string,
+  patternAnalysis: ReturnType<typeof import('./pattern').analyzePattern>,
   yongShen: string[],
   jiShen: string[],
 ): AnnotationResult['overview'] {
   const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
-  const summary = `日主${bazi.dayMaster}(${dayMasterWx})，身${strength}，命局${pattern}，用神${yongShen.join('、') || '待定'}，忌神${jiShen.join('、') || '待定'}`
+  const pa = patternAnalysis
+
+  let summary = `日主${bazi.dayMaster}(${dayMasterWx})，身${strength}，命局${pa.patternName}（${pa.method}）`
+
+  // 添加组合信息
+  if (pa.combination && !pa.combination.isPure) {
+    summary += `，组合${pa.combination.name}`
+  }
+  if (pa.combination && pa.combination.isPure) {
+    summary += `，为${pa.combination.name}`
+  }
+
+  // 添加MBTI
+  if (pa.mbti.typicalTypes.length > 0) {
+    summary += `，MBTI倾向${pa.mbti.typicalTypes.join('/')}`
+  }
+
+  summary += `，用神${yongShen.join('、') || '待定'}，忌神${jiShen.join('、') || '待定'}`
+
+  // 刻入取格方法详情
+  summary += `\n取格详情：${pa.method}，由月令藏干${pa.sourceStem ?? '?'}取${pa.shiShen}定${pa.patternName}`
 
   return {
     summary,
     dayMaster: bazi.dayMaster,
     strength,
-    pattern,
+    pattern: `${pa.patternName}（${pa.jiXiong}）${pa.combination && !pa.combination.isPure ? '·' + pa.combination.name : ''}`,
     yongShen: yongShen.join('、') || '无',
     jiShen: jiShen.join('、') || '无',
+    mbti: pa.mbti.typicalTypes.length > 0 ? pa.mbti.typicalTypes.join('/') : undefined,
+    combination: pa.combination?.name,
   }
 }
 
@@ -165,17 +187,18 @@ export function generateAnnotation(bazi: BaZiResult): AnnotationResult {
   const overview = generateOverview(
     bazi,
     strengthAnalysis.strength,
-    patternAnalysis.patternName,
+    patternAnalysis,
     yongShenResult.yongShen,
     yongShenResult.jiShen,
   )
 
-  // 9. 综合建议
-  const comprehensiveAdvice = generateAdvice(
-    yongShenResult.yongShen,
-    yongShenResult.jiShen,
-    strengthAnalysis.strength,
-  )
+  // 9. 综合建议（含V2.0破格风险建议）
+  const comprehensiveAdvice = [
+    ...generateAdvice(yongShenResult.yongShen, yongShenResult.jiShen, strengthAnalysis.strength),
+    ...patternAnalysis.poGeRisks
+      .filter(r => r.severity === '高' || r.severity === '中')
+      .map(r => `【${r.type}·${r.severity}风险】${r.suggestion}`),
+  ]
 
   return {
     overview,

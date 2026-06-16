@@ -1,334 +1,212 @@
 // ============================================================
-// 格局判断模块
+// 格局判断模块（V2.0 修订版）
+// 集成：V2.0取格规则 + 组合判定 + MBTI映射 + 破格风险
 // ============================================================
 
 import type { BaZiResult } from '../types'
-import { TIAN_GAN_WUXING, TIAN_GAN_YIN_YANG, HIDDEN_STEMS } from '../types'
-import { getShiShenName, DI_ZHI_BEN_QI_WUXING, WUXING_SHENG, WUXING_KE } from './wuxing'
+import {
+  determinePattern,
+  determineCombination,
+  detectPoGeRisks,
+  getSchoolPreference,
+  PATTERN_JI_XIONG,
+  analyzeMBTI,
+} from '../pattern'
 import type { PatternAnalysis, PatternType } from './types'
 
-/** 月令藏干 → 天干十神映射（相对于日主） */
-interface GeJuCheck {
-  patternName: string     // 格局名
-  shiShenName: string     // 十神名
-  condition: string       // 成格条件说明
-}
-
-/** 藏干是否透出天干 */
-function isHiddenStemRevealed(
-  hiddenStems: string[],
-  stems: string[],
-  dayMaster: string,
-): { revealed: string[]; shiShen: string } {
-  const dayMasterWx = TIAN_GAN_WUXING[dayMaster] ?? ''
-  const dayMasterYy = TIAN_GAN_YIN_YANG[dayMaster] ?? '阳'
-  const revealed: string[] = []
-
-  for (const hs of hiddenStems) {
-    if (stems.includes(hs)) {
-      revealed.push(hs)
-    }
-  }
-
-  // 取第一个透出的藏干的十神为月令格局
-  if (revealed.length > 0) {
-    const firstWx = TIAN_GAN_WUXING[revealed[0]] ?? ''
-    const firstYy = TIAN_GAN_YIN_YANG[revealed[0]] ?? '阳'
-    return { revealed, shiShen: getShiShenName(dayMasterWx, dayMasterYy, firstWx, firstYy) }
-  }
-
-  return { revealed: [], shiShen: '' }
-}
-
-/** 十神名 → 格局名映射 */
+/** 十神 → 格局名映射（兼容旧代码） */
 const SHISHEN_TO_PATTERN: Record<string, string> = {
   '正官': '正官格', '偏官': '偏官格',
   '正印': '正印格', '偏印': '偏印格',
   '食神': '食神格', '伤官': '伤官格',
   '正财': '正财格', '偏财': '偏财格',
-  '比肩': '建禄格', '劫财': '建禄格',
+  '比肩': '建禄格', '劫财': '羊刃格',
 }
 
-/** 判断格局 */
+/**
+ * 主入口：格局判断
+ *
+ * V2.0 流程：
+ * 1. V2.0 取格规则（四正月/透干/月令分金）
+ * 2. 组合判定
+ * 3. MBTI 映射
+ * 4. 破格风险检测
+ * 5. 从格/特殊格局作为备选
+ */
 export function analyzePattern(
   bazi: BaZiResult,
   dayMasterStrength: string,
 ): PatternAnalysis {
-  const monthBranch = bazi.monthPillar.branch
-  const monthHidden = HIDDEN_STEMS[monthBranch] ?? []
-  const allStems = [
-    bazi.yearPillar.stem,
-    bazi.monthPillar.stem,
-    bazi.dayPillar.stem,
-    bazi.hourPillar.stem,
-  ]
+  // ─── 步骤1：V2.0 取格 ───
+  const patternResult = determinePattern(bazi)
 
-  // 日主用神
-  const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
-  const dayYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
-  const isSuperWeak = dayMasterStrength === '极弱'
+  if (!patternResult.found || !patternResult.patternName) {
+    // 退路：取月令本气
+    const mainQi = bazi.monthPillar.hiddenStems[0] || '?'
+    const fallbackShiShen = '比肩'
+    const fallbackName = '建禄格'
+    return buildEmptyResult(fallbackName, '正格', fallbackShiShen, [])
+  }
 
-  // 1. 检查月令藏干是否透出天干 → 正格
-  const { revealed, shiShen } = isHiddenStemRevealed(monthHidden, allStems, bazi.dayMaster)
+  const patternName = patternResult.patternName!
+  const shiShen = patternResult.shiShen!
+  const method = patternResult.method ?? '未知'
+  const sourceStem = patternResult.sourceStem ?? '?'
+  const conditions = patternResult.conditions ?? []
 
-  // 月令本气透出 → 直接取正格
-  const monthMainQi = DI_ZHI_BEN_QI_WUXING[monthBranch]
-  const monthMainStem = monthHidden[0] // 主气对应的天干
+  // ─── 步骤2：组合判定 ───
+  const combination = determineCombination(bazi, patternName, shiShen)
 
-  let patternName = ''
-  let patternType: PatternType = '正格'
-  let conditions: string[] = []
+  // ─── 步骤3：格局质量 ───
   let quality: '上等' | '中等' | '平' = '平'
   let description = ''
 
-  if (revealed.length > 0) {
-    patternName = SHISHEN_TO_PATTERN[shiShen] ?? shiShen + '格'
-    patternType = '正格'
-    conditions.push(`月令${monthBranch}藏干${revealed.join('、')}透出天干`)
-    conditions.push(`透出之神为${shiShen}，故取${patternName}`)
-
-    // 格局高低判断
-    if (shiShen === '正官' || shiShen === '正印' || shiShen === '食神' || shiShen === '正财') {
-      quality = '上等'
-      description = `${patternName}为正格中之上品，${shiShen}为吉神顺用，命主有福。`
-    } else if (shiShen === '偏财') {
-      quality = '中等'
-      description = `${patternName}格局不低，偏财旺者善于经营投资。`
-    } else if (shiShen === '伤官' || shiShen === '偏官') {
-      quality = '中等'
-      description = `${patternName}格局较高，但需有制化方能得用。`
-      if (shiShen === '伤官') {
-        description += '伤官需配印（伤官配印格）或生财（伤官生财格），方为佳美。'
-      }
-      if (shiShen === '偏官') {
-        description += '偏官需有制（食神制杀格），无制则刚暴。'
-      }
-    }
-    if (shiShen === '比肩' || shiShen === '劫财') {
-      quality = '平'
-      description = `月令为${patternName}，日主坐禄/刃，需看全局配合。`
-    }
-  } else {
-    // 月令不透 → 取月令本气所对应的格局（隐性格局）
-    const mainQiWx = monthMainQi
-    const implShiShen = getShiShenName(dayMasterWx, dayYy, mainQiWx ?? '', '阳')
-    patternName = SHISHEN_TO_PATTERN[implShiShen] ?? `${monthBranch}月${implShiShen}格`
-    patternType = '正格'
-    conditions.push(`月令${monthBranch}藏干未透出天干，取月令本气${monthMainQi ?? '?'}为格`)
-    conditions.push(`月令本气对应十神为${implShiShen}，故取${patternName}`)
-    quality = '平'
-    description = `格局${patternName}，月令藏干不透，格局层次一般，需看运助。`
+  if (method === '透干取用') {
+    quality = '上等'
+    description = `格局${patternName}，月令藏干透出天干，格局清纯层次高。`
+  } else if (method === '四正月') {
+    quality = '上等'
+    description = `格局${patternName}，四正月气最专一，格局明确。`
+  } else if (method === '月令分金') {
+    quality = '中等'
+    description = `格局${patternName}，经月令分金精密推算得出，需大运配合方显。`
   }
 
-  // 置信度：月令透出则高，不透则中等
-  let confidence = revealed.length > 0 ? 0.85 : 0.55
-  const alternatives: { name: string; reason: string }[] = []
+  // 根据十神吉凶调整
+  const jxInfo = PATTERN_JI_XIONG[patternName]
+  if (jxInfo) {
+    if (jxInfo.type === '凶') {
+      quality = quality === '上等' ? '中等' : '平'
+      description += jxInfo.desc
+    }
+  }
+
+  // 组合对质量的影响
+  if (combination.name === '官印相生' || combination.name === '煞印相生') {
+    quality = quality === '上等' ? '上等' : '中等'
+    description += `组合为${combination.name}，格局更佳。`
+  }
+  if (combination.isPure && combination.name.includes('纯')) {
+    quality = quality === '上等' ? '中等' : '平'
+    description += `为${combination.name}，格局稍欠配合。`
+  }
+
+  // 置信度
+  let confidence = 0.6
+  if (method === '透干取用') confidence = 0.9
+  else if (method === '四正月') confidence = 0.85
+  else if (method === '月令分金') confidence = 0.65
+  confidence = Math.round(confidence * 100) / 100
+
+  // ─── 步骤4：破格风险检测 ───
+  const poGeRisks = detectPoGeRisks(bazi, patternName, combination)
+
+  // ─── 步骤5：MBTI 分析 ───
+  const mbtiAnalysis = analyzeMBTI(shiShen, combination, poGeRisks)
+
+  // ─── 步骤6：经典引证 ───
   const classicRefs: string[] = []
-
-  // 经典引证
-  if (revealed.length > 0) {
+  if (method === '透干取用') {
     classicRefs.push('《子平真诠》：「八字用神，专求月令」')
+    classicRefs.push('《渊海子平》：「月令为提纲，四柱之至尊」')
   }
-  if (shiShen === '正官' || shiShen === '正印' || shiShen === '食神' || shiShen === '正财') {
-    classicRefs.push('《渊海子平》：「吉神顺用，凶神逆用」')
+  if (method === '月令分金') {
+    classicRefs.push('《渊海子平》：「阴阳顺逆，分金定位」')
+  }
+  if (patternName === '建禄格' || patternName === '羊刃格') {
+    classicRefs.push('《渊海子平》：「建禄者，月建逢禄堂也」')
   }
 
-  // 构建备选格局
-  // 检查月令其余藏干是否也透出
-  if (monthHidden.length > 1) {
-    for (let i = 1; i < monthHidden.length; i++) {
-      if (allStems.includes(monthHidden[i])) {
-        const altWx = TIAN_GAN_WUXING[monthHidden[i]] ?? ''
-        const altYy = TIAN_GAN_YIN_YANG[monthHidden[i]] ?? '阳'
-        const altShiShen = getShiShenName(dayMasterWx, dayYy, altWx, altYy)
-        const altName = SHISHEN_TO_PATTERN[altShiShen] ?? altShiShen + '格'
-        alternatives.push({ name: altName, reason: `月令中气${monthHidden[i]}也透出天干，可取${altName}` })
+  // ─── 步骤7：备选格局 ───
+  const alternatives: { name: string; reason: string }[] = []
+
+  // 月令不透时，提供透干方案作为备选
+  if (method === '月令分金' && patternResult.method === '月令分金') {
+    const hiddenStems = bazi.monthPillar.hiddenStems
+    const allStems = [
+      bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem,
+    ]
+    for (const hs of hiddenStems) {
+      if (allStems.includes(hs)) {
+        // 这种情况理论上不应该出现(因为不透干才走分金)
+        // 但如果有，作为备选
+        const altName = SHISHEN_TO_PATTERN[shiShen] ?? shiShen + '格'
+        if (altName !== patternName) {
+          alternatives.push({ name: altName, reason: `月令藏干${hs}也透出，亦可取${altName}` })
+        }
       }
     }
   }
-  // 检查是否有从格倾向作为备选
+
+  // 从格作为备选
+  const isSuperWeak = dayMasterStrength === '极弱'
   if (isSuperWeak) {
     alternatives.push({ name: '从格', reason: '日主极弱无根，有从格倾向' })
   }
 
-  // 2. 检查从格（日主极弱且全局偏向）
-  if (isSuperWeak) {
-    const fromGe = checkCongGe(bazi)
-    if (fromGe) {
-      patternName = fromGe.name
-      patternType = '从格'
-      conditions = fromGe.conditions
-      quality = fromGe.quality
-      description = fromGe.description
-      confidence = 0.75
-      classicRefs.push('《滴天髓》：「从得真者只论从，从神又有吉和凶」')
-      // 正格作为备选
-      if (alternatives.length === 0) {
-        const implShiShen = getShiShenName(dayMasterWx, dayYy, monthMainQi ?? '', '阳')
-        alternatives.push({ name: SHISHEN_TO_PATTERN[implShiShen] ?? implShiShen + '格', reason: '亦可按月令取正格论' })
-      }
-    }
+  // ─── 构建MBTI信息 ───
+  const mbtiInfo = {
+    cognitiveFunctions: mbtiAnalysis.cognitiveDescription,
+    typicalTypes: mbtiAnalysis.recommendedTypes,
+    traits: mbtiAnalysis.combinationProfile?.traits ?? '',
+    portrait: mbtiAnalysis.combinationProfile?.portrait ?? '',
+    industrySuggestions: mbtiAnalysis.industrySuggestions.slice(0, 3).map(
+      m => `${m.combination}：${m.industries.join('、')}（${m.mbtiAdvantage}）`
+    ),
+    energyAdjustments: mbtiAnalysis.energyAdjustments.map(
+      a => `${a.initialState} → ${a.mbtiDirection}：${a.practicalMethods.join('、')}`
+    ),
   }
 
-  // 3. 检查特殊格局
-  if (!isSuperWeak) {
-    const specialGe = checkSpecialPattern(bazi)
-    if (specialGe) {
-      patternName = specialGe.name
-      patternType = '特殊格局'
-      conditions = [...conditions, ...specialGe.conditions]
-      quality = specialGe.quality
-      description = specialGe.description
-      confidence = 0.7
-      classicRefs.push('《渊海子平》：「建禄者，月建逢禄堂也」')
-    }
-  }
-
-  if (!description) {
-    description = `${patternName}，命局配合适中。`
-  }
+  // ─── 最终输出 ───
+  const jiXiongType = (jxInfo?.type ?? '中性') as '吉' | '凶' | '中性'
 
   return {
-    patternType,
+    patternType: '正格',
     patternName,
-    confidence: Math.round(confidence * 100) / 100,
+    confidence,
     conditions,
     quality,
     description,
     alternatives,
     classicReference: classicRefs,
+
+    // V2.0 新增
+    method: `${method}（${getSchoolPreference(method)}）`,
+    sourceStem,
+    shiShen,
+    jiXiong: jiXiongType,
+    jiXiongDesc: jxInfo?.desc ?? '',
+    combination,
+    poGeRisks,
+    mbti: mbtiInfo,
+    fenJinDetail: patternResult.fenJinDetail,
   }
 }
 
-/** 检查从格 */
-function checkCongGe(bazi: BaZiResult): { name: string; conditions: string[]; quality: '上等' | '中等' | '平'; description: string } | null {
-  const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
-
-  // 统计各五行力量
-  const fiveCount: Record<string, number> = { '金': 0, '木': 0, '水': 0, '火': 0, '土': 0 }
-  const pillars = [bazi.yearPillar, bazi.monthPillar, bazi.dayPillar, bazi.hourPillar]
-  for (const p of pillars) {
-    fiveCount[p.stemWuXing] = (fiveCount[p.stemWuXing] ?? 0) + 1
-    fiveCount[p.branchWuXing] = (fiveCount[p.branchWuXing] ?? 0) + 1
-    for (const hs of p.hiddenStems) {
-      const wx = TIAN_GAN_WUXING[hs]
-      if (wx) fiveCount[wx] = (fiveCount[wx] ?? 0) + 1
-    }
-  }
-
-  // 找出主导五行（日主之外的）
-  let dominantWx = ''
-  let dominantCount = 0
-  for (const [wx, c] of Object.entries(fiveCount)) {
-    if (wx !== dayMasterWx && c > dominantCount) {
-      dominantCount = c
-      dominantWx = wx
-    }
-  }
-
-  if (dominantCount < 5) return null // 不够集中
-
-  // 判断具体从格类型
-  const dayMasterYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
-  const dmWx = TIAN_GAN_WUXING[bazi.dayMaster]
-  const dominantYy = '阳' // 简化
-
-  // 官杀主导 → 从杀格
-  const guanShaWx = WUXING_KE[dayMasterWx]
-  const caiWx = WUXING_SHENG[guanShaWx ?? ''] // 财生官杀
-  const shiShangWx = WUXING_SHENG[dayMasterWx]
-
-  if (guanShaWx && fiveCount[guanShaWx] >= 4) {
-    return {
-      name: '从杀格',
-      conditions: [
-        `日主${dayMasterWx}极弱无根`,
-        `全局官杀(${guanShaWx})力量占主导（${fiveCount[guanShaWx]}个）`,
-        '日主不得不弃命从杀',
-      ],
-      quality: '上等',
-      description: '从杀格，格局清纯，顺势而为，利于权势领域发展。行运需官杀、财星为佳，忌印比。',
-    }
-  }
-
-  // 财星主导 → 从财格
-  if (caiWx && fiveCount[caiWx] >= 4) {
-    return {
-      name: '从财格',
-      conditions: [
-        `日主${dayMasterWx}极弱无根`,
-        `全局财星(${caiWx})力量占主导（${fiveCount[caiWx]}个）`,
-        '日主弃命从财',
-      ],
-      quality: '中等',
-      description: '从财格，格局清奇，善于经商理财。行运喜财、食伤，忌印比。',
-    }
-  }
-
-  // 食伤主导 → 从儿格
-  if (shiShangWx && fiveCount[shiShangWx] >= 4) {
-    return {
-      name: '从儿格',
-      conditions: [
-        `日主${dayMasterWx}极弱无根`,
-        `全局食伤(${shiShangWx})力量占主导（${fiveCount[shiShangWx]}个）`,
-        '日主弃命从儿',
-      ],
-      quality: '中等',
-      description: '从儿格，才华横溢，适合艺术创作领域。行运喜食伤、财星。',
-    }
-  }
-
-  // 多种力量 → 从势格
+/** 构建空白结果（错误退路） */
+function buildEmptyResult(
+  fallbackName: string,
+  fallbackType: PatternType,
+  fallbackShiShen: string,
+  fallbackConditions: string[],
+): PatternAnalysis {
   return {
-    name: '从势格',
-    conditions: [
-      `日主${dayMasterWx}极弱无根`,
-      `全局非日主之五行力量集中`,
-      '日主弃命从势，顺势而为',
-    ],
+    patternType: fallbackType,
+    patternName: fallbackName,
+    confidence: 0.3,
+    conditions: fallbackConditions,
     quality: '平',
-    description: '从势格，日主极弱，顺势而从。需看大运配合，整体运势起伏较大。',
+    description: '格局计算异常，使用默认格局，请人工复核。',
+    alternatives: [],
+    classicReference: [],
+    method: '异常退路',
+    sourceStem: '?',
+    shiShen: fallbackShiShen,
+    jiXiong: '中性',
+    jiXiongDesc: '',
+    combination: { name: fallbackName, dominantPattern: fallbackName, keyCombination: '', keyStem: '', keyPosition: '', isPure: true },
+    poGeRisks: [],
+    mbti: { cognitiveFunctions: '', typicalTypes: [], traits: '', portrait: '', industrySuggestions: [], energyAdjustments: [] },
   }
-}
-
-/** 检查特殊格局 */
-function checkSpecialPattern(bazi: BaZiResult): { name: string; conditions: string[]; quality: '上等' | '中等' | '平'; description: string } | null {
-  const dayStem = bazi.dayMaster
-  const dayBranch = bazi.dayPillar.branch
-
-  // 建禄格 / 阳刃格（日干坐禄或帝旺）
-  // 甲禄在寅, 乙禄在卯, 丙戊禄在巳, 丁己禄在午, 庚禄在申, 辛禄在酉, 壬禄在亥, 癸禄在子
-  const LU_MAP: Record<string, string> = {
-    '甲': '寅', '乙': '卯', '丙': '巳', '丁': '午',
-    '戊': '巳', '己': '午', '庚': '申', '辛': '酉',
-    '壬': '亥', '癸': '子',
-  }
-
-  // 帝旺: 甲卯, 乙寅, 丙午, 丁巳, 戊午, 己巳, 庚酉, 辛申, 壬子, 癸亥
-  const WANG_MAP: Record<string, string> = {
-    '甲': '卯', '乙': '寅', '丙': '午', '丁': '巳',
-    '戊': '午', '己': '巳', '庚': '酉', '辛': '申',
-    '壬': '子', '癸': '亥',
-  }
-
-  if (LU_MAP[dayStem] === dayBranch) {
-    return {
-      name: '建禄格',
-      conditions: [`日干${dayStem}坐禄地${dayBranch}，为建禄格`],
-      quality: '中等',
-      description: '建禄格，日主得禄，自身力量充足。宜食伤生财或官杀制身为佳。',
-    }
-  }
-
-  if (WANG_MAP[dayStem] === dayBranch) {
-    return {
-      name: '阳刃格',
-      conditions: [`日干${dayStem}坐帝旺${dayBranch}，为阳刃格`],
-      quality: '平',
-      description: '阳刃格，日主过旺刚猛。需官杀制刃或食伤泄秀，方能成器。',
-    }
-  }
-
-  return null
 }
