@@ -1,0 +1,70 @@
+{
+  "chart": {
+    "birthDate": "1811-11-26",
+    "birthTime": "07:00",
+    "gender": "男",
+    "yearPillar": { "stem": "辛", "branch": "未", "stemWuXing": "金", "branchWuXing": "土", "hiddenStems": ["己","丁","乙"], "ganZhi": "辛未" },
+    "monthPillar": { "stem": "己", "branch": "亥", "stemWuXing": "土", "branchWuXing": "水", "hiddenStems": ["壬","甲"], "ganZhi": "己亥" },
+    "dayPillar": { "stem": "己", "branch": "巳", "stemWuXing": "土", "branchWuXing": "火", "hiddenStems": ["丙","戊","庚"], "ganZhi": "己巳" },
+    "hourPillar": { "stem": "戊", "branch": "辰", "stemWuXing": "土", "branchWuXing": "土", "hiddenStems": ["乙","戊","癸"], "ganZhi": "戊辰" },
+    "dayMaster": "己",
+    "fiveElements": { "金": 2, "木": 3, "水": 2, "火": 1, "土": 5 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "壬", "branch": "寅", "ganZhi": "壬寅" },
+    "qiYunDays": 6,
+    "daYunForward": false
+  },
+  "annotation": {
+    "overview": { "summary": "己土湿润生于亥月，正印护身官印相生，中兴名臣之格", "dayMaster": "己土", "strength": "中和", "pattern": "正官佩印格", "mbti": "ISTJ", "combination": "官印相生" },
+    "strengthAnalysis": { "strength": "中和", "score": 55, "confidence": 0.72, "reasons": ["月令亥水为财", "日坐巳火印星生身", "时柱戊辰劫财帮身"], "classicReference": ["《滴天髓》"], "components": { "yueLing": 20, "diZhiGen": 30, "tianGanBiJie": 10, "shengFu": 60, "keXieHao": 45 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏弱", "count": 2, "advice": "食伤泄秀，利于文名" },
+      { "name": "木", "level": "中和", "count": 3, "advice": "官星适度，为用神" },
+      { "name": "水", "level": "偏弱", "count": 2, "advice": "财星不显，廉洁自守" },
+      { "name": "火", "level": "偏弱", "count": 1, "advice": "印星为贵，靠学识立身" },
+      { "name": "土", "level": "偏旺", "count": 5, "advice": "身强木疏为用" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 2, "positions": ["日干己","时干戊"] },
+      { "name": "劫财", "count": 1, "positions": ["时支辰藏戊"] },
+      { "name": "食神", "count": 1, "positions": ["年支未藏辛"] },
+      { "name": "伤官", "count": 1, "positions": ["日支巳藏庚"] },
+      { "name": "正财", "count": 0, "positions": [] },
+      { "name": "偏财", "count": 0, "positions": [] },
+      { "name": "正官", "count": 3, "positions": ["年干辛","年支未藏乙","时支辰藏乙"] },
+      { "name": "偏官", "count": 0, "positions": [] },
+      { "name": "正印", "count": 2, "positions": ["日支巳藏丙","月干己"] },
+      { "name": "偏印", "count": 1, "positions": ["年支未藏丁"] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "正官佩印格", "confidence": 0.78,
+      "conditions": ["月令亥水财星", "正官透干得印护", "日坐巳火印星"], "quality": "上等",
+      "description": "己土生于亥月财星当令，正官辛金透年干，巳火印星贴身化官，格局清贵",
+      "alternatives": [], "classicReference": ["《子平真诠》","《三命通会》"], "method": "月令取格", "sourceStem": "辛", "shiShen": "食神",
+      "jiXiong": "吉", "jiXiongDesc": "食神吐秀生财，官印相生护身，文臣贵格", "combination": { "name": "官印相生", "dominantPattern": "食神格", "keyCombination": "官印相生", "keyStem": "辛", "keyPosition": "年干", "isPure": true },
+      "poGeRisks": [],
+      "mbti": { "cognitiveFunctions": "Si-Te-Fi-Ne", "typicalTypes": ["ISTJ","INTJ"], "traits": "持重守正，坚韧不拔", "portrait": "自律型人格，以修身为本，以家国为念", "industrySuggestions": ["行政","教育","管理"], "energyAdjustments": ["避免过度保守","适当灵活变通"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "戊戌", "startAge": 6, "endAge": 15, "interpretation": "戊戌比劫帮身，家运平稳，初启蒙学", "quality": "平" },
+        { "ganZhi": "丁酉", "startAge": 16, "endAge": 25, "interpretation": "丁火偏印助文运，酉金食神泄秀，学业精进", "quality": "佳" },
+        { "ganZhi": "丙申", "startAge": 26, "endAge": 35, "interpretation": "丙火正印，申金伤官，文章名世", "quality": "佳" },
+        { "ganZhi": "乙未", "startAge": 36, "endAge": 45, "interpretation": "乙木七杀有制，事业稳步上升", "quality": "佳" },
+        { "ganZhi": "甲午", "startAge": 46, "endAge": 55, "interpretation": "甲木正官，午火印星旺地，官印双清，位极人臣", "quality": "佳" }
+      ],
+      "currentYear": { "ganZhi": "壬寅", "interpretation": "财官相生之年，事业稳中有进", "focus": ["事业","家宅"] },
+      "milestones": [{ "age": 42, "year": 1853, "ganZhi": "癸丑", "event": "组建湘军抗击太平军", "reason": "乙未大运官星得力，身强可任" }]
+    },
+    "branchRelations": { "summary": ["年支未与月支亥半合木局","日支巳与时支辰半合金局"], "items": ["亥未半合木局","巳辰半合金局"], "kongWang": [], "heJu": ["亥未半合木局"], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "文昌贵人", "type": "吉", "description": "日干己见巳为文昌贵人", "pillar": "日柱", "classicRef": "《星平会海》" },
+      { "name": "学堂", "type": "吉", "description": "月上己亥得学堂", "pillar": "月柱", "classicRef": "《三命通会》" }
+    ] },
+    "specialTopics": { "personality": ["持重守正","坚毅自律","虑事周密"], "career": ["文官","军事","教育"], "wealth": ["廉洁持身","不贪财货","晚年富足"], "marriage": ["正印旺婚姻稳","得贤内助"], "health": ["土重注意脾胃","木疏得宜无大碍"], "children": ["教子有方","家风端正"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["持志以恒","戒骄戒躁","修身为本"]
+  }
+}

@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* ===== 八字排盘 · 数字命书风格 =====
+ * 宣纸为底 / 朱砂为印 / 墨迹为字 / 留白呼吸
+ */
+
+:root {
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  background-color: #FBF7F0;
+  color: #1C1914;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 滚动条 — 淡墨色调 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #EDE8DF;
+}
+::-webkit-scrollbar-thumb {
+  background: #C4B8A8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A89880;
+}
+
+/* 选择框 — 墨色箭头 */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231C1914' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px !important;
+}
+
+/* ===== 命书排版工具类 ===== */
+
+/* 章节分隔：淡墨细线 */
+.chapter {
+  border-top: 1px solid #D8D2C8;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.chapter:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.chapter-title {
+  font-family: "Noto Serif SC", serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1C1914;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+/* 朱砂印章 — 日主特效 */
+.seal-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #B83A2E;
+  border: 2.5px solid #B83A2E;
+  transform: rotate(-3deg);
+  padding: 0 0.5rem;
+  font-family: "Noto Serif SC", serif;
+  font-weight: 700;
+  border-radius: 2px;
+}
+
+/* 淡墨卡片 — 章节内区块 */
+.ink-card {
+  background: rgba(237, 232, 223, 0.5);
+  border: 1px solid #E0DBD0;
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+/* 淡墨标签 */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #6B6459;
+  background: #EDE8DF;
+  border: 1px solid #E0DBD0;
+  border-radius: 3px;
+  padding: 0.125rem 0.5rem;
+}
+
+.ink-tag.active {
+  color: #B83A2E;
+  border-color: #D4A8A4;
+  background: #F5EDEB;
+}

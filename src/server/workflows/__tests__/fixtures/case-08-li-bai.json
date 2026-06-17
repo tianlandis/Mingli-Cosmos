@@ -1,0 +1,70 @@
+{
+  "chart": {
+    "birthDate": "0701-05-19",
+    "birthTime": "06:00",
+    "gender": "男",
+    "yearPillar": { "stem": "辛", "branch": "丑", "stemWuXing": "金", "branchWuXing": "土", "hiddenStems": ["己","癸","辛"], "ganZhi": "辛丑" },
+    "monthPillar": { "stem": "癸", "branch": "巳", "stemWuXing": "水", "branchWuXing": "火", "hiddenStems": ["丙","戊","庚"], "ganZhi": "癸巳" },
+    "dayPillar": { "stem": "乙", "branch": "卯", "stemWuXing": "木", "branchWuXing": "木", "hiddenStems": ["乙"], "ganZhi": "乙卯" },
+    "hourPillar": { "stem": "己", "branch": "卯", "stemWuXing": "土", "branchWuXing": "木", "hiddenStems": ["乙"], "ganZhi": "己卯" },
+    "dayMaster": "乙",
+    "fiveElements": { "金": 2, "木": 5, "水": 2, "火": 1, "土": 2 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "壬", "branch": "子", "ganZhi": "壬子" },
+    "qiYunDays": 9,
+    "daYunForward": true
+  },
+  "annotation": {
+    "overview": { "summary": "乙木春深根固，食伤泄秀文采风流，谪仙之格", "dayMaster": "乙木", "strength": "强", "pattern": "食伤泄秀格", "mbti": "ENFP", "combination": "食伤吐秀" },
+    "strengthAnalysis": { "strength": "强", "score": 82, "confidence": 0.88, "reasons": ["日坐卯木禄位", "时支卯木又禄", "月令巳火食伤泄秀", "癸水偏印润木"], "classicReference": ["《滴天髓》","乙木虽柔，刲羊解牛"], "components": { "yueLing": 40, "diZhiGen": 40, "tianGanBiJie": 0, "shengFu": 80, "keXieHao": 20 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏弱", "count": 2, "advice": "官星弱不喜管束，放任自由" },
+      { "name": "木", "level": "偏旺", "count": 5, "advice": "身强喜泄秀，宜发挥才情" },
+      { "name": "水", "level": "偏弱", "count": 2, "advice": "印星适度，有文化底蕴" },
+      { "name": "火", "level": "偏弱", "count": 1, "advice": "食伤偏弱，才华需遇时而发" },
+      { "name": "土", "level": "中和", "count": 2, "advice": "财星中和，仗义疏财" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 3, "positions": ["日干乙","日支卯藏乙","时支卯藏乙"] },
+      { "name": "劫财", "count": 0, "positions": [] },
+      { "name": "食神", "count": 1, "positions": ["月支巳藏丙"] },
+      { "name": "伤官", "count": 1, "positions": ["时干己"] },
+      { "name": "正财", "count": 0, "positions": [] },
+      { "name": "偏财", "count": 1, "positions": ["年干辛"] },
+      { "name": "正官", "count": 1, "positions": ["年支丑藏辛"] },
+      { "name": "偏官", "count": 0, "positions": [] },
+      { "name": "正印", "count": 0, "positions": [] },
+      { "name": "偏印", "count": 2, "positions": ["月干癸","年支丑藏癸"] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "食伤泄秀格", "confidence": 0.85,
+      "conditions": ["乙木日坐卯禄身极强", "巳火食伤泄秀", "癸水偏印润木养文"], "quality": "上等",
+      "description": "乙木生于巳月食伤当令，日时双卯木旺，食伤泄秀文采风流",
+      "alternatives": [], "classicReference": ["《穷通宝鉴》","《渊海子平》"], "method": "月令取格", "sourceStem": "丙", "shiShen": "伤官",
+      "jiXiong": "吉", "jiXiongDesc": "身强泄秀，才华横溢，文星之格", "combination": { "name": "食伤吐秀", "dominantPattern": "伤官格", "keyCombination": "食伤泄秀", "keyStem": "丙", "keyPosition": "月支藏", "isPure": true },
+      "poGeRisks": [{ "type": "伤官见官", "description": "年支官星弱，遇官运易有是非", "severity": "中", "suggestion": "遇官运低调行事", "mbtiAdjust": "" }],
+      "mbti": { "cognitiveFunctions": "Ne-Fi-Te-Si", "typicalTypes": ["ENFP","INFP"], "traits": "天马行空，才情奔放", "portrait": "浪漫主义型人格，追求自由与美，不拘一格", "industrySuggestions": ["文学","艺术","旅游"], "energyAdjustments": ["戒纵酒","节制情感","收敛锋芒"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "甲午", "startAge": 9, "endAge": 18, "interpretation": "甲木劫财，午火食伤旺地，才华初露", "quality": "佳" },
+        { "ganZhi": "乙未", "startAge": 19, "endAge": 28, "interpretation": "乙木比肩，未土财库，仗义疏财", "quality": "平" },
+        { "ganZhi": "丙申", "startAge": 29, "endAge": 38, "interpretation": "丙火食伤得力，文名远扬", "quality": "佳" },
+        { "ganZhi": "丁酉", "startAge": 39, "endAge": 48, "interpretation": "丁火食神，酉金七杀，文名与困厄并存", "quality": "平" },
+        { "ganZhi": "戊戌", "startAge": 49, "endAge": 58, "interpretation": "戊土正财合癸水印星，晚年多坎", "quality": "不佳" }
+      ],
+      "currentYear": { "ganZhi": "壬子", "interpretation": "印旺之年，文思泉涌", "focus": ["创作","交友"] },
+      "milestones": [{ "age": 42, "year": 742, "ganZhi": "壬午", "event": "应召入长安供奉翰林", "reason": "丁酉大运文星照耀" }]
+    },
+    "branchRelations": { "summary": ["日支卯与时支卯伏吟","年支丑与月支巳半合金局"], "items": ["卯卯伏吟","巳丑半合金局"], "kongWang": [], "heJu": ["巳丑半合金局"], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "文昌贵人", "type": "吉", "description": "日干乙见巳为文昌贵人", "pillar": "月柱", "classicRef": "《星平会海》" },
+      { "name": "禄神", "type": "吉", "description": "乙木见卯为建禄", "pillar": "日柱", "classicRef": "《三命通会》" }
+    ] },
+    "specialTopics": { "personality": ["才情奔放","豪迈不羁","浪漫多情"], "career": ["文学","艺术","游历"], "wealth": ["仗义疏财","千金散尽还复来","不聚财"], "marriage": ["伤官旺婚姻波折","晚婚为宜"], "health": ["木旺注意肝胆","酒重伤身"], "children": ["子女聪慧","有文采"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["戒酒惜身","收敛锋芒","淡泊明志"]
+  }
+}

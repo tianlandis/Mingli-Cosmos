@@ -1,0 +1,69 @@
+{
+  "chart": {
+    "birthDate": "0181-05-20",
+    "birthTime": "06:00",
+    "gender": "男",
+    "yearPillar": { "stem": "辛", "branch": "酉", "stemWuXing": "金", "branchWuXing": "金", "hiddenStems": ["辛"], "ganZhi": "辛酉" },
+    "monthPillar": { "stem": "癸", "branch": "巳", "stemWuXing": "水", "branchWuXing": "火", "hiddenStems": ["戊", "庚", "丙"], "ganZhi": "癸巳" },
+    "dayPillar": { "stem": "丙", "branch": "子", "stemWuXing": "火", "branchWuXing": "水", "hiddenStems": ["癸"], "ganZhi": "丙子" },
+    "hourPillar": { "stem": "壬", "branch": "辰", "stemWuXing": "水", "branchWuXing": "土", "hiddenStems": ["乙", "癸", "戊"], "ganZhi": "壬辰" },
+    "dayMaster": "丙",
+    "fiveElements": { "金": 2, "木": 0, "水": 4, "火": 2, "土": 2 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "辛", "branch": "酉", "ganZhi": "辛酉" },
+    "qiYunDays": 8,
+    "daYunForward": false
+  },
+  "annotation": {
+    "overview": { "summary": "丙火生于巳月，食神制杀，智谋超群", "dayMaster": "丙火", "strength": "中和偏弱", "pattern": "食神制杀格", "mbti": "INTJ", "combination": "食神制杀" },
+    "strengthAnalysis": { "strength": "中和偏弱", "score": 45, "confidence": 0.72, "reasons": ["月令巳火被水围困", "地支子水克身"], "classicReference": ["《滴天髓》"], "components": { "yueLing": 30, "diZhiGen": 0, "tianGanBiJie": 0, "shengFu": 30, "keXieHao": 70 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏弱", "count": 2, "advice": "财星弱，宜守不宜攻" },
+      { "name": "木", "level": "偏弱", "count": 0, "advice": "印星缺，靠后天学习弥补" },
+      { "name": "水", "level": "偏旺", "count": 4, "advice": "官杀旺，需印化食制" },
+      { "name": "火", "level": "偏弱", "count": 2, "advice": "日主偏弱，喜木火生扶" },
+      { "name": "土", "level": "中和", "count": 2, "advice": "食伤适度，为用神" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 0, "positions": [] },
+      { "name": "劫财", "count": 0, "positions": [] },
+      { "name": "食神", "count": 3, "positions": ["月干癸→丙生土", "日支子藏癸→水生木→木生火食"] },
+      { "name": "伤官", "count": 0, "positions": [] },
+      { "name": "正财", "count": 1, "positions": ["年干辛"] },
+      { "name": "偏财", "count": 0, "positions": [] },
+      { "name": "正官", "count": 1, "positions": ["时干壬"] },
+      { "name": "偏官", "count": 2, "positions": ["年支酉藏辛", "日支子藏癸"] },
+      { "name": "正印", "count": 0, "positions": [] },
+      { "name": "偏印", "count": 0, "positions": [] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "食神制杀格", "confidence": 0.75,
+      "conditions": ["月令食神透干", "杀星有力，食神可制"], "quality": "上等",
+      "description": "丙火生于巳月得令，癸水食神制杀为用，智谋深远",
+      "alternatives": [], "classicReference": ["《子平真诠》"], "method": "月令取格", "sourceStem": "丙", "shiShen": "食神",
+      "jiXiong": "吉", "jiXiongDesc": "食神制杀得宜，无往不利", "combination": { "name": "食神制杀", "dominantPattern": "食神格", "keyCombination": "食神制杀", "keyStem": "壬", "keyPosition": "时干", "isPure": true },
+      "poGeRisks": [{ "type": "印星夺食", "description": "怕印星大运来破格", "severity": "中", "suggestion": "遇印运当守拙", "mbtiAdjust": "" }],
+      "mbti": { "cognitiveFunctions": "Ni-Te-Fi-Se", "typicalTypes": ["INTJ", "INTP"], "traits": "深谋远虑，洞悉人心", "portrait": "战略家型人格，擅长长远规划", "industrySuggestions": ["战略", "咨询", "科技"], "energyAdjustments": ["避免过度劳累", "注意平衡工作与休息"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "甲午", "startAge": 5, "endAge": 14, "interpretation": "甲木偏印生身，少年聪慧", "quality": "佳" },
+        { "ganZhi": "乙未", "startAge": 15, "endAge": 24, "interpretation": "乙木正印，学业大进", "quality": "佳" },
+        { "ganZhi": "丙申", "startAge": 25, "endAge": 34, "interpretation": "丙火比肩助身，崭露头角", "quality": "佳" },
+        { "ganZhi": "丁酉", "startAge": 35, "endAge": 44, "interpretation": "丁火劫财，事业繁忙", "quality": "平" }
+      ],
+      "currentYear": { "ganZhi": "辛酉", "interpretation": "财星旺年但身弱不胜财", "focus": ["健康", "谨慎财务"] },
+      "milestones": [{ "age": 27, "year": 208, "ganZhi": "戊子", "event": "出山辅佐刘备", "reason": "丙申大运助身" }]
+    },
+    "branchRelations": { "summary": ["年柱酉与日支子破", "月支巳与时支辰会（巳辰巽位）"], "items": ["子酉相破"], "kongWang": [], "heJu": [], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "文昌", "type": "吉", "description": "日干丙见时支辰为文昌贵人", "pillar": "时柱", "classicRef": "《星平会海》" },
+      { "name": "华盖", "type": "中性", "description": "日支子为水局华盖", "pillar": "日柱", "classicRef": "《三命通会》" }
+    ] },
+    "specialTopics": { "personality": ["睿智深沉", "谋略过人"], "career": ["战略", "咨询", "策划"], "wealth": ["名声大财利次"], "marriage": ["晚婚为佳"], "health": ["注意水旺克火"], "children": ["子女聪慧，宜晚得"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["养心", "节劳"]
+  }
+}
