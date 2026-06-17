@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-06-18 — v4.0.0 里程碑发布
+
+| 任务 | 说明 |
+|------|------|
+| **v4.0.0 发布** | Git commit `95e7c01` → `78ebcd2`，push GitHub master |
+| **186 项全量测试** | vitest 3.2.4，7/7 文件全覆盖，零失败 |
+| **SSE Bugfix** | AI SDK v6 移除 `toDataStreamResponse()`，手动构建 `text/event-stream` |
+| **生产环境同构** | Vite + Hono 统一端口部署，SPA 回退路由 |
+| **大运竖轴** | LuckTimeline 竖向时间轴组件 (UI-6) |
+| **专题 Tab** | TopicTabs 六个专题水平切换 (UI-7) |
+| **ChatPanel** | SSE 流式对话 Copilot，逐字增量渲染 |
+| **品牌升级** | 项目更名为"数字命理推演引擎"，README 重写 |
+| **Dockerfile** | 多阶段构建：build → 极简生产镜像 |
+| **docker-compose.yml** | 端口映射 3001:3001，.env volumes 挂载，restart: always |
+| **Nginx 配置** | SSE 流式代理优化（proxy_buffering off + chunked_transfer_encoding on） |
+| **路线图更新** | 双轨演进 v4.0.0+ 版本，Phase 0-6 + P0-P2 全更新 |
+| **未来架构规划** | `arch/ARCHITECTURE-FUTURE.md` + `arch/CONFIG-CONTRACT.md` |
+| **src/admin/ + db/** | Phase 4 管理后台 + 数据库持久化目录结构规划 |
+
 ## 2026-06-17
 
 | 任务 | 说明 |

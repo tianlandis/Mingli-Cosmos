@@ -1,0 +1,26 @@
+feat: Phase 3 容器化部署 + 品牌升级 + 未来架构规划
+
+## Docker 容器化
+- Dockerfile: 多阶段构建 (node:22-alpine), build -> 极简生产镜像
+- docker-compose.yml: 端口 3001:3001, .env volumes 动态挂载, restart: always
+- nginx.conf: SSE 流式代理优化 (proxy_buffering off + chunked_transfer_encoding on)
+- .dockerignore: 排除 node_modules/.git/tests/docs 等非必要文件
+
+## 路线图 + 任务看板更新
+- 01-product-brief.md: 项目更名为数字命理推演引擎, 产品形态 v4.0+
+- 02-feature-roadmap.md: 双轨演进 v4.0.0+ 版本 (功能轨 6 Phase + 设计轨 3 Priority)
+- TODO.md: Sprint 重新锚定 Phase 3, 封存 Phase 4-6 远期
+- DONE.md: v4.0.0 里程碑完整记录
+- CHANGELOG.md: v4.0.0 版本条目
+
+## 未来架构规划
+- arch/ARCHITECTURE-FUTURE.md: Phase 4 管理后台 + 数据库技术蓝图
+- arch/CONFIG-CONTRACT.md: 动态双轨配置契约 (DB -> .env fallback)
+- src/admin/ src/server/db/ src/server/config/: 目录结构 + README 规划
+
+## 文档维护
+- INDEX.md: v4.0 版本文档索引更新, 新增容器化/架构规划导航
+- .gitignore: 移除错误 docs/ 忽略规则
+
+## 质检
+- tsc --noEmit: 零错误通过

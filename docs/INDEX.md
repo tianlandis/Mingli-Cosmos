@@ -1,6 +1,6 @@
-# 📋 八字排盘系统 — AI 开发索引（AI Development Index）
+# 📋 数字命理推演引擎 — AI 开发索引（AI Development Index）
 
-> **版本**: v3.0 | **更新**: 2026-06-16
+> **版本**: v4.0.0 | **更新**: 2026-06-18
 > **用途**: AI 开发助手每次任务必须首先读取本文件，按需加载后续文档。
 
 ---
@@ -23,6 +23,9 @@
 | 了解代码规范 | `arch/CODE-STYLE.md` | 架构 |
 | 了解核心引擎对外API | `contracts/engine-api.md` | 契约 |
 | 开发 AI/报告等外围功能 | `contracts/engine-api.md` + `plan/03-ai-strategy.md` | 契约+计划 |
+| 了解容器化部署 | `../../Dockerfile` + `../../docker-compose.yml` | 根目录 |
+| 了解 Nginx SSE 代理 | `../../nginx.conf` | 根目录 |
+| 了解未来 Phase 4 规划 | `arch/ARCHITECTURE-FUTURE.md` + `arch/CONFIG-CONTRACT.md` | 架构 |
 
 ### 我要了解项目...
 
@@ -40,7 +43,7 @@
 
 ---
 
-## 📁 文档分层架构（V3.0）
+## 📁 文档分层架构（V4.0）
 
 ```
 docs/
@@ -51,12 +54,14 @@ docs/
 │   ├── 02-wuxing-shishen.md          ← 五行生克·十神矩阵·月令旺衰
 │   ├── 03-dizhi-relations.md         ← 冲·合·刑·破·害·三合·三会·空亡
 │   ├── 04-qiangruo-yongshen.md       ← 日主强弱评分·用神忌神·调候
-│   ├── 05-geju-v2.md                 ← 格局判断V2（四正/透干/分金/破格/组合）
+│   ├── 05-geju-v2.md                 ← 格局判断（封版黑盒）
 │   ├── 06-dayun-liunian.md           ← 大运流年·太岁·人生节点·专题批注
 │   └── 07-shensha-mbti.md            ← 神煞规则·MBTI人格映射
 │
 ├── arch/                             ← 🏗️ 架构层（工程约束，改代码时必读）
 │   ├── ARCHITECTURE.md               ← 分层架构·核心/外围隔离·数据流·流水线
+│   ├── ARCHITECTURE-FUTURE.md        ← 🆕 Phase 4 未来架构：管理后台+数据库规划
+│   ├── CONFIG-CONTRACT.md            ← 🆕 动态双轨配置契约（DB→.env fallback）
 │   ├── STACK.md                      ← 技术栈锁定·配色·限制规则
 │   └── CODE-STYLE.md                 ← 代码规范·命名约定·调用约定
 │
@@ -66,7 +71,7 @@ docs/
 ├── plan/                             ← 📋 计划层（产品方向+商业策略）
 │   ├── README.md                     ← 计划层导航
 │   ├── 01-product-brief.md           ← 产品一页纸：愿景·定位·用户·价值
-│   ├── 02-feature-roadmap.md         ← 功能路线图：4阶段功能清单+进度
+│   ├── 02-feature-roadmap.md         ← 🆕 双轨演进路线 v4.0.0+（6功能+3设计阶段）
 │   ├── 03-ai-strategy.md             ← AI增强策略：对话·报告·RAG·护栏
 │   ├── 04-growth-model.md            ← 增长变现：渠道·定价·营销·Freemium
 │   └── 05-risk-compliance.md         ← 风险合规：法律·伦理·隐私·成本
@@ -106,3 +111,13 @@ docs/
 | `八字取格判断规则引导词（V2.0）.md` | V2.0 取格规则引导词 |
 | `从月令取用到实战策略的完整解析.md` | 月令分金实战策略 |
 | `八字格局与MBTI类型映射.md` | MBTI 映射详细规则 |
+
+---
+
+## 🐳 部署参考
+
+| 文件 | 用途 |
+|------|------|
+| `../Dockerfile` | 多阶段构建，生成极简生产镜像 |
+| `../docker-compose.yml` | 一键编排：端口 + 卷挂载 + 自动重启 |
+| `../nginx.conf` | SSE 流式代理优化（防卡顿配置） |

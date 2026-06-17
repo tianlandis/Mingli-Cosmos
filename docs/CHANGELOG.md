@@ -1,4 +1,53 @@
-# 八字排盘 · 版本记录
+# 数字命理推演引擎 · 版本记录
+
+---
+
+## v4.0.0 — 生产就绪 MVP (2026-06-18)
+
+> **主题**：容器化 + 品牌升级 + 未来架构规划
+>
+> Tag: `v4.0.0` | Commit: `78ebcd2` | GitHub: [tianlandis/bazipaipan](https://github.com/tianlandis/bazipaipan)
+
+---
+
+### 🏗️ 架构升级：Vite + Hono 生产同构
+
+- Hono 后端服务框架 (port 3001)，同时承载 API 与前端静态文件
+- Vite 生产打包：dist/ 输出 SPA，Hono SPA fallback 路由
+- 环境判定：`--prod` CLI flag 或 `NODE_ENV=production`
+- 一键启动：`npm run start` → vite build + tsx --prod 自托管
+
+### 🎨 UI 重构：大运竖轴 + 专题 Tab
+
+- LuckTimeline.tsx：竖向时间轴，年龄/干支/quality 徽章，当前大运高亮
+- TopicTabs.tsx：6 个专题 Tab（性格/事业/财运/婚姻/健康/子女）
+- ChatPanel.tsx：A 模式对话 Copilot，SSE 流式渐入渲染
+- ReportView.tsx：命书全量展示
+
+### 🤖 算力增强：AI 全链路流水线
+
+- LLM Provider 抽象层：统一 4 种后端（DeepSeek/OpenAI/Claude/Ollama）
+- SOP 三阶段流水线：性格格局 → 运势趋势 → 报告装配
+- System Prompt 构建器 + Guardrail 护栏 + SSE 流式响应
+- AI SDK v6 SSE 兼容性修复（手动构建 text/event-stream）
+
+### 🧪 测试稳固：186 项零失败
+
+- vitest 3.2.4，7/7 文件全覆盖（calculator/patternRules/celebrity/e2e/guardrail/prompts/workflows）
+- tsc --noEmit + vite build 回归通过
+
+### 🐳 容器化：Docker + Nginx 部署方案
+
+- `Dockerfile` 多阶段构建（build → 极简生产镜像，alpine 基镜像）
+- `docker-compose.yml` 端口映射 3001:3001 + .env volumes 动态挂载 + restart: always
+- `nginx.conf` SSE 流式代理专项优化（proxy_buffering off + chunked_transfer_encoding on）
+
+### 📋 品牌升级 & 路线图
+
+- 项目更名为"数字命理推演引擎"
+- README 重写：古籍真传校准 + LLM 语义增强混合机制
+- 双轨演进路线 v4.0.0+（功能轨 6 阶段 + 设计轨 3 优先级）
+- 未来架构规划：Phase 4 管理后台 + 数据库 + 动态配置双轨路由
 
 ---
 
