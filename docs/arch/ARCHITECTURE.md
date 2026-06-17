@@ -63,7 +63,7 @@ src/
 │   │   ├── engine.ts            ← 主引擎串联 → generateAnnotation()
 │   │   ├── wuxing.ts            ← 五行生克工具 + getShiShenName()
 │   │   ├── dayMasterStrength.ts ← 日主强弱打分
-│   │   ├── yongShen.ts          ← 用神忌神取用
+│   │   ├── ~~yongShen.ts~~      ← (V2.1 已移除，用神忌神体系废弃)
 │   │   ├── pattern.ts           ← 格局判断包装（串联V2.0引擎+从格/特殊格局）
 │   │   ├── luckAnalysis.ts      ← 大运流年节点
 │   │   ├── branchRelations.ts   ← 地支关系全面分析
@@ -98,7 +98,7 @@ src/
   → calculator.ts（四柱 + 纳音 + 藏干 + 十神 + 大运）
   → annotation/engine.ts（批注流水线）
      ├── dayMasterStrength.ts   → 日主强弱
-     ├── yongShen.ts            → 用神忌神
+     ├── ~~yongShen.ts~~        → (已移除，V2.1 废弃用神忌神体系)
      ├── pattern.ts             → V2.0格局(调用pattern/)
      ├── wuxing.ts              → 五行平衡
      ├── luckAnalysis.ts        → 大运流年
@@ -114,7 +114,7 @@ src/
 
 ```
 1.  analyzeDayMasterStrength    → 日主强弱
-2.  analyzeYongShen             → 用神忌神（依赖步骤1的等级）
+2.  ~~analyzeYongShen~~         → (V2.1 已移除，用神忌神体系废弃)
 3.  analyzePattern              → V2.0格局（独立于强弱）
     3.1  determinePattern()      → V2.0取格（四正月/透干/分金）
     3.2  determineCombination()  → 组合判定
@@ -122,8 +122,8 @@ src/
     3.4  analyzeMBTI()           → MBTI人格映射
 4.  analyzeWuXingBalance        → 五行平衡
 5.  analyzeShiShenProfile       → 十神概况
-6.  analyzeDaYun                → 大运（依赖步骤2的用神忌神）
-7.  analyzeCurrentYear          → 流年（依赖步骤2的用神忌神）
+6.  analyzeDaYun                → 大运（格局导向分析）
+7.  analyzeCurrentYear          → 流年（格局导向分析）
 8.  analyzeMilestones           → 人生节点
 9.  analyzeBranchRelations      → 地支关系
 10. analyzeSpecialTopics        → 专题批注（含所有专题子分析）
@@ -132,7 +132,7 @@ src/
 13. generateAdvice              → 综合建议（含破格风险建议）
 ```
 
-⚠️ **执行顺序不可更改**：步骤2依赖步骤1，步骤6/7依赖步骤2。
+⚠️ **执行顺序不可更改**：步骤3-13为固定流水线。V2.1 已移除用神忌神体系，大运流年改用格局导向分析。
 
 ---
 
@@ -140,9 +140,9 @@ src/
 
 ```
 AnnotationResult
-├── overview          总览（日主、强弱、格局、用神忌神、MBTI、组合）
+├── overview          总览（日主、强弱、格局、MBTI、组合）
 ├── strengthAnalysis  日主强弱（分数+原因+各维度分）
-├── yongShen          用神忌神（五行列表+理由+调候）
+├── ~~yongShen~~      (V2.1 已移除)
 ├── wuXingBalance     五行平衡（各五行等级+补益建议）
 ├── shiShenProfile    十神概况（各十神数量+位置）
 ├── patternAnalysis   格局分析（V2.0全部字段）
@@ -180,7 +180,7 @@ AnnotationResult
 | `engine/calculator.ts` | 八字排盘计算 + `computeQiYunDays()` 起运天数 |
 | `engine/annotation/wuxing.ts` | 五行生克工具函数 + `getShiShenName()` |
 | `engine/annotation/dayMasterStrength.ts` | 日主强弱打分 |
-| `engine/annotation/yongShen.ts` | 用神忌神取用 |
+| `engine/annotation/yongShen.ts` | ~~用神忌神取用~~ (V2.1 已移除) |
 | `engine/pattern/patternRules.ts` | **V2.0 核心取格引擎**: `determinePattern()` / `determineCombination()` / `detectPoGeRisks()` |
 | `engine/pattern/mbtiMapping.ts` | MBTI 人格映射: `analyzeMBTI()` / 十神→MBTI映射表 / 行业适配 / 能量调整 |
 | `engine/pattern/index.ts` | pattern 统一导出 |

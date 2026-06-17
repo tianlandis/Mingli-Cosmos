@@ -57,7 +57,9 @@ export function getShiShenName(
   targetWx: string,
   targetYy: '阳' | '阴',
 ): string {
-  const rel = getWuXingRelation(targetWx, dayMasterWx)
+  // getWuXingRelation(a, b): 以 a 为"我"，返回 a→b 的关系
+  // 此处 dayMaster=我，target=他，所以 from=dayMaster, to=target
+  const rel = getWuXingRelation(dayMasterWx, targetWx)
   const sameYy = dayMasterYy === targetYy
   switch (rel) {
     case '同': return sameYy ? '比肩' : '劫财'

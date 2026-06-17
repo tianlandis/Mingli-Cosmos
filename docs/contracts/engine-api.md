@@ -135,7 +135,7 @@ function AnnotationPanel({ result }: { result: AnnotationResult }) {
 | `pattern/mbtiMapping.ts` | `engine/pattern/mbtiMapping.ts` | MBTI 人格映射 |
 | `annotation/engine.ts` | `engine/annotation/engine.ts` | 批注主流水线 |
 | `annotation/dayMasterStrength.ts` | `engine/annotation/dayMasterStrength.ts` | 日主强弱 |
-| `annotation/yongShen.ts` | `engine/annotation/yongShen.ts` | 用神忌神 |
+| ~~`annotation/yongShen.ts`~~ | ~~`engine/annotation/yongShen.ts`~~ | ~~用神忌神~~ (V2.1 已移除，改用格局导向分析) |
 | `annotation/luckAnalysis.ts` | `engine/annotation/luckAnalysis.ts` | 大运流年 |
 | `annotation/specialTopics.ts` | `engine/annotation/specialTopics.ts` | 专题批注 |
 | `annotation/branchRelations.ts` | `engine/annotation/branchRelations.ts` | 地支关系分析 |

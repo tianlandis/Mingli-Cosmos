@@ -1,7 +1,7 @@
 # 04-日主强弱与用神忌神（Day Master Strength & Useful/Unfavorable Gods）
 
 > **版本**: v2.0 | **来源**: `BaziSystemRules.md` §4 + §5
-> **对应代码**: `annotation/dayMasterStrength.ts` + `annotation/yongShen.ts`
+> **对应代码**: `annotation/dayMasterStrength.ts`（用神忌神体系 V2.1 已废弃，`yongShen.ts` 不存在）
 > **前置依赖**: 需先理解 `02-wuxing-shishen.md`（五行十神规则）
 
 ---
