@@ -1,9 +1,30 @@
 import { useState, useEffect } from 'react'
 
-const HOUR_OPTIONS = [
-  ['子时 23-01', '丑时 01-03', '寅时 03-05', '卯时 05-07'],
-  ['辰时 07-09', '巳时 09-11', '午时 11-13', '未时 13-15'],
-  ['申时 15-17', '酉时 17-19', '戌时 19-21', '亥时 21-23'],
+interface HourOption { label: string; hour: number }
+
+/** 时辰选项：0→24 时间顺序，共13个时辰 */
+const HOUR_ROWS: HourOption[][] = [
+  [
+    { label: '早子时 0-1', hour: 0 },
+    { label: '丑时 1-3', hour: 1 },
+    { label: '寅时 3-5', hour: 3 },
+    { label: '卯时 5-7', hour: 5 },
+  ],
+  [
+    { label: '辰时 7-9', hour: 7 },
+    { label: '巳时 9-11', hour: 9 },
+    { label: '午时 11-13', hour: 11 },
+    { label: '未时 13-15', hour: 13 },
+  ],
+  [
+    { label: '申时 15-17', hour: 15 },
+    { label: '酉时 17-19', hour: 17 },
+    { label: '戌时 19-21', hour: 19 },
+    { label: '亥时 21-23', hour: 21 },
+  ],
+  [
+    { label: '晚子时 23-24', hour: 23 },
+  ],
 ]
 
 const LUNAR_MONTH_NAMES = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月']
@@ -23,7 +44,7 @@ export default function BirthForm({ onCalculate }: Props) {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [day, setDay] = useState(now.getDate())
-  const [hourIndex, setHourIndex] = useState(6) // 午时
+  const [selectedHour, setSelectedHour] = useState(11) // 午时
   const [gender, setGender] = useState<'男' | '女'>('男')
   const [isLeapMonth, setIsLeapMonth] = useState(false)
   const [leapMonth, setLeapMonth] = useState(0) // 0=无闰月, >0=闰几月
@@ -72,9 +93,8 @@ export default function BirthForm({ onCalculate }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const actualHour = hourIndex === 0 ? 23 : hourIndex * 2 - 1
     onCalculate({
-      year, month, day, hour: actualHour, minute: 0, gender,
+      year, month, day, hour: selectedHour, minute: 0, gender,
       calendarType,
       isLeapMonth: calendarType === 'lunar' ? isLeapMonth : undefined,
     })
@@ -191,20 +211,32 @@ export default function BirthForm({ onCalculate }: Props) {
       {/* 时辰选择器 */}
       <div className="mb-5">
         <label className="text-stone-300 text-sm mb-1 block">出生时辰</label>
-        <div className="grid grid-cols-4 gap-2">
-          {HOUR_OPTIONS.flat().map((label, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setHourIndex(idx)}
-              className={`py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                hourIndex === idx
-                  ? 'bg-amber-700 text-amber-100 ring-1 ring-amber-500'
-                  : 'bg-stone-800 text-stone-400 hover:bg-stone-700'
-              }`}
+        <div className="space-y-2">
+          {HOUR_ROWS.map((row, rowIdx) => (
+            <div
+              key={rowIdx}
+              className={row.length === 4
+                ? 'grid grid-cols-4 gap-2'
+                : 'flex justify-center gap-2'
+              }
             >
-              {label}
-            </button>
+              {row.map((opt) => (
+                <button
+                  key={opt.hour}
+                  type="button"
+                  onClick={() => setSelectedHour(opt.hour)}
+                  className={`py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    row.length === 4 ? '' : 'w-1/4'
+                  } ${
+                    selectedHour === opt.hour
+                      ? 'bg-amber-700 text-amber-100 ring-1 ring-amber-500'
+                      : 'bg-stone-800 text-stone-400 hover:bg-stone-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           ))}
         </div>
       </div>
