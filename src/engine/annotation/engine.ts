@@ -1,11 +1,11 @@
 // ============================================================
 // 批注主引擎 — 组合所有规则模块
+// V2.1：移除用神忌神体系，改为格局导向分析
 // ============================================================
 
 import type { BaZiResult } from '../types'
 import { TIAN_GAN_WUXING } from '../types'
 import { analyzeDayMasterStrength } from './dayMasterStrength'
-import { analyzeYongShen } from './yongShen'
 import { analyzePattern } from './pattern'
 import { analyzeDaYun, analyzeCurrentYear, analyzeMilestones } from './luckAnalysis'
 import { analyzeSpecialTopics } from './specialTopics'
@@ -26,7 +26,6 @@ function analyzeWuXingBalance(bazi: BaZiResult): WuXingBalanceItem[] {
   const counts = { ...bazi.fiveElements }
   const values = Object.values(counts)
   const max = Math.max(...values)
-  const min = Math.min(...values)
 
   const adviceMap: Record<string, string> = {
     '金': '金过弱宜增金（佩戴金属饰品、向西发展）',
@@ -78,8 +77,6 @@ function generateOverview(
   bazi: BaZiResult,
   strength: string,
   patternAnalysis: ReturnType<typeof import('./pattern').analyzePattern>,
-  yongShen: string[],
-  jiShen: string[],
 ): AnnotationResult['overview'] {
   const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
   const pa = patternAnalysis
@@ -99,8 +96,6 @@ function generateOverview(
     summary += `，MBTI倾向${pa.mbti.typicalTypes.join('/')}`
   }
 
-  summary += `，用神${yongShen.join('、') || '待定'}，忌神${jiShen.join('、') || '待定'}`
-
   // 刻入取格方法详情
   summary += `\n取格详情：${pa.method}，由月令藏干${pa.sourceStem ?? '?'}取${pa.shiShen}定${pa.patternName}`
 
@@ -109,8 +104,6 @@ function generateOverview(
     dayMaster: bazi.dayMaster,
     strength,
     pattern: `${pa.patternName}（${pa.jiXiong}）${pa.combination && !pa.combination.isPure ? '·' + pa.combination.name : ''}`,
-    yongShen: yongShen.join('、') || '无',
-    jiShen: jiShen.join('、') || '无',
     mbti: pa.mbti.typicalTypes.length > 0 ? pa.mbti.typicalTypes.join('/') : undefined,
     combination: pa.combination?.name,
   }
@@ -118,23 +111,10 @@ function generateOverview(
 
 /** 生成综合建议 */
 function generateAdvice(
-  yongShen: string[],
-  jiShen: string[],
   strength: string,
+  patternName: string,
 ): string[] {
   const advice: string[] = []
-
-  const adviceMap: Record<string, string[]> = {
-    '金': ['佩戴金属饰品，选择白色系衣物', '向西方发展有利', '从事金融、机械、法律等行业'],
-    '木': ['种植绿植，接触大自然', '向东方发展有利', '从事教育、医疗、文化等行业'],
-    '水': ['多亲近水源，养鱼', '向北方发展有利', '从事贸易、物流、咨询等行业'],
-    '火': ['多运动锻炼，增强活力', '向南方发展有利', '从事能源、传媒、科技等行业'],
-    '土': ['脚踏实地，稳扎稳打', '立足本地发展', '从事房地产、建筑、农业等行业'],
-  }
-
-  for (const wx of yongShen) {
-    if (adviceMap[wx]) advice.push(...adviceMap[wx])
-  }
 
   if (strength.includes('弱')) {
     advice.push('注意增强体质，规律作息不熬夜')
@@ -145,7 +125,21 @@ function generateAdvice(
     advice.push('注意谦逊低调，避免过于强势')
   }
 
-  // 去重
+  const patternAdvice: Record<string, string> = {
+    '正官格': '循规蹈矩，以正直诚信待人处事',
+    '正印格': '注重学习积累，以知识充实自我',
+    '偏印格': '发挥独创思维，但需注意人际沟通',
+    '食神格': '培养才艺专长，以才华服务社会',
+    '伤官格': '善用创新能力，但需注意言行分寸',
+    '正财格': '稳扎稳打理财，注重长期积累',
+    '偏财格': '把握投资机会，但需控制风险',
+    '七杀格': '勇于面对挑战，化压力为动力',
+    '建禄格': '独立自主，发挥自身能量',
+    '羊刃格': '刚毅果断，但需避免冲动决策',
+  }
+  const pAdv = patternAdvice[patternName]
+  if (pAdv) advice.push(pAdv)
+
   return [...new Set(advice)].slice(0, 8)
 }
 
@@ -154,47 +148,43 @@ export function generateAnnotation(bazi: BaZiResult): AnnotationResult {
   // 1. 日主强弱
   const strengthAnalysis = analyzeDayMasterStrength(bazi)
 
-  // 2. 用神忌神
-  const yongShenResult = analyzeYongShen(bazi, strengthAnalysis)
-
-  // 3. 格局判断
+  // 2. 格局判断
   const patternAnalysis = analyzePattern(bazi, strengthAnalysis.strength)
 
-  // 4. 五行平衡
+  // 3. 五行平衡
   const wuXingBalance = analyzeWuXingBalance(bazi)
 
-  // 5. 十神概况
+  // 4. 十神概况
   const shiShenProfile = analyzeShiShenProfile(bazi)
 
-  // 6. 大运流年
-  const daYunList = analyzeDaYun(bazi, yongShenResult.yongShen, yongShenResult.jiShen)
-  const currentYear = analyzeCurrentYear(bazi, yongShenResult.yongShen, yongShenResult.jiShen)
+  // 5. 大运流年（格局导向）
+  const patternShiShen = patternAnalysis.shiShen ?? '比肩'
+  const daYunList = analyzeDaYun(bazi, patternShiShen)
+  const currentYear = analyzeCurrentYear(bazi)
   const milestones = analyzeMilestones(bazi)
 
-  // 7. 专题批注
+  // 6. 专题批注
   const specialTopics = analyzeSpecialTopics(bazi)
 
-  // 7.5 地支关系分析（刑冲破害合空亡）
+  // 7. 地支关系分析
   const branchRelations = analyzeBranchRelations(bazi)
 
-  // 7.6 神煞分析
+  // 8. 神煞分析
   const shenSha = analyzeShenSha(bazi)
 
-  // 7.7 免责声明
+  // 9. 免责声明
   const disclaimer = '以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考，不构成科学预测或人生决策建议。每个人的命运由多种因素共同决定，请理性看待，保持积极乐观的人生态度。'
 
-  // 8. 总览
+  // 10. 总览
   const overview = generateOverview(
     bazi,
     strengthAnalysis.strength,
     patternAnalysis,
-    yongShenResult.yongShen,
-    yongShenResult.jiShen,
   )
 
-  // 9. 综合建议（含V2.0破格风险建议）
+  // 11. 综合建议
   const comprehensiveAdvice = [
-    ...generateAdvice(yongShenResult.yongShen, yongShenResult.jiShen, strengthAnalysis.strength),
+    ...generateAdvice(strengthAnalysis.strength, patternAnalysis.patternName),
     ...patternAnalysis.poGeRisks
       .filter(r => r.severity === '高' || r.severity === '中')
       .map(r => `【${r.type}·${r.severity}风险】${r.suggestion}`),
@@ -203,7 +193,6 @@ export function generateAnnotation(bazi: BaZiResult): AnnotationResult {
   return {
     overview,
     strengthAnalysis,
-    yongShen: yongShenResult,
     wuXingBalance,
     shiShenProfile,
     patternAnalysis,

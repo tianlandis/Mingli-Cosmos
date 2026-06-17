@@ -1,7 +1,7 @@
 # 🏗️ 架构约束（Architecture Constraints）
 
-> **版本**: v3.0 | **用途**: 新增组件/修改架构/改流水线时必读
-> **来源**: `BaziSystemRules.md` §11 + `ProjectPlan.md` §三/§四
+> **版本**: v3.1 | **用途**: 新增组件/修改架构/改流水线时必读
+> **权威源**: 格局算法以 Python MCP 为准 → `arch/ALGORITHM-AUTHORITY.md`
 
 ---
 
@@ -208,5 +208,6 @@ AnnotationResult
 
 ---
 
+> 📎 **算法权威源**: `arch/ALGORITHM-AUTHORITY.md`（Python MCP 为最高权威）
 > 📎 **技术栈锁定**: `arch/STACK.md`
 > 📎 **代码规范**: `arch/CODE-STYLE.md`

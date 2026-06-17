@@ -209,7 +209,7 @@ export interface MBTIAnalysis {
 export function analyzeMBTI(
   dominantShiShen: string,
   combination: PatternCombination,
-  risks: PoGeRisk[],
+  _risks: PoGeRisk[],
 ): MBTIAnalysis {
   // 主导功能
   const dominantFunc = SHISHEN_MBTI_FUNCTION[dominantShiShen] ?? {
@@ -231,7 +231,6 @@ export function analyzeMBTI(
 
   // 行业适配
   const industrySuggestions: IndustryMatch[] = []
-  const cleanPattern = combination.dominantPattern.replace('格', '格').replace(/格/g, '')
   // 尝试按格局名匹配行业
   for (const [key, match] of Object.entries(INDUSTRY_MATCHES)) {
     if (

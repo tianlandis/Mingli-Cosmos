@@ -8,19 +8,10 @@ import type { BaZiResult, ShiShen } from '../types'
 export type DayMasterStrength = '极强' | '强' | '中和偏强' | '中和' | '中和偏弱' | '弱' | '极弱'
 
 /** 格局类型 */
-export type PatternType = '正格' | '从格' | '特殊格局'
+export type PatternType = '正格' | '特殊格局'
 
 /** 五行等级 */
 export type WuXingLevel = '偏旺' | '中和' | '偏弱'
-
-/** 用神忌神结果 */
-export interface YongShenResult {
-  yongShen: string[]        // 用神五行列表
-  jiShen: string[]           // 忌神五行列表
-  xianShen: string[]         // 闲神（中性）
-  reason: string[]           // 取用理由
-  tiaoHou: string[]          // 调候用神
-}
 
 /** 日主强弱分析 */
 export interface StrengthAnalysis {
@@ -100,7 +91,6 @@ export interface PatternAnalysis {
   fenJinDetail?: {
     qiYunDays: number
     daYunForward: boolean
-    fenJinReverse: boolean
     effectiveDays: number
     steps: string[]
   }
@@ -202,8 +192,6 @@ export interface AnnotationResult {
     dayMaster: string
     strength: string
     pattern: string
-    yongShen: string
-    jiShen: string
     /** MBTI 类型（V2.0新增） */
     mbti?: string
     /** 格局组合（V2.0新增） */
@@ -211,8 +199,6 @@ export interface AnnotationResult {
   }
 
   strengthAnalysis: StrengthAnalysis
-
-  yongShen: YongShenResult
 
   wuXingBalance: WuXingBalanceItem[]
 

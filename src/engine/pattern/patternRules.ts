@@ -1,6 +1,6 @@
 // ============================================================
-// 八字取格判断规则（V2.0 核心算法）
-// 来源：八字取格判断规则引导词（V2.0）+ 从月令取用到实战策略的完整解析
+// 八字取格判断规则（以 Python MCP tengods.py 为权威参考）
+// 透干跳过比劫 | 分金逆数用反向迭代 | 比劫不成格简化为进退一位
 // ============================================================
 
 import type { BaZiResult } from '../types'
@@ -14,8 +14,8 @@ import { getShiShenName } from '../annotation/wuxing'
 
 /** 四正月 */
 const SI_ZHENG = ['子', '午', '卯', '酉']
-/** 四长生月 */
-const SI_CHANG_SHENG = ['寅', '申', '巳', '亥']
+/** 四墓库月 */
+const SI_MU_KU = ['辰', '戌', '丑', '未']
 
 /** 十神 → 格局名映射 */
 const SHISHEN_TO_PATTERN: Record<string, string> = {
@@ -82,7 +82,7 @@ function resolveSiZheng(monthBranch: string, dayMaster: string): PatternResult {
   }
 }
 
-// ─── 规则二：透干取用 ───
+// ─── 规则二：透干取用（跳过比劫，匹配 Python MCP） ───
 
 function resolveTouGan(
   monthBranch: string,
@@ -94,25 +94,29 @@ function resolveTouGan(
 
   const hiddenSet = new Set(segments.map(s => s.stem))
 
-  // 优先级：月干 > 年干 > 时干
+  // 优先级：月干 > 年干 > 时干；跳过比劫
   const priorityOrder = ['月干', '年干', '时干'] as const
   for (const pos of priorityOrder) {
-    const match = allStems.find(s => s.position === pos && hiddenSet.has(s.stem))
-    if (match) {
-      const shiShen = stemShiShen(dayMaster, match.stem)
-      const patternName = SHISHEN_TO_PATTERN[shiShen] ?? shiShen + '格'
+    const allAtPos = allStems.filter(s => s.position === pos)
+    for (const match of allAtPos) {
+      if (hiddenSet.has(match.stem)) {
+        const shiShen = stemShiShen(dayMaster, match.stem)
+        // Python MCP: 透干遇比劫跳过，继续查下一柱
+        if (isBiJie(shiShen)) continue
 
-      return {
-        found: true,
-        patternName,
-        shiShen,
-        sourceStem: match.stem,
-        rule: `月令藏干透出天干（${match.position}透${match.stem}）`,
-        method: '透干取用',
-        conditions: [
-          `月令${monthBranch}藏干${match.stem}透出在${match.position}`,
-          `取透出之神${match.stem}与日主十神${shiShen}，定${patternName}`,
-        ],
+        const patternName = SHISHEN_TO_PATTERN[shiShen] ?? shiShen + '格'
+        return {
+          found: true,
+          patternName,
+          shiShen,
+          sourceStem: match.stem,
+          rule: `月令藏干透出天干（${match.position}透${match.stem}）`,
+          method: '透干取用',
+          conditions: [
+            `月令${monthBranch}藏干${match.stem}透出在${match.position}`,
+            `取透出之神${match.stem}与日主十神${shiShen}，定${patternName}`,
+          ],
+        }
       }
     }
   }
@@ -120,7 +124,7 @@ function resolveTouGan(
   return null
 }
 
-// ─── 规则三：月令分金 ───
+// ─── 规则三：月令分金（匹配 Python MCP find_tianganbutou） ───
 
 function resolveFenJin(
   monthBranch: string,
@@ -128,38 +132,61 @@ function resolveFenJin(
   qiYunDays: number,
   daYunForward: boolean,
 ): FenJinResult {
-  const segments = HIDDEN_STEMS_DAYS[monthBranch]
+  let segments = HIDDEN_STEMS_DAYS[monthBranch]
   if (!segments || segments.length === 0) {
     return { found: false, error: '无可用分金数据' }
   }
 
-  // 分金方向
-  // 阳男阴女(大运顺排) → 分金逆数 → effectiveDays = 30 - qiYunDays
-  // 阴男阳女(大运逆排) → 分金顺数 → effectiveDays = qiYunDays
-  const fenJinReverse = daYunForward
-  const effectiveDays = fenJinReverse
+  // 亥月特规：天干不透时去掉戊，只留 [甲7, 壬23]
+  if (monthBranch === '亥') {
+    segments = [
+      { stem: '甲', days: 7 },
+      { stem: '壬', days: 23 },
+    ]
+  }
+
+  // Python MCP: range_value = start_time * 3 = qiYunDays
+  // adjusted_value = 30 - range_value if shunpai else range_value
+  const effectiveValue = daYunForward
     ? Math.max(1, 30 - qiYunDays)
     : Math.max(1, qiYunDays)
 
-  // 在分金刻度尺上定位
-  let accumulated = 0
   let targetStem = ''
   let targetDays = 0
+  let targetIndex = -1
 
-  for (const seg of segments) {
-    accumulated += seg.days
-    if (effectiveDays <= accumulated) {
-      targetStem = seg.stem
-      targetDays = seg.days
-      break
+  if (daYunForward) {
+    // 顺排：正向迭代 (匹配 Python shunpai 逻辑)
+    let cumEnd = 0
+    for (let i = 0; i < segments.length; i++) {
+      cumEnd += segments[i].days
+      if (cumEnd > effectiveValue && effectiveValue >= cumEnd - segments[i].days) {
+        targetStem = segments[i].stem
+        targetDays = segments[i].days
+        targetIndex = i
+        break
+      }
+    }
+  } else {
+    // 逆排：反向迭代 (匹配 Python 逆排逻辑)
+    let cumStart = 30
+    for (let i = segments.length - 1; i >= 0; i--) {
+      cumStart -= segments[i].days
+      if (cumStart <= effectiveValue && effectiveValue < cumStart + segments[i].days) {
+        targetStem = segments[i].stem
+        targetDays = segments[i].days
+        targetIndex = i
+        break
+      }
     }
   }
 
-  // 回退到最后一个藏干
+  // 未匹配到则回退到最后一个
   if (!targetStem && segments.length > 0) {
-    const last = segments[segments.length - 1]
-    targetStem = last.stem
-    targetDays = last.days
+    const lastIdx = daYunForward ? segments.length - 1 : 0
+    targetStem = segments[lastIdx].stem
+    targetDays = segments[lastIdx].days
+    targetIndex = lastIdx
   }
 
   const shiShen = stemShiShen(dayMaster, targetStem)
@@ -168,11 +195,12 @@ function resolveFenJin(
     found: true,
     targetStem,
     shiShen,
-    fenJinReverse,
-    effectiveDays: Math.min(effectiveDays, 30),
+    targetIndex,
+    daYunForward,
+    effectiveDays: effectiveValue,
     steps: [
-      `大运${daYunForward ? '顺排' : '逆排'} → 分金${fenJinReverse ? '逆数' : '顺数'}`,
-      `起运天数=${qiYunDays}，有效分金天数=${effectiveDays}`,
+      `大运${daYunForward ? '顺排' : '逆排'}，分金${daYunForward ? '逆数' : '顺数'}`,
+      `起运天数=${qiYunDays}，有效分金天数=${effectiveValue}`,
       `分金刻度定位 → ${targetStem}(${targetDays}天区段)`,
       `${targetStem}与日主十神关系 → ${shiShen}`,
     ],
@@ -184,125 +212,63 @@ interface FenJinResult {
   found: boolean
   targetStem?: string
   shiShen?: string
-  fenJinReverse?: boolean
+  targetIndex?: number
+  daYunForward?: boolean
   effectiveDays?: number
   steps?: string[]
   error?: string
 }
 
-// ─── 比劫不成格特殊处理 ───
+// ─── 比劫不成格 (匹配 Python MCP calculate_tianganbutou) ───
 
 function resolveBiJieException(
   monthBranch: string,
   dayMaster: string,
   fenJinResult: FenJinResult,
-  daYunForward: boolean,
-  fenJinReverse: boolean,
   segments: HiddenStemSegment[],
 ): { patternName?: string; shiShen?: string; action: string; conditions: string[] } | null {
   const fjStem = fenJinResult.targetStem!
   const fjShen = fenJinResult.shiShen!
+  const fjIdx = fenJinResult.targetIndex!
+  const daYunForward = fenJinResult.daYunForward!
 
-  // 禄格破例：四长生月 + 日干得禄
-  // 甲禄在寅, 丙戊禄在巳, 庚禄在申, 壬禄在亥
-  const LU_MAP: Record<string, string> = {
-    '甲': '寅', '丙': '巳', '戊': '巳', '庚': '申', '壬': '亥',
-  }
-  if (SI_CHANG_SHENG.includes(monthBranch) && LU_MAP[dayMaster] === monthBranch) {
-    return {
-      patternName: '建禄格',
-      shiShen: fjShen,
-      action: '破例立禄格',
-      conditions: [
-        `月支${monthBranch}为四长生月，日干${dayMaster}得禄于此`,
-        `分金结果虽为比劫，但满足禄格条件，破例立为建禄格`,
-      ],
-    }
-  }
+  // Python MCP: next_index = index + 1 if shunpai else index - 1
+  const isShunpai = daYunForward
+  let nextIdx = isShunpai ? fjIdx + 1 : fjIdx - 1
 
-  // 羊刃格破例：四正月 + 日干为羊刃
-  // 甲刃在卯, 丙戊刃在午, 庚刃在酉, 壬刃在子
-  const REN_MAP: Record<string, string> = {
-    '甲': '卯', '丙': '午', '戊': '午', '庚': '酉', '壬': '子',
-  }
-  if (SI_ZHENG.includes(monthBranch) && REN_MAP[dayMaster] === monthBranch) {
-    return {
-      patternName: '羊刃格',
-      shiShen: fjShen,
-      action: '破例立羊刃格',
-      conditions: [
-        `月支${monthBranch}为四正位，日干${dayMaster}羊刃在此`,
-        `分金结果虽为比劫，但满足羊刃格条件，破例立为羊刃格`,
-      ],
-    }
-  }
-
-  // 通用规则：比劫不成格，进退一位
-  const allStems = segments.map(s => s.stem)
-  const fjIdx = allStems.indexOf(fjStem)
-
-  // 分金逆数时「进一位」意味着在刻度尺上往后移一位
-  // 分金顺数时「退一位」意味着在刻度尺上前移一位
-  let adjacentIdx: number
-  let direction: string
-  if (fjIdx === 0) {
-    // 第一个位置，只能往后移
-    adjacentIdx = 1
-    direction = '后移'
-  } else if (fjIdx === allStems.length - 1) {
-    // 最后一个位置，只能往前移
-    adjacentIdx = allStems.length - 2
-    direction = '前移'
-  } else {
-    // 中间位置，按分金方向移动
-    // 逆数→进一位(往后), 顺数→退一位(往前)
-    if (fenJinReverse) {
-      adjacentIdx = Math.min(fjIdx + 1, allStems.length - 1)
-      direction = '进一位'
+  // 边界处理
+  if (nextIdx < 0 || nextIdx >= segments.length) {
+    if (SI_MU_KU.includes(monthBranch)) {
+      // 四墓库：上取一位 (Python MCP: reverse direction)
+      nextIdx = isShunpai ? fjIdx - 1 : fjIdx + 1
     } else {
-      adjacentIdx = Math.max(fjIdx - 1, 0)
-      direction = '退一位'
+      // 非四墓库：返回 "比肩.X" 格式 (取上一个天干的十神作为参考)
+      const prevIdx = fjIdx - 1 >= 0 ? fjIdx - 1 : segments.length - 1
+      const prevStem = segments[prevIdx].stem
+      const prevShen = stemShiShen(dayMaster, prevStem)
+      return {
+        patternName: `${fjShen}.${prevShen}`,
+        shiShen: fjShen,
+        action: `比劫不成格，下一位越界（非四墓库），显示${fjShen}.${prevShen}`,
+        conditions: [
+          `分金定位${fjStem}为${fjShen}，按规则比劫不成格`,
+          `下一位越界（月支${monthBranch}非四墓库），取上一位${prevStem}(${prevShen})为参考`,
+        ],
+      }
     }
   }
 
-  if (adjacentIdx >= 0 && adjacentIdx < allStems.length && adjacentIdx !== fjIdx) {
-    const adjStem = allStems[adjacentIdx]
-    const adjShen = stemShiShen(dayMaster, adjStem)
-
-    // 如果相邻的也是比劫，跳过继续
-    if (isBiJie(adjShen)) {
-      let skipIdx = adjacentIdx
-      for (let tries = 0; tries < allStems.length; tries++) {
-        if (fenJinReverse) skipIdx = Math.min(skipIdx + 1, allStems.length - 1)
-        else skipIdx = Math.max(skipIdx - 1, 0)
-        if (skipIdx === fjIdx) break
-        const skipStem = allStems[skipIdx]
-        const skipShen = stemShiShen(dayMaster, skipStem)
-        if (!isBiJie(skipShen)) {
-          const patternName = SHISHEN_TO_PATTERN[skipShen] ?? skipShen + '格'
-          return {
-            patternName,
-            shiShen: skipShen,
-            action: `比劫不成格，继续${fenJinReverse ? '进' : '退'}一位至${skipStem}`,
-            conditions: [
-              `分金定位${fjStem}为${fjShen}，按规则比劫不成格`,
-              `按分金方向${direction}至${adjStem}(${adjShen})，仍为比劫`,
-              `继续移动至${skipStem}(${skipShen})，取${patternName}`,
-            ],
-          }
-        }
-      }
-      return null
-    }
-
-    const patternName = SHISHEN_TO_PATTERN[adjShen] ?? adjShen + '格'
+  if (nextIdx >= 0 && nextIdx < segments.length) {
+    const nextStem = segments[nextIdx].stem
+    const nextShen = stemShiShen(dayMaster, nextStem)
+    const patternName = SHISHEN_TO_PATTERN[nextShen] ?? nextShen + '格'
     return {
       patternName,
-      shiShen: adjShen,
-      action: `比劫不成格，${direction}取${adjStem}`,
+      shiShen: nextShen,
+      action: `比劫不成格，${isShunpai ? '进' : '退'}一位取${nextStem}`,
       conditions: [
         `分金定位${fjStem}为${fjShen}，按规则比劫不成格`,
-        `按分金方向${direction}，取相邻${adjStem}(${adjShen})，定${patternName}`,
+        `按分金方向${isShunpai ? '进' : '退'}一位至${nextStem}(${nextShen})，定${patternName}`,
       ],
     }
   }
@@ -324,7 +290,6 @@ export interface PatternResult {
   fenJinDetail?: {
     qiYunDays: number
     daYunForward: boolean
-    fenJinReverse: boolean
     effectiveDays: number
     steps: string[]
   }
@@ -332,16 +297,16 @@ export interface PatternResult {
   biJieAction?: string
 }
 
-// ─── 主入口：V2.0 格局判定 ───
+// ─── 主入口：格局判定（以 Python MCP 为权威） ───
 
 /**
- * V2.0 格局判定主函数
+ * 格局判定主函数
  *
- * 决策流程：
+ * 决策流程（匹配 Python MCP determine_pattern_geju）：
  * 1. 四正月 → 直接取本气
- * 2. 杂气月 → 检查透干（月干 > 年干 > 时干）
- * 3. 不透 → 月令分金算法
- * 4. 分金结果比劫 → 禄格/羊刃格破例 或 进退位
+ * 2. 杂气月 → 检查透干（月干 > 年干 > 时干，跳过比劫）
+ * 3. 不透 → 月令分金算法（顺排正向/逆排反向迭代）
+ * 4. 分金结果比劫 → 进退一位（四墓库边界反向，其它显示"比肩.X"）
  */
 export function determinePattern(bazi: BaZiResult): PatternResult {
   const monthBranch = bazi.monthPillar.branch
@@ -364,14 +329,13 @@ export function determinePattern(bazi: BaZiResult): PatternResult {
     return resolveSiZheng(monthBranch, dayMaster)
   }
 
-  // 规则二：杂气月，检查透干
+  // 规则二：杂气月，检查透干（跳过比劫）
   const touGan = resolveTouGan(monthBranch, dayMaster, allStems)
   if (touGan) return touGan
 
   // 规则三：不透，启动月令分金
   const segments = HIDDEN_STEMS_DAYS[monthBranch]
   if (!segments) {
-    // 退路：取本气
     const mainStem = bazi.monthPillar.hiddenStems[0]
     const shiShen = stemShiShen(dayMaster, mainStem)
     const patternName = SHISHEN_TO_PATTERN[shiShen] ?? shiShen + '格'
@@ -388,7 +352,6 @@ export function determinePattern(bazi: BaZiResult): PatternResult {
 
   const fenJinResult = resolveFenJin(monthBranch, dayMaster, qiYunDays, daYunForward)
   if (!fenJinResult.found || !fenJinResult.targetStem) {
-    // 退路
     const mainStem = segments[0].stem
     const shiShen = stemShiShen(dayMaster, mainStem)
     const patternName = SHISHEN_TO_PATTERN[shiShen] ?? shiShen + '格'
@@ -403,12 +366,11 @@ export function determinePattern(bazi: BaZiResult): PatternResult {
     }
   }
 
-  // 检查分金结果为比劫 → 特殊处理
+  // 检查分金结果为比劫 → Python MCP 的 calculate_tianganbutou 处理
   if (isBiJie(fenJinResult.shiShen!)) {
-    const fenJinReverse = fenJinResult.fenJinReverse ?? daYunForward
     const exception = resolveBiJieException(
       monthBranch, dayMaster,
-      fenJinResult, daYunForward, fenJinReverse, segments,
+      fenJinResult, segments,
     )
 
     if (exception && exception.patternName) {
@@ -426,7 +388,6 @@ export function determinePattern(bazi: BaZiResult): PatternResult {
         fenJinDetail: {
           qiYunDays,
           daYunForward,
-          fenJinReverse,
           effectiveDays: fenJinResult.effectiveDays ?? 0,
           steps: fenJinResult.steps ?? [],
         },
@@ -454,7 +415,6 @@ export function determinePattern(bazi: BaZiResult): PatternResult {
 
   // 正常：分金结果非比劫，直接取格
   const patternName = SHISHEN_TO_PATTERN[fenJinResult.shiShen!] ?? fenJinResult.shiShen + '格'
-  const fenJinReverse = fenJinResult.fenJinReverse ?? daYunForward
 
   return {
     found: true,
@@ -470,7 +430,6 @@ export function determinePattern(bazi: BaZiResult): PatternResult {
     fenJinDetail: {
       qiYunDays,
       daYunForward,
-      fenJinReverse,
       effectiveDays: fenJinResult.effectiveDays ?? 0,
       steps: fenJinResult.steps ?? [],
     },
@@ -502,7 +461,7 @@ export interface PatternCombination {
 export function determineCombination(
   bazi: BaZiResult,
   dominantPattern: string,
-  dominantShiShen: string,
+  _dominantShiShen: string,
 ): PatternCombination {
   const dayMaster = bazi.dayMaster
   const allStems = [

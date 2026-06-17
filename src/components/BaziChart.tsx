@@ -42,8 +42,6 @@ export default function BaziChart({ yearPillar, monthPillar, dayPillar, hourPill
             <div className="text-xs text-stone-400 mt-1">
               {p.stemWuXing}{p.branchWuXing}
             </div>
-            {/* 纳音 */}
-            <div className="text-xs text-amber-600/70 mt-0.5">{p.naYin}</div>
           </div>
         ))}
       </div>

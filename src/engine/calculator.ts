@@ -1,13 +1,13 @@
 // ============================================================
 // 八字排盘 - 核心计算引擎 (Pure TypeScript)
-// 使用 lunar-typescript 库 + bazijichu.md 规则
+// 使用 lunar-typescript 库，配合八字取格判断规则引导词（V2.0）+ 从月令取用到实战策略的完整解析 + 八字格局与MBTI类型映射
 // ============================================================
 
 import type { Solar, Lunar } from 'lunar-typescript'
 import {
   type BaZiResult, type Pillar, type DaYun, type ShiShenItem,
   TIAN_GAN_WUXING, DI_ZHI_WUXING,
-  NAYIN_TABLE, HIDDEN_STEMS,
+  HIDDEN_STEMS,
   TIAN_GAN_YIN_YANG, WUXING_LIST,
 } from './types'
 
@@ -52,7 +52,7 @@ async function calculateBaziFromLunarImpl(
   gender: '男' | '女',
   isLeapMonth: boolean,
 ): Promise<BaZiResult> {
-  const { Lunar, Solar } = await import('lunar-typescript')
+  const { Lunar } = await import('lunar-typescript')
 
   // 构建农历对象
   let lunar: Lunar
@@ -172,7 +172,6 @@ function buildPillar(stem: string, branch: string): Pillar {
     stemWuXing: TIAN_GAN_WUXING[stem] ?? '',
     branchWuXing: DI_ZHI_WUXING[branch] ?? '',
     hiddenStems: HIDDEN_STEMS[branch] ?? [],
-    naYin: NAYIN_TABLE[ganZhi] ?? '',
     ganZhi,
   }
 }
@@ -288,8 +287,12 @@ function computeDaYun(
   for (let i = 0; i < Math.min(daYunList.length, 12); i++) {
     const dy = daYunList[i]
     const gz = dy.getGanZhi()
+    // 跳过干支为空的过渡大运（出生到起运之间的阶段）
+    if (!gz || gz.length < 2) continue
+    const startAge = dy.getStartAge()
     result.push({
-      startAge: dy.getStartAge(),
+      startAge,
+      endAge: startAge + 9,
       startYear: dy.getStartYear(),
       endYear: dy.getEndYear(),
       stem: gz[0],
@@ -305,7 +308,7 @@ function computeDaYun(
 function getCurrentDaYun(daYun: DaYun[], currentSolar: Solar, birthSolar: Solar): DaYun | null {
   const currentAge = currentSolar.getYear() - birthSolar.getYear() + 1
   for (const dy of daYun) {
-    if (currentAge >= dy.startAge && currentAge <= dy.startAge + 9) {
+    if (currentAge >= dy.startAge && currentAge <= dy.endAge) {
       return dy
     }
   }

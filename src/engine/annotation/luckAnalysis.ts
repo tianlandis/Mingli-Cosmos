@@ -1,19 +1,25 @@
 // ============================================================
 // 大运流年解读模块
+// 依据：从月令取用到实战策略的完整解析 + 八字取格判断规则引导词（V2.0）
+// V2.1：格局导向分析，移除用神忌神体系
 // ============================================================
 
 import type { BaZiResult, DaYun, DiZhi } from '../types'
 import { TIAN_GAN_WUXING, TIAN_GAN_YIN_YANG, DI_ZHI_WUXING } from '../types'
-import { getShiShenName, WUXING_SHENG, WUXING_KE } from './wuxing'
+import { getShiShenName, CHANG_SHENG } from './wuxing'
 import { CHONG_MAP, HE_MAP, XING_MAP, PO_MAP, HAI_MAP } from '../relation'
-import type { DaYunAnalysisItem, CurrentYearAnalysis, Milestone, YongShenResult } from './types'
+import type { DaYunAnalysisItem, CurrentYearAnalysis, Milestone } from './types'
 
-/** 分析单个大运 */
+/** 根据日主五行查某地支的十二长生状态 */
+function getChangShengStatus(dayMasterWx: string, branch: string): string {
+  return CHANG_SHENG[dayMasterWx]?.[branch] ?? ''
+}
+
+/** 分析单个大运（格局导向，V2.1） */
 function analyzeOneDaYun(
   daYun: DaYun,
   bazi: BaZiResult,
-  yongShenWx: string[],
-  jiShenWx: string[],
+  patternShiShen: string,
 ): DaYunAnalysisItem {
   const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
   const dayMasterYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
@@ -27,53 +33,63 @@ function analyzeOneDaYun(
   const stemShiShen = getShiShenName(dayMasterWx, dayMasterYy, stemWx, stemYy)
   const branchShiShen = getShiShenName(dayMasterWx, dayMasterYy, branchWx, '阳')
 
-  // 大运好坏判断
-  let goodCount = 0, badCount = 0
+  // 十二长生状态
+  const dayStatus = getChangShengStatus(dayMasterWx, branch)
+  const statusLabels: Record<string, string> = {
+    '长生': '生机勃发', '沐浴': '变化不稳定', '冠带': '成长提升',
+    '临官': '事业兴旺', '帝旺': '鼎盛巅峰', '衰': '由盛转衰',
+    '病': '困顿波折', '死': '阻滞不顺', '墓': '蓄力收藏',
+    '绝': '低谷转折', '胎': '酝酿计划', '养': '培育扶持',
+  }
 
-  if (yongShenWx.includes(stemWx)) goodCount += 1.5
-  if (jiShenWx.includes(stemWx)) badCount += 1
-  if (yongShenWx.includes(branchWx)) goodCount += 1
-  if (jiShenWx.includes(branchWx)) badCount += 1
+  // 格局吉凶属性：吉格喜生扶，凶格喜制化
+  const JI_PATTERNS = new Set(['正官', '正印', '偏印', '食神', '正财', '偏财'])
+  const XIONG_PATTERNS = new Set(['七杀', '伤官', '羊刃'])
 
+  const isJiPattern = JI_PATTERNS.has(patternShiShen)
+  const isXiongPattern = XIONG_PATTERNS.has(patternShiShen)
+
+  // 大运地支与格局的生克关系（核心判断）
   let quality: '佳' | '平' | '不佳' = '平'
-  if (goodCount >= 2) quality = '佳'
-  else if (badCount >= 2) quality = '不佳'
+  const relation = getShiShenName(dayMasterWx, dayMasterYy, branchWx, '阳')
 
-  let interpretation = ''
+  if (isJiPattern) {
+    // 吉格：喜生扶
+    if (relation === '正印' || relation === '偏印' || relation === '比肩' || relation === '劫财') {
+      quality = '佳'
+    } else if (relation === '正官' || relation === '偏官') {
+      quality = '不佳'
+    }
+  } else if (isXiongPattern) {
+    // 凶格：喜制化
+    if (relation === '正印' || relation === '偏印' || relation === '食神') {
+      quality = '佳'
+    } else if (relation === '正财' || relation === '偏财') {
+      quality = '不佳'
+    }
+  }
+
+  // 十二长生对质量的影响
+  const topStatuses = ['长生', '临官', '帝旺', '冠带']
+  const badStatuses = ['死', '绝', '病']
+  if (topStatuses.includes(dayStatus)) quality = quality === '不佳' ? '平' : '佳'
+  if (badStatuses.includes(dayStatus)) quality = quality === '佳' ? '平' : '不佳'
+
+  // 解读
   const parts: string[] = []
+  parts.push(`大运${daYun.ganZhi}`)
+  parts.push(`天干${stem}为${stemShiShen}，地支${branch}为${branchShiShen}`)
+  parts.push(`日主${dayMasterWx}在地支${branch}处${dayStatus}（${statusLabels[dayStatus] ?? '平稳'}）`)
 
-  // 天干解读
-  if (stemWx === dayMasterWx) {
-    parts.push(`天干${stem}为比劫帮身`)
-  } else if (yongShenWx.includes(stemWx)) {
-    parts.push(`天干${stem}(${stemShiShen})为用神，好运`)
-  } else if (jiShenWx.includes(stemWx)) {
-    parts.push(`天干${stem}(${stemShiShen})为忌神，需防范`)
-  } else {
-    parts.push(`天干${stem}(${stemShiShen})运势平稳`)
-  }
+  // 干支配合解读
+  if (stemShiShen === '正官' && branchShiShen === '正印') parts.push('官印相生，事业平稳上升')
+  else if (stemShiShen === '食神' && branchShiShen === '正财') parts.push('食神生财，财运亨通')
+  else if (stemShiShen === '伤官' && branchShiShen === '偏官') parts.push('伤官见杀，需防官非口舌')
+  else if (stemShiShen === '偏印' && branchShiShen === '食神') parts.push('枭神夺食，注意健康')
+  else if (stemShiShen === '正财' && branchShiShen === '正印') parts.push('财星破印，理想与现实冲突')
+  else if (stemShiShen === '偏官' && branchShiShen === '正印') parts.push('杀印相生，化压力为动力')
 
-  // 地支解读
-  if (branchWx === dayMasterWx) {
-    parts.push(`地支${branch}为比劫帮身`)
-  } else if (yongShenWx.includes(branchWx)) {
-    parts.push(`地支${branch}(${branchShiShen})为用神之运`)
-  } else if (jiShenWx.includes(branchWx)) {
-    parts.push(`地支${branch}(${branchShiShen})为忌神之运，需谨慎`)
-  } else {
-    parts.push(`地支${branch}(${branchShiShen})运势平平`)
-  }
-
-  // 大运干支配合
-  if (stemShiShen === '正官' && branchShiShen === '正印') {
-    parts.push('官印相生，事业平稳上升')
-  } else if (stemShiShen === '食神' && branchShiShen === '正财') {
-    parts.push('食神生财，财运亨通')
-  } else if (stemShiShen === '伤官' && branchShiShen === '偏官') {
-    parts.push('伤官见官，需防官非口舌')
-  }
-
-  interpretation = parts.join('；')
+  const interpretation = parts.join('；')
 
   return {
     ganZhi: daYun.ganZhi,
@@ -84,27 +100,23 @@ function analyzeOneDaYun(
   }
 }
 
-/** 分析所有大运 */
+/** 分析所有大运（格局导向） */
 export function analyzeDaYun(
   bazi: BaZiResult,
-  yongShen: string[],
-  jiShen: string[],
+  patternShiShen: string,
 ): DaYunAnalysisItem[] {
-  return bazi.daYun.map(dy => analyzeOneDaYun(dy, bazi, yongShen, jiShen))
+  return bazi.daYun.map(dy => analyzeOneDaYun(dy, bazi, patternShiShen))
 }
 
-/** 分析当前流年 */
+/** 分析当前流年（V2.1 格局导向） */
 export function analyzeCurrentYear(
   bazi: BaZiResult,
-  yongShen: string[],
-  jiShen: string[],
 ): CurrentYearAnalysis {
   const currentYear = bazi.currentYear
   const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
   const dayMasterYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
 
   const yearStemWx = TIAN_GAN_WUXING[currentYear.stem] ?? ''
-  const yearBranchWx = DI_ZHI_WUXING[currentYear.branch] ?? ''
   const yearStemYy = TIAN_GAN_YIN_YANG[currentYear.stem] ?? '阳'
 
   const stemShiShen = getShiShenName(dayMasterWx, dayMasterYy, yearStemWx, yearStemYy)
@@ -112,17 +124,20 @@ export function analyzeCurrentYear(
   const parts: string[] = []
   const focus: string[] = []
 
-  // 流年天干判断
-  if (yongShen.includes(yearStemWx)) {
-    parts.push(`流年天干${currentYear.stem}(${stemShiShen})为用神，今年整体运势向好`)
-    focus.push('把握时机，积极进取')
-  } else if (jiShen.includes(yearStemWx)) {
-    parts.push(`流年天干${currentYear.stem}(${stemShiShen})为忌神，今年需谨慎应对`)
-    focus.push('宜稳守，避免冒险')
-  } else {
-    parts.push(`流年${currentYear.ganZhi}，平运之年`)
-    focus.push('按部就班，稳步前行')
+  // 流年天干解读
+  const shiShenAdvice: Record<string, string> = {
+    '正官': '官星主事，利于事业、名誉、考试求职',
+    '偏官': '七杀当值，压力与机遇并存，需果断决策',
+    '正印': '印星护身，利于学习、长辈缘、贵人相助',
+    '偏印': '偏印当值，利于钻研、独创，但需防孤僻',
+    '正财': '正财主事，财运稳定，利于工作收入和储蓄',
+    '偏财': '偏财当值，有意外之财，但需防投资风险',
+    '食神': '食神值年，心情愉悦，利于创作和享受生活',
+    '伤官': '伤官当值，才华展露，但需防口舌是非',
+    '比肩': '比肩值年，利于合作合伙，但需防竞争',
+    '劫财': '劫财当值，人际关系活跃，但需防破财',
   }
+  parts.push(`流年${currentYear.ganZhi}，天干${currentYear.stem}(${stemShiShen})${shiShenAdvice[stemShiShen] ?? '运势平稳'}`)
 
   // 流年与大运关系
   if (bazi.currentDaYun) {
@@ -132,43 +147,37 @@ export function analyzeCurrentYear(
     }
   }
 
-  // 本命年检查（值太岁）
+  // 太岁关系
   const yearZodiac = currentYear.branch as DiZhi
   const birthZodiac = bazi.yearPillar.branch as DiZhi
+
   if (yearZodiac === birthZodiac) {
     parts.push('今年为本命年（值太岁），宜低调行事')
     focus.push('注意健康和安全')
   }
-
-  // 冲太岁
   if (CHONG_MAP[birthZodiac] === yearZodiac) {
     parts.push('今年冲太岁，变动较大')
     focus.push('注意人际关系和事业变动')
   }
-
-  // 合太岁
   if (HE_MAP[birthZodiac]?.includes(yearZodiac)) {
     parts.push('今年合太岁，人缘佳，适合合作')
     focus.push('利于合伙、婚姻')
   }
-
-  // 刑太岁
   if (XING_MAP[birthZodiac]?.includes(yearZodiac)) {
     parts.push('今年刑太岁，防口舌是非')
     focus.push('注意法律文书和人际关系')
   }
-
-  // 破太岁
   if (PO_MAP[birthZodiac]?.includes(yearZodiac)) {
     parts.push('今年破太岁，防小人暗中破坏')
     focus.push('注意合作关系和契约')
   }
-
-  // 害太岁
   if (HAI_MAP[birthZodiac]?.includes(yearZodiac)) {
     parts.push('今年害太岁，防背后中伤')
     focus.push('注意健康和感情关系')
   }
+
+  // 默认关注
+  if (focus.length === 0) focus.push('按部就班，稳步前行')
 
   return {
     ganZhi: currentYear.ganZhi,
@@ -181,8 +190,6 @@ export function analyzeCurrentYear(
 export function analyzeMilestones(bazi: BaZiResult): Milestone[] {
   const milestones: Milestone[] = []
   const birthZodiac = bazi.yearPillar.branch as DiZhi
-  const dayStem = bazi.dayMaster
-
   // 基础参数
   const startYear0 = bazi.daYun[0]?.startYear ?? 0
   const startAge0 = bazi.daYun[0]?.startAge ?? 0

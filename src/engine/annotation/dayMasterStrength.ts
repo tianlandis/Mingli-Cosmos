@@ -97,7 +97,7 @@ function scoreToStrength(score: number): DayMasterStrength {
 /** 计算日主强弱 */
 export function analyzeDayMasterStrength(bazi: BaZiResult): StrengthAnalysis {
   const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
-  const dayMasterYy = TIAN_GAN_YIN_YANG[bazi.dayMaster] ?? '阳'
+  void TIAN_GAN_YIN_YANG[bazi.dayMaster]
   const monthBranch = bazi.monthPillar.branch
   const monthNumber = ['', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑'].indexOf(monthBranch)
 

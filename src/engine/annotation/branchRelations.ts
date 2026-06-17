@@ -1,15 +1,14 @@
 // ============================================================
 // 地支关系分析模块
 // 刑·冲·破·害·三合·三会·空亡 的全面分析
-// 依据: bazijichu §4-6
+// 依据：从月令取用到实战策略的完整解析 + 八字取格判断规则引导词（V2.0）
 // ============================================================
 
 import type { BaZiResult, DiZhi } from '../types'
 import {
-  CHONG_MAP, HE_MAP, XING_MAP, PO_MAP, HAI_MAP,
-  SAN_HE, SAN_HUI, BAN_HE, ZI_XING,
+  HE_MAP, ZI_XING,
   getKongWang, getFourPillarKongWang, findSanHui, findSanHe, findBanHe,
-  getBranchRelation, getXingName,
+  getBranchRelation,
 } from '../relation'
 import type {
   BranchRelationItem,

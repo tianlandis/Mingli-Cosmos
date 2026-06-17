@@ -4,8 +4,7 @@
 // ============================================================
 
 import type { BaZiResult, ShiShenItem, DiZhi } from '../types'
-import { TIAN_GAN_WUXING, TIAN_GAN_YIN_YANG, DI_ZHI_WUXING } from '../types'
-import { WUXING_SHENG, WUXING_KE } from './wuxing'
+import { TIAN_GAN_WUXING, DI_ZHI_WUXING } from '../types'
 import { CHONG_MAP, HE_MAP, XING_MAP, PO_MAP, HAI_MAP, getKongWang } from '../relation'
 import type { SpecialTopics } from './types'
 
@@ -125,7 +124,7 @@ function analyzeCareer(bazi: BaZiResult, tenGods: ShiShenItem[]): string[] {
 
 /** 分析财运 */
 function analyzeWealth(bazi: BaZiResult, tenGods: ShiShenItem[]): string[] {
-  const dayMasterWx = TIAN_GAN_WUXING[bazi.dayMaster] ?? ''
+  void TIAN_GAN_WUXING[bazi.dayMaster]
   const tips: string[] = []
 
   const tenGodCount: Record<string, number> = {}

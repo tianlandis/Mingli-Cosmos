@@ -35,14 +35,13 @@ const SHISHEN_TO_PATTERN: Record<string, string> = {
  */
 export function analyzePattern(
   bazi: BaZiResult,
-  dayMasterStrength: string,
+  _dayMasterStrength: string,
 ): PatternAnalysis {
   // ─── 步骤1：V2.0 取格 ───
   const patternResult = determinePattern(bazi)
 
   if (!patternResult.found || !patternResult.patternName) {
     // 退路：取月令本气
-    const mainQi = bazi.monthPillar.hiddenStems[0] || '?'
     const fallbackShiShen = '比肩'
     const fallbackName = '建禄格'
     return buildEmptyResult(fallbackName, '正格', fallbackShiShen, [])
@@ -136,12 +135,6 @@ export function analyzePattern(
         }
       }
     }
-  }
-
-  // 从格作为备选
-  const isSuperWeak = dayMasterStrength === '极弱'
-  if (isSuperWeak) {
-    alternatives.push({ name: '从格', reason: '日主极弱无根，有从格倾向' })
   }
 
   // ─── 构建MBTI信息 ───

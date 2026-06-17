@@ -2,7 +2,6 @@ import Header from './components/Header'
 import BirthForm from './components/BirthForm'
 import BaziChart from './components/BaziChart'
 import HiddenStems from './components/HiddenStems'
-import NaYin from './components/NaYin'
 import FiveElements from './components/FiveElements'
 import TenGods from './components/TenGods'
 import LuckCycle from './components/LuckCycle'
@@ -49,15 +48,9 @@ export default function App() {
               dayMaster={result.dayMaster}
             />
 
-            {/* 藏干 & 纳音 并排 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 藏干 */}
+            <div className="grid grid-cols-1 gap-4">
               <HiddenStems
-                yearPillar={result.yearPillar}
-                monthPillar={result.monthPillar}
-                dayPillar={result.dayPillar}
-                hourPillar={result.hourPillar}
-              />
-              <NaYin
                 yearPillar={result.yearPillar}
                 monthPillar={result.monthPillar}
                 dayPillar={result.dayPillar}

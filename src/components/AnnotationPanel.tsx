@@ -7,7 +7,7 @@ interface Props {
 const SECTION_CLASS = 'bg-gradient-to-b from-stone-900/80 to-stone-900/40 border border-stone-700/50 rounded-xl p-5'
 
 export default function AnnotationPanel({ annotation }: Props) {
-  const { overview, strengthAnalysis, yongShen, wuXingBalance, shiShenProfile, patternAnalysis, luckAnalysis, specialTopics, comprehensiveAdvice } = annotation
+  const { overview, strengthAnalysis, wuXingBalance, shiShenProfile, patternAnalysis, luckAnalysis, specialTopics, comprehensiveAdvice } = annotation
 
   const scoreWidth = Math.max(5, Math.min(100, strengthAnalysis.score))
 
@@ -25,7 +25,7 @@ export default function AnnotationPanel({ annotation }: Props) {
         <p className="text-stone-200 text-base leading-relaxed">{overview.summary}</p>
       </div>
 
-      {/* ── 日主强弱 + 用神忌神 并排 ── */}
+      {/* ── 日主强弱 + 格局分析 并排 ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 日主强弱 */}
         <div className={SECTION_CLASS}>
@@ -63,42 +63,6 @@ export default function AnnotationPanel({ annotation }: Props) {
           </ul>
         </div>
 
-        {/* 用神忌神 */}
-        <div className={SECTION_CLASS}>
-          <div className="text-amber-400/80 text-sm font-bold mb-3">用神 · 忌神</div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
-              <div className="text-green-400 text-xs font-bold mb-1">用神（有利）</div>
-              <div className="text-green-300 text-sm font-bold">
-                {yongShen.yongShen.join('、') || '—'}
-              </div>
-            </div>
-            <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-3">
-              <div className="text-red-400 text-xs font-bold mb-1">忌神（不利）</div>
-              <div className="text-red-300 text-sm font-bold">
-                {yongShen.jiShen.join('、') || '—'}
-              </div>
-            </div>
-          </div>
-          {yongShen.tiaoHou.length > 0 && (
-            <div className="mb-2">
-              <span className="text-amber-500/80 text-xs">调候：</span>
-              <span className="text-stone-400 text-xs">{yongShen.tiaoHou.filter(s => s.length > 1).join('；') || yongShen.tiaoHou[0]}</span>
-            </div>
-          )}
-          <ul className="space-y-1">
-            {yongShen.reason.map((r, i) => (
-              <li key={i} className="text-stone-400 text-xs flex items-start gap-1.5">
-                <span className="text-amber-600 shrink-0 mt-0.5">·</span>
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* ── 格局分析 + 五行平衡 并排 ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 格局分析 */}
         <div className={SECTION_CLASS}>
           <div className="text-amber-400/80 text-sm font-bold mb-3">格局分析</div>
@@ -137,8 +101,10 @@ export default function AnnotationPanel({ annotation }: Props) {
             ))}
           </ul>
         </div>
+      </div>
 
-        {/* 五行平衡 */}
+      {/* ── 五行平衡 ── */}
+      <div className="grid grid-cols-1 gap-4">
         <div className={SECTION_CLASS}>
           <div className="text-amber-400/80 text-sm font-bold mb-3">五行平衡</div>
           <div className="space-y-2">

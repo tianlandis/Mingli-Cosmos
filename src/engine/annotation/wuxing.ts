@@ -69,12 +69,6 @@ export function getShiShenName(
   }
 }
 
-/** 地支藏干主气（第一位） */
-export const DI_ZHI_MAIN_QI: Record<string, string> = {
-  '子': '癸', '丑': '己', '寅': '甲', '卯': '乙',
-  '辰': '戊', '巳': '丙', '午': '丁', '未': '己',
-  '申': '庚', '酉': '辛', '戌': '戊', '亥': '壬',
-}
 
 /** 十二长生表（五行在地支的长生状态） */
 export const CHANG_SHENG: Record<string, Record<string, string>> = {
@@ -93,15 +87,6 @@ export const MONTH_POWER: Record<string, Record<number, string>> = {
   '水': {1:'休',2:'休',3:'休',4:'囚',5:'囚',6:'囚',7:'相',8:'相',9:'相',10:'旺',11:'旺',12:'余气'},
   '土': {1:'余气',2:'休',3:'休',4:'囚',5:'囚',6:'相',7:'相',8:'相',9:'休',10:'休',11:'余气',12:'旺'},
 }
-
-/** 节气→月支对应表 (approx) */
-export const JIE_QI_MONTH_BRANCH: [string, string, number][] = [
-  // [节气名, 月支, 大致公历日]
-  ['立春', '寅', 2], ['惊蛰', '卯', 3], ['清明', '辰', 4],
-  ['立夏', '巳', 5], ['芒种', '午', 6], ['小暑', '未', 7],
-  ['立秋', '申', 8], ['白露', '酉', 9], ['寒露', '戌', 10],
-  ['立冬', '亥', 11], ['大雪', '子', 12], ['小寒', '丑', 1],
-]
 
 /** 每个地支的本气 */
 export const DI_ZHI_BEN_QI_WUXING: Record<string, string> = {

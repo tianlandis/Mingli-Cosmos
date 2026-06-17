@@ -1,11 +1,10 @@
 // ============================================================
 // 八字命理神煞规则（非择日神煞）
 // 以日干/年干/日支/年支为基准推演
-// 来源: bazijichu.md §18 + 经典命理口诀
+// 来源：八字取格判断规则引导词（V2.0）+ 经典命理口诀
 // ============================================================
 
 import type { BaZiResult } from '../types'
-import { TIAN_GAN_WUXING, DI_ZHI_WUXING } from '../types'
 import type { ShenShaItem, ShenShaAnalysis } from '../annotation/types'
 
 // ── 辅助：日干/年干 → 地支映射 ──
