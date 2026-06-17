@@ -1,0 +1,69 @@
+{
+  "chart": {
+    "birthDate": "1992-11-20",
+    "birthTime": "14:00",
+    "gender": "女",
+    "yearPillar": { "stem": "壬", "branch": "申", "stemWuXing": "水", "branchWuXing": "金", "hiddenStems": ["戊", "壬", "庚"], "ganZhi": "壬申" },
+    "monthPillar": { "stem": "辛", "branch": "亥", "stemWuXing": "金", "branchWuXing": "水", "hiddenStems": ["戊", "甲", "壬"], "ganZhi": "辛亥" },
+    "dayPillar": { "stem": "戊", "branch": "午", "stemWuXing": "土", "branchWuXing": "火", "hiddenStems": ["丁"], "ganZhi": "戊午" },
+    "hourPillar": { "stem": "己", "branch": "未", "stemWuXing": "土", "branchWuXing": "土", "hiddenStems": ["丁", "乙", "己"], "ganZhi": "己未" },
+    "dayMaster": "戊",
+    "fiveElements": { "金": 3, "木": 1, "水": 3, "火": 2, "土": 4 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "丙", "branch": "午", "ganZhi": "丙午" },
+    "qiYunDays": 6,
+    "daYunForward": false
+  },
+  "annotation": {
+    "overview": { "summary": "戊土生于亥月水旺，身弱用印，沉稳稳重", "dayMaster": "戊土", "strength": "中和偏弱", "pattern": "正印格", "mbti": "ISFJ", "combination": "" },
+    "strengthAnalysis": { "strength": "中和偏弱", "score": 42, "confidence": 0.70, "reasons": ["月令亥水为财", "日支午火正印生身", "时柱火土为助"], "classicReference": [], "components": { "yueLing": 15, "diZhiGen": 25, "tianGanBiJie": 5, "shengFu": 45, "keXieHao": 55 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "中和", "count": 3, "advice": "食伤适度，聪明但不张扬" },
+      { "name": "木", "level": "偏弱", "count": 1, "advice": "官杀弱，事业心不够强" },
+      { "name": "水", "level": "偏旺", "count": 3, "advice": "财旺身弱，守成为宜" },
+      { "name": "火", "level": "中和", "count": 2, "advice": "印星为用，宜求稳" },
+      { "name": "土", "level": "偏旺", "count": 4, "advice": "比劫多，宜合作" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 3, "positions": ["日干戊", "日支午藏丁×", "时支未藏己"] },
+      { "name": "劫财", "count": 1, "positions": ["时干己"] },
+      { "name": "正官", "count": 0, "positions": [] },
+      { "name": "偏官", "count": 0, "positions": [] },
+      { "name": "正财", "count": 0, "positions": [] },
+      { "name": "偏财", "count": 1, "positions": ["月支亥中壬"] },
+      { "name": "正印", "count": 2, "positions": ["年支申藏庚", "日支午藏丁"] },
+      { "name": "偏印", "count": 0, "positions": [] },
+      { "name": "食神", "count": 1, "positions": ["年干壬"] },
+      { "name": "伤官", "count": 1, "positions": ["月干辛"] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "正印格", "confidence": 0.71,
+      "conditions": ["日支午火正印透出", "身弱喜印"], "quality": "中等",
+      "description": "戊土亥月身弱，午火正印为用，人格端正",
+      "alternatives": [], "classicReference": [], "method": "透干取格", "sourceStem": "丁", "shiShen": "正印",
+      "jiXiong": "吉", "jiXiongDesc": "正印格主文贵", "combination": { "name": "", "dominantPattern": "正印格", "keyCombination": "", "keyStem": "", "keyPosition": "", "isPure": true },
+      "poGeRisks": [],
+      "mbti": { "cognitiveFunctions": "Si-Fe-Ti-Ne", "typicalTypes": ["ISFJ", "INFJ"], "traits": "善良体贴，责任心强", "portrait": "守护者型人格，重视家庭和传统", "industrySuggestions": ["教育", "医疗", "社会服务"], "energyAdjustments": ["学习拒绝", "提升自我价值感"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "庚戌", "startAge": 6, "endAge": 15, "interpretation": "庚金食神，天资聪颖", "quality": "平" },
+        { "ganZhi": "己酉", "startAge": 16, "endAge": 25, "interpretation": "己土劫财，人际圈扩大", "quality": "平" },
+        { "ganZhi": "戊申", "startAge": 26, "endAge": 35, "interpretation": "戊土比肩，事业上升期", "quality": "佳" },
+        { "ganZhi": "丁未", "startAge": 36, "endAge": 45, "interpretation": "丁火正印，中年安稳", "quality": "佳" }
+      ],
+      "currentYear": { "ganZhi": "丙午", "interpretation": "偏印年，适合学习深造", "focus": ["学习", "家庭"] },
+      "milestones": [{ "age": 30, "year": 2022, "ganZhi": "壬寅", "event": "家庭添丁", "reason": "财官之年" }]
+    },
+    "branchRelations": { "summary": ["年支申与月支亥害"], "items": ["申亥相害"], "kongWang": [], "heJu": [], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "天乙贵人", "type": "吉", "description": "日干戊见年支申为天乙", "pillar": "年柱", "classicRef": "《三命通会》" },
+      { "name": "桃花", "type": "中性", "description": "日支午为局内桃花", "pillar": "日柱", "classicRef": "《星平会海》" }
+    ] },
+    "specialTopics": { "personality": ["温柔", "稳重", "顾家"], "career": ["教育", "医疗", "服务"], "wealth": ["中年渐丰"], "marriage": ["晚婚为宜"], "health": ["注意脾胃"], "children": ["子女缘佳"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["修身养性", "理财规划"]
+  }
+}

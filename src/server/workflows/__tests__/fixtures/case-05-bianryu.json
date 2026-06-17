@@ -1,0 +1,69 @@
+{
+  "chart": {
+    "birthDate": "1988-02-02",
+    "birthTime": "04:00",
+    "gender": "男",
+    "yearPillar": { "stem": "戊", "branch": "辰", "stemWuXing": "土", "branchWuXing": "土", "hiddenStems": ["乙", "癸", "戊"], "ganZhi": "戊辰" },
+    "monthPillar": { "stem": "甲", "branch": "寅", "stemWuXing": "木", "branchWuXing": "木", "hiddenStems": ["戊", "丙", "甲"], "ganZhi": "甲寅" },
+    "dayPillar": { "stem": "丁", "branch": "丑", "stemWuXing": "火", "branchWuXing": "土", "hiddenStems": ["癸", "辛", "己"], "ganZhi": "丁丑" },
+    "hourPillar": { "stem": "壬", "branch": "寅", "stemWuXing": "水", "branchWuXing": "木", "hiddenStems": ["戊", "丙", "甲"], "ganZhi": "壬寅" },
+    "dayMaster": "丁",
+    "fiveElements": { "金": 1, "木": 5, "水": 3, "火": 2, "土": 4 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "丙", "branch": "午", "ganZhi": "丙午" },
+    "qiYunDays": 3,
+    "daYunForward": true
+  },
+  "annotation": {
+    "overview": { "summary": "丁火生于寅月木旺，特殊格局化气格", "dayMaster": "丁火", "strength": "极弱", "pattern": "化气格（丁壬合化木）", "mbti": "INFJ", "combination": "丁壬合化木" },
+    "strengthAnalysis": { "strength": "极弱", "score": 15, "confidence": 0.80, "reasons": ["月令寅木极旺泄火", "丁壬合化木，日主弱极"], "classicReference": ["《滴天髓》化象篇"], "components": { "yueLing": 0, "diZhiGen": 0, "tianGanBiJie": 0, "shengFu": 0, "keXieHao": 100 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏弱", "count": 1, "advice": "财星微，不以为重" },
+      { "name": "木", "level": "极旺", "count": 5, "advice": "木极旺，化气之基" },
+      { "name": "水", "level": "偏旺", "count": 3, "advice": "官杀配合化气" },
+      { "name": "火", "level": "极弱", "count": 2, "advice": "日主弱极，从化" },
+      { "name": "土", "level": "偏旺", "count": 4, "advice": "泄火之力亦用" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 0, "positions": [] },
+      { "name": "劫财", "count": 0, "positions": [] },
+      { "name": "正印", "count": 2, "positions": ["月干甲", "时支寅藏丙"] },
+      { "name": "偏印", "count": 0, "positions": [] },
+      { "name": "正官", "count": 1, "positions": ["时干壬"] },
+      { "name": "偏官", "count": 1, "positions": ["日支丑藏癸"] },
+      { "name": "食神", "count": 2, "positions": ["年干戊", "年支辰藏戊"] },
+      { "name": "伤官", "count": 0, "positions": [] },
+      { "name": "正财", "count": 0, "positions": [] },
+      { "name": "偏财", "count": 0, "positions": [] }
+    ],
+    "patternAnalysis": {
+      "patternType": "特殊格局", "patternName": "化气格（丁壬合化木）", "confidence": 0.78,
+      "conditions": ["丁壬合化木", "月令寅木为化神", "化神得地"], "quality": "上等",
+      "description": "丁壬合化木，化气成格，以木为体",
+      "alternatives": [], "classicReference": ["《三命通会》卷八化气篇"], "method": "化气取格", "sourceStem": "壬", "shiShen": "正官",
+      "jiXiong": "吉", "jiXiongDesc": "化气得时，格局清纯", "combination": { "name": "丁壬合化木", "dominantPattern": "化气格", "keyCombination": "丁壬合化木", "keyStem": "壬", "keyPosition": "时干", "isPure": true },
+      "poGeRisks": [{ "type": "化气不纯", "description": "见火土破格", "severity": "高", "suggestion": "忌南方火土运", "mbtiAdjust": "" }],
+      "mbti": { "cognitiveFunctions": "Ni-Fe-Ti-Se", "typicalTypes": ["INFJ", "ENFJ"], "traits": "理想主义，洞察力极强", "portrait": "倡导者型人格，有远见和使命感", "industrySuggestions": ["咨询", "心理", "公益"], "energyAdjustments": ["学会放松", "接受不完美"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "乙卯", "startAge": 3, "endAge": 12, "interpretation": "乙卯木运，化气得助", "quality": "佳" },
+        { "ganZhi": "丙辰", "startAge": 13, "endAge": 22, "interpretation": "丙火劫财，化气受扰", "quality": "不佳" },
+        { "ganZhi": "丁巳", "startAge": 23, "endAge": 32, "interpretation": "丁火破化，注意波折", "quality": "不佳" },
+        { "ganZhi": "戊午", "startAge": 33, "endAge": 42, "interpretation": "火土旺运，需谨慎", "quality": "平" }
+      ],
+      "currentYear": { "ganZhi": "丙午", "interpretation": "火旺之年，化气受挫", "focus": ["谨慎", "健康"] },
+      "milestones": [{ "age": 25, "year": 2013, "ganZhi": "癸巳", "event": "事业转折", "reason": "水运调候" }]
+    },
+    "branchRelations": { "summary": ["年支辰与月支寅会为震方", "时支寅与日支丑暗合"], "items": ["寅丑暗合"], "kongWang": [], "heJu": ["寅卯辰三会木局"], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "魁罡", "type": "吉", "description": "日支丑为魁罡日", "pillar": "日柱", "classicRef": "《三命通会》" },
+      { "name": "孤辰", "type": "凶", "description": "日支丑见时支寅为孤辰", "pillar": "时柱", "classicRef": "《星平会海》" }
+    ] },
+    "specialTopics": { "personality": ["超凡脱俗", "理想主义"], "career": ["非传统行业", "创新领域"], "wealth": ["非常规路径"], "marriage": ["特殊缘分"], "health": ["木火失衡注意"], "children": ["缘浅"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["顺势而为", "养生调候"]
+  }
+}

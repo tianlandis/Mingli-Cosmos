@@ -3,28 +3,20 @@ import { useState, useEffect } from 'react'
 interface HourOption { label: string; hour: number }
 
 /** 时辰选项：0→24 时间顺序，共13个时辰 */
-const HOUR_ROWS: HourOption[][] = [
-  [
-    { label: '早子时 0-1', hour: 0 },
-    { label: '丑时 1-3', hour: 1 },
-    { label: '寅时 3-5', hour: 3 },
-    { label: '卯时 5-7', hour: 5 },
-  ],
-  [
-    { label: '辰时 7-9', hour: 7 },
-    { label: '巳时 9-11', hour: 9 },
-    { label: '午时 11-13', hour: 11 },
-    { label: '未时 13-15', hour: 13 },
-  ],
-  [
-    { label: '申时 15-17', hour: 15 },
-    { label: '酉时 17-19', hour: 17 },
-    { label: '戌时 19-21', hour: 19 },
-    { label: '亥时 21-23', hour: 21 },
-  ],
-  [
-    { label: '晚子时 23-24', hour: 23 },
-  ],
+const HOUR_OPTIONS: HourOption[] = [
+  { label: '早子 0-1', hour: 0 },
+  { label: '丑 1-3', hour: 1 },
+  { label: '寅 3-5', hour: 3 },
+  { label: '卯 5-7', hour: 5 },
+  { label: '辰 7-9', hour: 7 },
+  { label: '巳 9-11', hour: 9 },
+  { label: '午 11-13', hour: 11 },
+  { label: '未 13-15', hour: 13 },
+  { label: '申 15-17', hour: 15 },
+  { label: '酉 17-19', hour: 17 },
+  { label: '戌 19-21', hour: 19 },
+  { label: '亥 21-23', hour: 21 },
+  { label: '晚子 23-24', hour: 23 },
 ]
 
 const LUNAR_MONTH_NAMES = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月']
@@ -44,12 +36,11 @@ export default function BirthForm({ onCalculate }: Props) {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [day, setDay] = useState(now.getDate())
-  const [selectedHour, setSelectedHour] = useState(11) // 午时
+  const [selectedHour, setSelectedHour] = useState(11)
   const [gender, setGender] = useState<'男' | '女'>('男')
   const [isLeapMonth, setIsLeapMonth] = useState(false)
-  const [leapMonth, setLeapMonth] = useState(0) // 0=无闰月, >0=闰几月
+  const [leapMonth, setLeapMonth] = useState(0)
 
-  // 检测选中农历年是否有闰月
   useEffect(() => {
     if (calendarType === 'lunar') {
       checkLeapMonth(year)
@@ -60,7 +51,6 @@ export default function BirthForm({ onCalculate }: Props) {
     try {
       const { Lunar } = await import('lunar-typescript')
       const lunar = Lunar.fromYmd(lunarYear, 1, 1)
-      // lunar-typescript: getLeapMonth() 返回闰月数字，0 表示无闰月
       const lm = (lunar as unknown as Record<string, () => number>)['getLeapMonth']?.() ?? 0
       setLeapMonth(lm)
       if (lm === 0 || month !== lm) {
@@ -72,7 +62,6 @@ export default function BirthForm({ onCalculate }: Props) {
     }
   }
 
-  // 公历模式下：根据年/月动态计算当月天数
   const handleYearChange = (value: number) => {
     const maxDay = calendarType === 'solar'
       ? new Date(value, month, 0).getDate()
@@ -87,7 +76,6 @@ export default function BirthForm({ onCalculate }: Props) {
       : 30
     setMonth(value)
     if (day > maxDay) setDay(maxDay)
-    // 切换月份时重置闰月勾选
     if (value !== leapMonth) setIsLeapMonth(false)
   }
 
@@ -102,151 +90,128 @@ export default function BirthForm({ onCalculate }: Props) {
 
   const daysInMonth = calendarType === 'solar'
     ? new Date(year, month, 0).getDate()
-    : 30 // 农历月最多30天
+    : 30
+
+  const selectCls = 'bg-white border border-[#D8D2C8] rounded-sm px-2 py-1.5 text-xs text-[#1C1914] hover:border-[#C4B8A8] focus:border-[#B83A2E] focus:outline-none cursor-pointer'
+  const toggleBase = 'px-3 py-1.5 text-xs transition-colors cursor-pointer'
 
   return (
-    <form onSubmit={handleSubmit} className="bg-stone-900/80 backdrop-blur rounded-2xl border border-amber-700/30 p-6 shadow-xl">
-      <h2 className="text-lg font-bold text-amber-400 mb-4 border-b border-amber-700/20 pb-2">
-        出生信息
-      </h2>
-
-      {/* 公历/农历切换 */}
-      <div className="mb-4">
-        <label className="text-stone-300 text-sm mb-1 block">历法类型</label>
-        <div className="flex gap-2">
+    <form onSubmit={handleSubmit}>
+      {/* 工具栏第一行：历法 · 性别 · 日期 · 排盘 */}
+      <div className="flex flex-wrap items-end gap-2">
+        {/* 公历/农历 */}
+        <div className="flex rounded-sm overflow-hidden border border-[#D8D2C8]">
           {(['solar', 'lunar'] as const).map(ct => (
             <button
               key={ct}
               type="button"
-              onClick={() => {
-                setCalendarType(ct)
-                setIsLeapMonth(false)
-              }}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              onClick={() => { setCalendarType(ct); setIsLeapMonth(false) }}
+              className={`${toggleBase} ${
                 calendarType === ct
-                  ? 'bg-amber-700 text-amber-100'
-                  : 'bg-stone-800 text-stone-400 hover:bg-stone-700'
+                  ? 'bg-[#1C1914] text-[#FBF7F0]'
+                  : 'bg-white text-[#6B6459] hover:bg-[#F5F2EB]'
               }`}
             >
-              {ct === 'solar' ? '☀ 公历' : '🌙 农历'}
+              {ct === 'solar' ? '公历' : '农历'}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* 性别 */}
-      <div className="mb-4">
-        <label className="text-stone-300 text-sm mb-1 block">性别</label>
-        <div className="flex gap-2">
+        {/* 性别 */}
+        <div className="flex rounded-sm overflow-hidden border border-[#D8D2C8]">
           {(['男', '女'] as const).map(g => (
             <button
               key={g}
               type="button"
               onClick={() => setGender(g)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              className={`${toggleBase} ${
                 gender === g
-                  ? 'bg-amber-700 text-amber-100'
-                  : 'bg-stone-800 text-stone-400 hover:bg-stone-700'
+                  ? 'bg-[#1C1914] text-[#FBF7F0]'
+                  : 'bg-white text-[#6B6459] hover:bg-[#F5F2EB]'
               }`}
             >
-              {g === '男' ? '♂ 男' : '♀ 女'}
+              {g === '男' ? '♂' : '♀'}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* 日期 */}
-      <div className="mb-4">
-        <label className="text-stone-300 text-sm mb-1 block">
-          出生日期（{calendarType === 'solar' ? '公历' : '农历'}）
-        </label>
-        <div className="flex gap-2">
-          <select
-            value={year}
-            onChange={e => handleYearChange(Number(e.target.value))}
-            className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-200 text-sm focus:border-amber-600 focus:outline-none"
-          >
-            {Array.from({ length: 100 }, (_, i) => now.getFullYear() - i).map(y => (
-              <option key={y} value={y}>{y}年</option>
-            ))}
-          </select>
-          <select
-            value={month}
-            onChange={e => handleMonthChange(Number(e.target.value))}
-            className="w-20 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-stone-200 text-sm focus:border-amber-600 focus:outline-none"
-          >
-            {calendarType === 'solar'
-              ? Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                  <option key={m} value={m}>{m}月</option>
-                ))
-              : Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                  <option key={m} value={m}>{LUNAR_MONTH_NAMES[m - 1]}</option>
-                ))
-            }
-          </select>
-          <select
-            value={day}
-            onChange={e => setDay(Number(e.target.value))}
-            className="w-20 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-stone-200 text-sm focus:border-amber-600 focus:outline-none"
-          >
-            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
-              <option key={d} value={d}>{d}日</option>
-            ))}
-          </select>
-        </div>
-        {/* 闰月勾选（仅农历模式且当前年份有闰月且选中了闰月对应的月份） */}
+        {/* 年 */}
+        <select
+          value={year}
+          onChange={e => handleYearChange(Number(e.target.value))}
+          className={`${selectCls} w-[72px]`}
+        >
+          {Array.from({ length: 100 }, (_, i) => now.getFullYear() - i).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+
+        {/* 月 */}
+        <select
+          value={month}
+          onChange={e => handleMonthChange(Number(e.target.value))}
+          className={`${selectCls} ${calendarType === 'solar' ? 'w-[56px]' : 'w-[64px]'}`}
+        >
+          {calendarType === 'solar'
+            ? Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))
+            : Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>{LUNAR_MONTH_NAMES[m - 1]}</option>
+              ))
+          }
+        </select>
+
+        {/* 日 */}
+        <select
+          value={day}
+          onChange={e => setDay(Number(e.target.value))}
+          className={`${selectCls} w-[56px]`}
+        >
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+
+        {/* 闰月勾选 */}
         {calendarType === 'lunar' && leapMonth > 0 && month === leapMonth && (
-          <label className="flex items-center gap-2 mt-2 text-sm text-stone-400 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-[#6B6459] cursor-pointer">
             <input
               type="checkbox"
               checked={isLeapMonth}
               onChange={e => setIsLeapMonth(e.target.checked)}
-              className="accent-amber-600 w-4 h-4 cursor-pointer"
+              className="accent-[#B83A2E] w-3.5 h-3.5 cursor-pointer"
             />
-            闰{leapMonth}月
+            闰
           </label>
         )}
+
+        {/* 排盘按钮 — 朱砂红 */}
+        <button
+          type="submit"
+          className="px-6 py-1.5 bg-[#B83A2E] text-white text-xs font-medium tracking-[0.1em] hover:bg-[#9B2C22] transition-colors rounded-sm cursor-pointer"
+        >
+          排 盘
+        </button>
       </div>
 
-      {/* 时辰选择器 */}
-      <div className="mb-5">
-        <label className="text-stone-300 text-sm mb-1 block">出生时辰</label>
-        <div className="space-y-2">
-          {HOUR_ROWS.map((row, rowIdx) => (
-            <div
-              key={rowIdx}
-              className={row.length === 4
-                ? 'grid grid-cols-4 gap-2'
-                : 'flex justify-center gap-2'
-              }
-            >
-              {row.map((opt) => (
-                <button
-                  key={opt.hour}
-                  type="button"
-                  onClick={() => setSelectedHour(opt.hour)}
-                  className={`py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    row.length === 4 ? '' : 'w-1/4'
-                  } ${
-                    selectedHour === opt.hour
-                      ? 'bg-amber-700 text-amber-100 ring-1 ring-amber-500'
-                      : 'bg-stone-800 text-stone-400 hover:bg-stone-700'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
+      {/* 工具栏第二行：时辰选择 */}
+      <div className="mt-2 flex flex-wrap gap-1">
+        {HOUR_OPTIONS.map(opt => (
+          <button
+            key={opt.hour}
+            type="button"
+            onClick={() => setSelectedHour(opt.hour)}
+            className={`px-2 py-1 text-xs rounded-sm transition-colors cursor-pointer ${
+              selectedHour === opt.hour
+                ? 'bg-[#B83A2E] text-white'
+                : 'bg-white border border-[#D8D2C8] text-[#6B6459] hover:border-[#C4B8A8]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
-
-      <button
-        type="submit"
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-700 to-red-800 text-amber-100 font-bold text-base tracking-wider hover:from-amber-600 hover:to-red-700 transition-all shadow-lg cursor-pointer"
-      >
-        排 盘
-      </button>
     </form>
   )
 }

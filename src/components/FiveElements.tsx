@@ -1,28 +1,36 @@
-import { WUXING_COLORS, WUXING_LIST } from '../engine/types'
+import { WUXING_LIST } from '../engine/types'
 
 interface Props {
   fiveElements: Record<string, number>
+}
+
+const WX_LABEL_COLORS: Record<string, string> = {
+  '木': '#4A7C3F', '火': '#B83A2E', '土': '#B8973E',
+  '金': '#C4A458', '水': '#3D5A80',
 }
 
 export default function FiveElements({ fiveElements }: Props) {
   const maxVal = Math.max(...Object.values(fiveElements), 1)
 
   return (
-    <div className="bg-stone-900/80 backdrop-blur rounded-2xl border border-amber-700/30 p-6 shadow-xl">
-      <h2 className="text-lg font-bold text-amber-400 mb-4 border-b border-amber-700/20 pb-2">五行分布</h2>
-      <div className="flex gap-3 items-end h-40">
+    <div>
+      <h3 className="chapter-title">五行分布</h3>
+      <div className="space-y-2.5">
         {WUXING_LIST.map(wx => {
           const count = fiveElements[wx] ?? 0
-          const height = Math.max((count / maxVal) * 100, 4)
-          const color = WUXING_COLORS[wx] ?? '#888'
+          const pct = Math.max((count / maxVal) * 100, 8)
           return (
-            <div key={wx} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-sm font-bold text-stone-300">{count}</span>
-              <div
-                className="w-full rounded-t-lg transition-all duration-500 min-h-[4px]"
-                style={{ height: `${height}%`, backgroundColor: color }}
-              />
-              <span className="text-xs text-stone-500 mt-1">{wx}</span>
+            <div key={wx} className="flex items-center gap-3">
+              <span className="w-6 text-sm font-bold shrink-0" style={{ color: WX_LABEL_COLORS[wx] }}>
+                {wx}
+              </span>
+              <div className="flex-1 h-2.5 bg-[#E8E3D9] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%`, backgroundColor: WX_LABEL_COLORS[wx] }}
+                />
+              </div>
+              <span className="w-4 text-right text-xs font-medium text-[#6B6459]">{count}</span>
             </div>
           )
         })}

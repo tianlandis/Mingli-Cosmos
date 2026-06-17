@@ -14,36 +14,46 @@ export default function BaziChart({ yearPillar, monthPillar, dayPillar, hourPill
   const pillars = [yearPillar, monthPillar, dayPillar, hourPillar]
 
   return (
-    <div className="bg-stone-900/80 backdrop-blur rounded-2xl border border-amber-700/30 p-6 shadow-xl">
-      <h2 className="text-lg font-bold text-amber-400 mb-4 border-b border-amber-700/20 pb-2">
-        四柱八字
-        <span className="text-sm text-stone-400 ml-3 font-normal">
-          日主：<span className="text-red-400 font-bold text-lg">{dayMaster}</span>
-        </span>
-      </h2>
+    <div className="text-center py-6">
+      {/* 四柱大字 — 命盘英雄 */}
+      <div className="grid grid-cols-4 gap-2 md:gap-4 max-w-md mx-auto mb-4">
+        {pillars.map((p, i) => {
+          const isDay = i === 2
+          return (
+            <div key={i} className="text-center">
+              <div className="text-xs text-[#B0A898] mb-2 tracking-wider">{PILLAR_LABELS[i]}</div>
+              {/* 天干 */}
+              <div
+                className={
+                  isDay
+                    ? 'seal-stamp text-3xl md:text-4xl mx-auto mb-1.5 w-14 h-14 md:w-16 md:h-16'
+                    : 'text-3xl md:text-4xl font-bold text-[#1C1914] mb-1.5'
+                }
+                style={isDay ? undefined : { fontFamily: '"Noto Serif SC", serif' }}
+              >
+                {p.stem}
+              </div>
+              {/* 地支 */}
+              <div
+                className="text-3xl md:text-4xl font-bold text-[#4A4438]"
+                style={{ fontFamily: '"Noto Serif SC", serif' }}
+              >
+                {p.branch}
+              </div>
+              {/* 五行标签 */}
+              <div className="text-xs text-[#B0A898] mt-1 tracking-wider">
+                {p.stemWuXing}{p.branchWuXing}
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {pillars.map((p, i) => (
-          <div key={i} className="text-center">
-            <div className="text-xs text-stone-500 mb-1">{PILLAR_LABELS[i]}</div>
-            {/* 天干 */}
-            <div className={`text-3xl md:text-4xl font-bold py-2 rounded-t-xl ${
-              i === 2 ? 'text-red-400 bg-red-900/20' : 'text-amber-200 bg-stone-800/50'
-            }`}>
-              {p.stem}
-            </div>
-            {/* 地支 */}
-            <div className={`text-3xl md:text-4xl font-bold py-2 bg-stone-800/30 ${
-              i === 2 ? 'text-red-300' : 'text-stone-200'
-            }`}>
-              {p.branch}
-            </div>
-            {/* 五行 */}
-            <div className="text-xs text-stone-400 mt-1">
-              {p.stemWuXing}{p.branchWuXing}
-            </div>
-          </div>
-        ))}
+      {/* 命盘署名 */}
+      <div className="text-center text-xs text-[#B0A898] tracking-widest mt-4">
+        日主 <span className="text-[#B83A2E] font-bold text-sm" style={{ fontFamily: '"Noto Serif SC", serif' }}>{dayMaster}</span>
+        <span className="mx-1.5 opacity-30">|</span>
+        四柱八字命盘
       </div>
     </div>
   )

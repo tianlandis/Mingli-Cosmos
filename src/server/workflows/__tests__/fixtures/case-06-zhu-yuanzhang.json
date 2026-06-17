@@ -1,0 +1,70 @@
+{
+  "chart": {
+    "birthDate": "1328-10-21",
+    "birthTime": "07:00",
+    "gender": "男",
+    "yearPillar": { "stem": "戊", "branch": "辰", "stemWuXing": "土", "branchWuXing": "土", "hiddenStems": ["乙","戊","癸"], "ganZhi": "戊辰" },
+    "monthPillar": { "stem": "辛", "branch": "酉", "stemWuXing": "金", "branchWuXing": "金", "hiddenStems": ["辛"], "ganZhi": "辛酉" },
+    "dayPillar": { "stem": "丁", "branch": "丑", "stemWuXing": "火", "branchWuXing": "土", "hiddenStems": ["己","癸","辛"], "ganZhi": "丁丑" },
+    "hourPillar": { "stem": "甲", "branch": "辰", "stemWuXing": "木", "branchWuXing": "土", "hiddenStems": ["乙","戊","癸"], "ganZhi": "甲辰" },
+    "dayMaster": "丁",
+    "fiveElements": { "金": 2, "木": 2, "水": 2, "火": 1, "土": 5 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "戊", "branch": "申", "ganZhi": "戊申" },
+    "qiYunDays": 3,
+    "daYunForward": true
+  },
+  "annotation": {
+    "overview": { "summary": "丁火临酉月财旺，正印化杀权倾天下，草莽帝王之格", "dayMaster": "丁火", "strength": "中和偏弱", "pattern": "正印化杀格", "mbti": "ENTJ", "combination": "杀印相生" },
+    "strengthAnalysis": { "strength": "中和偏弱", "score": 42, "confidence": 0.78, "reasons": ["月令酉金泄火", "地支丑辰土重泄火气", "时干甲木正印贴身生扶"], "classicReference": ["《滴天髓》"], "components": { "yueLing": 15, "diZhiGen": 0, "tianGanBiJie": 0, "shengFu": 30, "keXieHao": 70 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏旺", "count": 2, "advice": "财星旺，印星化杀有力可担" },
+      { "name": "木", "level": "中和", "count": 2, "advice": "印星为用，学识与贵人均得力" },
+      { "name": "水", "level": "偏弱", "count": 2, "advice": "官杀暗藏，印化有力" },
+      { "name": "火", "level": "偏弱", "count": 1, "advice": "日主偏弱，喜木火生扶" },
+      { "name": "土", "level": "偏旺", "count": 5, "advice": "食伤过旺泄身，需印星制之" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 0, "positions": [] },
+      { "name": "劫财", "count": 0, "positions": [] },
+      { "name": "食神", "count": 2, "positions": ["年支辰藏戊","日支丑藏己"] },
+      { "name": "伤官", "count": 2, "positions": ["日支丑藏己","时支辰藏戊"] },
+      { "name": "正财", "count": 2, "positions": ["月干辛","日支丑藏辛"] },
+      { "name": "偏财", "count": 0, "positions": [] },
+      { "name": "正官", "count": 0, "positions": [] },
+      { "name": "偏官", "count": 2, "positions": ["年支辰藏癸","日支丑藏癸"] },
+      { "name": "正印", "count": 2, "positions": ["时干甲","时支辰藏乙"] },
+      { "name": "偏印", "count": 1, "positions": ["年支辰藏乙"] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "正印化杀格", "confidence": 0.80,
+      "conditions": ["月令酉金财旺", "甲木正印透时干", "七杀暗藏丑辰得印化"], "quality": "上等",
+      "description": "丁火生于酉月财星当令，甲木正印贴身化杀生身，格局清奇",
+      "alternatives": [], "classicReference": ["《子平真诠》","《穷通宝鉴》"], "method": "月令取格", "sourceStem": "辛", "shiShen": "正财",
+      "jiXiong": "吉", "jiXiongDesc": "财印相涵，杀印相生，文武双全之格", "combination": { "name": "杀印相生", "dominantPattern": "财格", "keyCombination": "杀印相生", "keyStem": "甲", "keyPosition": "时干", "isPure": true },
+      "poGeRisks": [],
+      "mbti": { "cognitiveFunctions": "Te-Ni-Se-Fi", "typicalTypes": ["ENTJ","ESTJ"], "traits": "刚毅果决，审时度势", "portrait": "乱世枭雄型人格，从基层崛起，兼具草莽气与帝王略", "industrySuggestions": ["军事","政治","创业"], "energyAdjustments": ["忌刚愎自用","需以仁义收民心"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "壬戌", "startAge": 3, "endAge": 12, "interpretation": "壬水正官透出，甲木化之，少年聪慧", "quality": "平" },
+        { "ganZhi": "癸亥", "startAge": 13, "endAge": 22, "interpretation": "癸亥水旺杀重，印化之，磨难中成长", "quality": "平" },
+        { "ganZhi": "甲子", "startAge": 23, "endAge": 32, "interpretation": "甲木正印得力，子水七杀有化，崭露头角", "quality": "佳" },
+        { "ganZhi": "乙丑", "startAge": 33, "endAge": 42, "interpretation": "乙木偏印生身，事业蒸蒸日上", "quality": "佳" },
+        { "ganZhi": "丙寅", "startAge": 43, "endAge": 52, "interpretation": "丙火比劫助身，寅木印星旺地，登基称帝", "quality": "佳" }
+      ],
+      "currentYear": { "ganZhi": "戊申", "interpretation": "伤官生财之年，注意言行与健康", "focus": ["健康","人事"] },
+      "milestones": [{ "age": 40, "year": 1368, "ganZhi": "戊申", "event": "建立明朝，登基称帝", "reason": "丙寅大运印比生扶，身强可任" }]
+    },
+    "branchRelations": { "summary": ["年支辰与时支辰自刑","月支酉与日支丑半合金"], "items": ["辰辰自刑","酉丑半合金局"], "kongWang": [], "heJu": ["酉丑半合金局"], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "太极贵人", "type": "吉", "description": "日干丁见丑为太极贵人", "pillar": "日柱", "classicRef": "《三命通会》" },
+      { "name": "国印贵人", "type": "吉", "description": "年支辰得国印", "pillar": "年柱", "classicRef": "《星平会海》" }
+    ] },
+    "specialTopics": { "personality": ["刚毅果决","善权谋","知人善任"], "career": ["创业","军事","治国"], "wealth": ["中年后富","晚年盈实"], "marriage": ["得贤内助","正印护婚姻"], "health": ["火弱注意心脏","土重注意脾胃"], "children": ["子女贤孝","后继有人"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["以仁治国","知人善任","戒杀养心"]
+  }
+}

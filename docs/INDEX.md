@@ -36,6 +36,7 @@
 | 了解增长变现计划 | `plan/04-growth-model.md` | 计划 |
 | 了解风险合规要求 | `plan/05-risk-compliance.md` | 计划 |
 | 了解 UI/UX 设计规范 | `design/UI-UX.md` | 设计 |
+| 开发 Phase 2 AI Agent | `design/PHASE2_AI_AGENT_DESIGN.md` | 设计 |
 
 ---
 
@@ -70,8 +71,9 @@ docs/
 │   ├── 04-growth-model.md            ← 增长变现：渠道·定价·营销·Freemium
 │   └── 05-risk-compliance.md         ← 风险合规：法律·伦理·隐私·成本
 │
-├── design/                           ← 🎨 设计层（UI/UX 规范）
-│   └── UI-UX.md                      ← 配色·字体·布局·组件·页面流
+├── design/                           ← 🎨 设计层（UI/UX + AI Agent 架构）
+│   ├── UI-UX.md                      ← 配色·字体·布局·组件·页面流
+│   └── PHASE2_AI_AGENT_DESIGN.md     ← Phase 2 AI Agent 架构（B→A→C 路径）
 │
 ├── tasks/                            ← 📌 执行层（任务状态机）
 │   ├── TODO.md                       ← 当前 Sprint Backlog（优先读取）
