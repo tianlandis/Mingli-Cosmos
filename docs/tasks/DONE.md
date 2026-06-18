@@ -15,7 +15,9 @@
 | **Sidebar 菜单** | 命理规则字典 已启用 (Library 图标 + NEW 徽章)，命理知识库 规划中 (BookOpen 图标 + 规划中 徽章) |
 | **技术架构** | KnowledgeProvider 5min TTL 缓存 + invalidateCache() 热刷新；VALID_CATEGORIES 白名单校验；Zod Schema 验证 |
 | **L3 护栏保护** | 全程未触碰 anti-hallucination.ts 核心模块，防幻觉机制 100% 保持可用 |
-| **VPS 全链路部署** | Git pull → docker compose down → up -d --build → 容器健康检查 → API/SSE 验证 |
+| **VPS 全链路部署** | Git pull → docker compose down → up -d --build → 容器健康检查 → API/SSE 验证 ✅ |
+| **SSE 流式修复** | 非流式模型(siliconflow DeepSeek-V3) fullStream 不含 text-delta chunk → result.text() Promise fallback 兜底 → SSE text-delta 成功推送 ✅ |
+| **SiliconFlow 接入** | 新增 ModelProvider='siliconflow' + PROVIDER_DEFAULTS/BaseUrl + loadConfig 自动推断 + 管理后台 PROVIDER_PRESETS 已就绪 |
 | **Phase 8 收尾** | 编译零错 ✅ 186 测试全绿 ✅ GitHub 推送 ✅ VPS 上线 ✅
 
 ## 2026-06-18 — v4.0.0 里程碑发布 + Phase 3 完成

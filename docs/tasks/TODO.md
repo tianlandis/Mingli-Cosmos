@@ -1,7 +1,7 @@
 # 📋 当前待办 — Sprint Backlog
 
 > **更新**: 2026-06-19 | **AI 每次任务优先读取本文件**
-> **Sprint**: Phase 8 ✅ 完成 → VPS 上线验证
+> **Sprint**: Phase 8 ✅ 完成 → VPS 上线验证 ✅ → Phase 9 规划
 
 ---
 
