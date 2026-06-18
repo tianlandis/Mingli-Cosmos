@@ -193,13 +193,14 @@ chatRoute.post('/api/chat', async (c) => {
                 console.log(`[Chat] finishReason=${fc.finishReason}`)
               }
               if (fc.text) fullText += fc.text
+              // DEBUG: log finish chunk keys
+              console.log(`[Chat DEBUG] finish chunk keys:`, Object.keys(fc).join(', '))
+              if (fc.text) console.log(`[Chat DEBUG] finish text length=${fc.text.length}`)
               break
             }
 
             default:
-              // start / start-step / text-start / text-end /
-              // tool-input-start/delta/end / step-finish / finish-step
-              // 这些生命周期事件不推送到前端
+              console.log(`[Chat DEBUG] unknown chunk type: ${chunk.type}, keys:`, Object.keys(chunk).join(', '))
               break
           }
         }
@@ -209,7 +210,9 @@ chatRoute.post('/api/chat', async (c) => {
         }
 
         // 兜底：非流式模型 → finish chunk 的 fc.text 未被 text-delta 推送
+        console.log(`[Chat DEBUG] fullText=${fullText.length} chars, toolCallCount=${toolCallCount}`)
         if (fullText && toolCallCount === 0) {
+          console.log(`[Chat DEBUG] enqueuing fallback text-delta`)
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ type: 'text-delta', textDelta: fullText })}\n\n`,
