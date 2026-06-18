@@ -14,6 +14,7 @@ import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { logger, requestLogger, configureLogger, rotateLogs, closeLogger } from './lib/logger'
+import { initDb, closeDb } from './db'
 
 const app = new Hono()
 
@@ -71,9 +72,11 @@ app.get('/api/health', (c) => {
 
 import { reportRoute } from './api/report'
 import { chatRoute } from './api/chat'
+import { adminRoute } from './api/admin'
 
 app.route('/', reportRoute)
 app.route('/', chatRoute)
+app.route('/api/admin', adminRoute)
 
 // ═══════════════════════════════════════
 // 生产模式：静态文件服务 + SPA 回退
@@ -88,6 +91,17 @@ if (isProduction) {
 
   // 静态资源（JS / CSS / 图片 / 字体）
   app.use('/assets/*', serveStatic({ root: distDir }))
+
+  // 管理后台静态文件
+  app.use('/admin/assets/*', serveStatic({ root: distDir }))
+  app.get('/admin', (c) => {
+    try {
+      const html = readFileSync(join(distDir, 'admin/index.html'), 'utf-8')
+      return c.html(html)
+    } catch {
+      return c.json({ error: 'ADMIN_NOT_BUILT' }, 500)
+    }
+  })
 
   // Favicon
   app.get('/favicon.svg', serveStatic({ root: distDir }))
@@ -123,6 +137,14 @@ app.onError((err, c) => {
 })
 
 // ═══════════════════════════════════════
+// 数据库初始化 (Phase 4A)
+// ═══════════════════════════════════════
+
+if (process.env.DB_ENABLED !== 'false') {
+  initDb()
+}
+
+// ═══════════════════════════════════════
 // 启动服务
 // ═══════════════════════════════════════
 
@@ -149,12 +171,14 @@ serve({ fetch: app.fetch, port }, (info) => {
 
 process.on('SIGTERM', () => {
   logger.info('server', '收到 SIGTERM，优雅关闭...')
+  closeDb()
   closeLogger()
   process.exit(0)
 })
 
 process.on('SIGINT', () => {
   logger.info('server', '收到 SIGINT，优雅关闭...')
+  closeDb()
   closeLogger()
   process.exit(0)
 })
