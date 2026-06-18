@@ -32,7 +32,6 @@ tests
 test-results
 playwright-report
 coverage
-vitest.config.ts
 
 # ── 文档（不进入镜像）──
 docs
