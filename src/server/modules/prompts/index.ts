@@ -12,6 +12,7 @@ import { logAudit } from '../../core/middleware/audit'
 import {
   listPrompts, getPrompt, createPrompt, updatePrompt, deletePrompt,
   listPromptVersions, getPromptVersion, createPromptVersion, getLatestVersion,
+  getConfig, setConfig, listApiKeys,
 } from '../../db'
 
 // ═══════════════════════════════════════
@@ -56,6 +57,204 @@ route.use('*', authMiddleware)
 route.get('/', (c) => {
   const prompts = listPrompts()
   return c.json({ success: true, data: prompts })
+})
+
+// ═══════════════════════════════════════
+// Phase 4.11 — 防幻觉 L3 护栏热编辑 API（必须在 /:id 之前注册）
+// GET  /prompts/guards — 获取当前 L1/L2 护栏规则
+// PUT  /prompts/guards — 保存并热更新
+// 存储：app_configs key='anti_hallucination_rules' (JSON)
+// ═══════════════════════════════════════
+
+const L1_RULE_NAMES = [
+  'corePositioning', 'toolAuthorization',
+  'rule0_noPaipan', 'rule1_dataLock', 'rule2_noAbsolute',
+  'rule3_safety', 'rule4_style', 'rule5_topicBoundary',
+] as const
+
+type L1RuleName = typeof L1_RULE_NAMES[number]
+
+interface GuardRuleItem {
+  name: L1RuleName
+  label: string
+  content: string
+}
+
+interface GuardsPayload {
+  l1Rules: GuardRuleItem[]
+  l1RejectMessage: string
+}
+
+const guardsBodySchema = z.object({
+  l1Rules: z.array(z.object({
+    name: z.enum(L1_RULE_NAMES),
+    label: z.string().min(1, '规则标题不可为空'),
+    content: z.string().min(1, '规则内容不可为空'),
+  })).length(L1_RULE_NAMES.length, `必须包含全部 ${L1_RULE_NAMES.length} 条 L1 规则`),
+  l1RejectMessage: z.string().min(1, '拒绝话术不可为空'),
+})
+
+// ---- GET /prompts/guards — 获取当前护栏规则 ----
+route.get('/guards', (c) => {
+  const row = getConfig('anti_hallucination_rules')
+  if (row) {
+    try {
+      const data = JSON.parse(row.value) as GuardsPayload
+      return c.json({ success: true, data, source: 'db', updatedAt: row.updatedAt })
+    } catch {
+      // DB 数据损坏 → 返回内置默认值
+    }
+  }
+
+  // 回退：返回内置默认（与 anti-hallucination.ts 同步）
+  const fallback = buildDefaultGuards()
+  return c.json({ success: true, data: fallback, source: 'builtin', updatedAt: null })
+})
+
+// ---- PUT /prompts/guards — 保存护栏规则 ----
+route.put('/guards', async (c) => {
+  let body: unknown
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST' } }, 400)
+  }
+
+  const parsed = guardsBodySchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; '),
+      },
+    }, 400)
+  }
+
+  const jsonValue = JSON.stringify(parsed.data)
+  const result = setConfig(
+    'anti_hallucination_rules',
+    jsonValue,
+    'L3 防幻觉护栏规则',
+    'L1 系统提示词 + L2 拒绝话术，热生效无需重启',
+    'json',
+    'security',
+  )
+
+  logAudit(c, {
+    action: 'update',
+    resource: 'config',
+    resourceId: result.id,
+    detail: JSON.stringify({ key: 'anti_hallucination_rules' }),
+  })
+
+  return c.json({
+    success: true,
+    data: parsed.data,
+    message: '护栏规则已保存，将在下一轮对话中自动生效',
+    updatedAt: result.updatedAt,
+  })
+})
+
+// ═══════════════════════════════════════
+// POST /prompts/debug — 实时调试端点（必须在 /:id 之前注册）
+// ═══════════════════════════════════════
+
+const debugBodySchema = z.object({
+  prompt: z.string().min(1, 'Prompt 内容不能为空'),
+  userInput: z.string().min(1, '用户输入不能为空'),
+  temperature: z.number().min(0).max(2).optional(),
+  topP: z.number().min(0).max(1).optional(),
+  maxTokens: z.number().int().min(1).max(32768).optional(),
+})
+
+route.post('/debug', async (c) => {
+  let body: unknown
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
+  }
+
+  const parsed = debugBodySchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message },
+    }, 400)
+  }
+
+  const { prompt, userInput, temperature: reqTemp, topP, maxTokens: reqMaxTokens } = parsed.data
+
+  // 查找活跃的 LLM Provider
+  const providers = listApiKeys().filter((p: any) => p.isActive === 1)
+  if (providers.length === 0) {
+    return c.json({
+      success: false,
+      error: { code: 'NO_PROVIDER', message: '没有可用的 LLM Provider，请先在 LLM 管理页配置' },
+    }, 400)
+  }
+
+  const provider = providers[0]
+  const baseUrl = provider.baseUrl || 'https://api.openai.com/v1'
+  const apiKey = provider.apiKey
+  const model = provider.model || 'gpt-4o'
+
+  const finalTemp = reqTemp ?? provider.temperature ?? 0.7
+  const finalTopP = topP ?? provider.topP ?? 1.0
+  const finalMaxTokens = reqMaxTokens ?? provider.maxTokens ?? 2048
+
+  try {
+    const llmBody: Record<string, any> = {
+      model,
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: userInput },
+      ],
+      temperature: finalTemp,
+      max_tokens: finalMaxTokens,
+    }
+    if (finalTopP !== undefined && finalTopP < 1.0) {
+      llmBody.top_p = finalTopP
+    }
+
+    const llmRes = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(llmBody),
+    })
+
+    if (!llmRes.ok) {
+      const errText = await llmRes.text()
+      return c.json({
+        success: false,
+        error: { code: 'LLM_ERROR', message: `LLM 返回错误 (${llmRes.status}): ${errText.slice(0, 200)}` },
+      }, 502)
+    }
+
+    const llmData = await llmRes.json() as any
+    const output = llmData.choices?.[0]?.message?.content || llmData.content || '(空响应)'
+
+    logAudit(c, {
+      action: 'debug',
+      resource: 'prompt_debug',
+      detail: JSON.stringify({ provider: provider.provider, model, inputLen: userInput.length, outputLen: output.length }),
+    })
+
+    return c.json({
+      success: true,
+      data: {
+        output,
+        model,
+        provider: provider.provider,
+        usage: llmData.usage || null,
+      },
+    })
+  } catch (e: any) {
+    return c.json({
+      success: false,
+      error: { code: 'LLM_ERROR', message: `调用 LLM 失败: ${e.message}` },
+    }, 502)
+  }
 })
 
 // ---- GET /prompts/:id — 获取单个模板 ----
@@ -204,103 +403,6 @@ route.delete('/:id', (c) => {
   deletePrompt(id)
   logAudit(c, { action: 'delete', resource: 'prompt', resourceId: id })
   return c.json({ success: true, data: { ok: true } })
-})
-
-// ═══════════════════════════════════════
-// Phase 4.11 — 防幻觉 L3 护栏热编辑 API
-// GET  /prompts/guards — 获取当前 L1/L2 护栏规则
-// PUT  /prompts/guards — 保存并热更新
-// 存储：app_configs key='anti_hallucination_rules' (JSON)
-// ═══════════════════════════════════════
-
-import { getConfig, setConfig } from '../../db'
-
-const L1_RULE_NAMES = [
-  'corePositioning', 'toolAuthorization',
-  'rule0_noPaipan', 'rule1_dataLock', 'rule2_noAbsolute',
-  'rule3_safety', 'rule4_style', 'rule5_topicBoundary',
-] as const
-
-type L1RuleName = typeof L1_RULE_NAMES[number]
-
-interface GuardRuleItem {
-  name: L1RuleName
-  label: string
-  content: string
-}
-
-interface GuardsPayload {
-  l1Rules: GuardRuleItem[]
-  l1RejectMessage: string
-}
-
-const guardsBodySchema = z.object({
-  l1Rules: z.array(z.object({
-    name: z.enum(L1_RULE_NAMES),
-    label: z.string().min(1, '规则标题不可为空'),
-    content: z.string().min(1, '规则内容不可为空'),
-  })).length(L1_RULE_NAMES.length, `必须包含全部 ${L1_RULE_NAMES.length} 条 L1 规则`),
-  l1RejectMessage: z.string().min(1, '拒绝话术不可为空'),
-})
-
-// ---- GET /prompts/guards — 获取当前护栏规则 ----
-route.get('/guards', (c) => {
-  const row = getConfig('anti_hallucination_rules')
-  if (row) {
-    try {
-      const data = JSON.parse(row.value) as GuardsPayload
-      return c.json({ success: true, data, source: 'db', updatedAt: row.updatedAt })
-    } catch {
-      // DB 数据损坏 → 返回内置默认值
-    }
-  }
-
-  // 回退：返回内置默认（与 anti-hallucination.ts 同步）
-  const fallback = buildDefaultGuards()
-  return c.json({ success: true, data: fallback, source: 'builtin', updatedAt: null })
-})
-
-// ---- PUT /prompts/guards — 保存护栏规则 ----
-route.put('/guards', async (c) => {
-  let body: unknown
-  try { body = await c.req.json() } catch {
-    return c.json({ success: false, error: { code: 'BAD_REQUEST' } }, 400)
-  }
-
-  const parsed = guardsBodySchema.safeParse(body)
-  if (!parsed.success) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; '),
-      },
-    }, 400)
-  }
-
-  const jsonValue = JSON.stringify(parsed.data)
-  const result = setConfig(
-    'anti_hallucination_rules',
-    jsonValue,
-    'L3 防幻觉护栏规则',
-    'L1 系统提示词 + L2 拒绝话术，热生效无需重启',
-    'json',
-    'security',
-  )
-
-  logAudit(c, {
-    action: 'update',
-    resource: 'config',
-    resourceId: result.id,
-    detail: JSON.stringify({ key: 'anti_hallucination_rules' }),
-  })
-
-  return c.json({
-    success: true,
-    data: parsed.data,
-    message: '护栏规则已保存，将在下一轮对话中自动生效',
-    updatedAt: result.updatedAt,
-  })
 })
 
 /**

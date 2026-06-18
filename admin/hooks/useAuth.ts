@@ -1,39 +1,32 @@
 import { useState, useCallback } from 'react'
+import { getToken, setToken, clearToken, api } from '../lib/api'
 
 interface AuthState {
   token: string | null
   isAuthenticated: boolean
 }
 
-const TOKEN_KEY = 'admin_token'
-
-function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
-}
-
 export function useAuth() {
   const [auth, setAuth] = useState<AuthState>(() => {
-    const token = getStoredToken()
+    const token = getToken()
     return { token, isAuthenticated: !!token }
   })
 
   const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch('/api/v1/admin/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.message || err.error?.message || '登录失败')
+    const res = await api.post<{ token: string }>('/api/v1/admin/auth/login', { username, password })
+    if (!res.success) {
+      throw new Error(res.error?.message || '登录失败')
     }
-    const data = await res.json()
-    localStorage.setItem(TOKEN_KEY, data.data.token)
-    setAuth({ token: data.data.token, isAuthenticated: true })
+    if (res.data?.token) {
+      setToken(res.data.token)
+      setAuth({ token: res.data.token, isAuthenticated: true })
+    } else {
+      throw new Error('登录响应缺少令牌')
+    }
   }, [])
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
+    clearToken()
     setAuth({ token: null, isAuthenticated: false })
   }, [])
 

@@ -3,6 +3,7 @@
 // 文件：admin/modules/prompts/GuardPanel.tsx
 // 职责：管理员可视化编辑 L1 系统提示词规则 + L2 拒绝话术
 //       保存后热生效，无需重启服务
+// ⚠️ Phase 8.1 修复：改用 api.ts 统一客户端，从 localStorage 自动注入 Token
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react'
@@ -20,6 +21,7 @@ import {
   Globe,
   MessageSquareOff,
 } from 'lucide-react'
+import { api } from '../../lib/api'
 
 // ═══════════════════════════════════════
 // 类型定义
@@ -34,10 +36,6 @@ interface GuardRuleItem {
 interface GuardsPayload {
   l1Rules: GuardRuleItem[]
   l1RejectMessage: string
-}
-
-interface GuardPanelProps {
-  apiHeaders: Record<string, string>
 }
 
 const API_BASE = '/api/v1/admin/prompts/guards'
@@ -117,7 +115,7 @@ const BUILTIN_DEFAULTS: GuardsPayload = {
 // GuardPanel 主组件
 // ═══════════════════════════════════════
 
-export default function GuardPanel({ apiHeaders }: GuardPanelProps) {
+export default function GuardPanel() {
   const [rules, setRules] = useState<GuardRuleItem[]>(BUILTIN_DEFAULTS.l1Rules)
   const [rejectMsg, setRejectMsg] = useState(BUILTIN_DEFAULTS.l1RejectMessage)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -129,19 +127,20 @@ export default function GuardPanel({ apiHeaders }: GuardPanelProps) {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
 
-  // ── 加载当前护栏配置 ──
+  // ── 加载当前护栏配置（api.ts 自动从 localStorage 注入 Bearer Token）──
   const loadGuards = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(API_BASE, { headers: apiHeaders })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success && json.data) {
+      const json = await api.get<GuardsPayload & { source: string; updatedAt: string | null }>(API_BASE)
+      if (!json.success) {
+        throw new Error(json.error?.message || `请求失败`)
+      }
+      if (json.data) {
         setRules(json.data.l1Rules)
         setRejectMsg(json.data.l1RejectMessage)
-        setSource(json.source || 'builtin')
-        setUpdatedAt(json.updatedAt || null)
+        setSource((json.data as any).source || json.source || 'builtin')
+        setUpdatedAt((json.data as any).updatedAt || json.updatedAt || null)
         setDirty(false)
       }
     } catch (e: any) {
@@ -149,30 +148,25 @@ export default function GuardPanel({ apiHeaders }: GuardPanelProps) {
     } finally {
       setLoading(false)
     }
-  }, [apiHeaders])
+  }, [])
 
   useEffect(() => {
     loadGuards()
   }, [loadGuards])
 
-  // ── 保存到后端 ──
+  // ── 保存到后端（api.ts 自动注入 Auth + Content-Type）──
   const handleSave = useCallback(async () => {
     setSaving(true)
     setError(null)
     setSuccessMsg(null)
     try {
       const payload: GuardsPayload = { l1Rules: rules, l1RejectMessage: rejectMsg }
-      const res = await fetch(API_BASE, {
-        method: 'PUT',
-        headers: { ...apiHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const json = await res.json()
+      const json = await api.put<GuardsPayload>(API_BASE, payload)
       if (!json.success) {
         throw new Error(json.error?.message || '保存失败')
       }
       setSuccessMsg(json.message || '护栏规则已保存')
-      setUpdatedAt(json.updatedAt || new Date().toISOString())
+      setUpdatedAt((json.data as any)?.updatedAt || new Date().toISOString())
       setSource('db')
       setDirty(false)
       setTimeout(() => setSuccessMsg(null), 4000)
@@ -181,7 +175,7 @@ export default function GuardPanel({ apiHeaders }: GuardPanelProps) {
     } finally {
       setSaving(false)
     }
-  }, [rules, rejectMsg, apiHeaders])
+  }, [rules, rejectMsg])
 
   // ── 重置为内置默认 ──
   const handleReset = useCallback(() => {

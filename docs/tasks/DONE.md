@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-06-19 — Phase 8：全掌控命理中台大基建
+
+| 任务 | 说明 |
+|------|------|
+| **知识字典引擎增强** | API 新增 `GET /api/v1/admin/knowledge/category/:category` 路径风格路由；KnowledgeDictPage 全面 Card 化 + 字段自解释说明 |
+| **OpenClaw 调优驾驶舱** | 验证 PROVIDER_PRESETS 参数自动同步机制完备：ProviderForm 自动填充 baseUrl/model、TuningPanel 自动加载 temp/topP/maxTokens/freqPenalty/personality |
+| **底层数据接口化** | famous_chart_compare 接入 KnowledgeProvider，从 knowledge_assets 动态加载名人命例；classic_search + web_search 已完整接入知识库检索链路 |
+| **全站 UI 工业级打磨** | ConfigPanel/AuditLog/KnowledgeDictPage 统一使用 shadcn Card 容器；所有表单字段统一 `text-[#6B6459] italic` 自解释说明 |
+| **Sidebar 菜单** | 命理规则字典 已启用 (Library 图标 + NEW 徽章)，命理知识库 规划中 (BookOpen 图标 + 规划中 徽章) |
+| **技术架构** | KnowledgeProvider 5min TTL 缓存 + invalidateCache() 热刷新；VALID_CATEGORIES 白名单校验；Zod Schema 验证 |
+| **L3 护栏保护** | 全程未触碰 anti-hallucination.ts 核心模块，防幻觉机制 100% 保持可用 |
+
 ## 2026-06-18 — v4.0.0 里程碑发布 + Phase 3 完成
 
 | 任务 | 说明 |

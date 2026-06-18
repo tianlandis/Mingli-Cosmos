@@ -109,8 +109,8 @@ function updateAdminPasswordHash(newHash: string): void {
 
 export const route = new Hono()
 
-// ---- POST /auth/login ----
-route.post('/auth/login', loginRateLimit(), async (c) => {
+// ---- POST /login ----
+route.post('/login', loginRateLimit(), async (c) => {
   let body: unknown
   try {
     body = await c.req.json()
@@ -159,16 +159,16 @@ route.post('/auth/login', loginRateLimit(), async (c) => {
   })
 })
 
-// ---- POST /auth/logout ----
-route.post('/auth/logout', authMiddleware, (c) => {
+// ---- POST /logout ----
+route.post('/logout', authMiddleware, (c) => {
   const user = c.get('adminUser')
   if (user?.jti) invalidateSession(user.jti)
   logAudit(c, { action: 'logout', resource: 'auth' })
   return c.json({ success: true, data: { message: '已退出登录' } })
 })
 
-// ---- PUT /auth/password —— 完整实现（DB 持久化）----
-route.put('/auth/password', authMiddleware, async (c) => {
+// ---- PUT /password —— 完整实现（DB 持久化）----
+route.put('/password', authMiddleware, async (c) => {
   let body: unknown
   try { body = await c.req.json() } catch {
     return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
@@ -217,14 +217,14 @@ route.put('/auth/password', authMiddleware, async (c) => {
   })
 })
 
-// ---- GET /auth/sessions —— 列出所有活跃会话 ----
-route.get('/auth/sessions', authMiddleware, (c) => {
+// ---- GET /sessions —— 列出所有活跃会话 ----
+route.get('/sessions', authMiddleware, (c) => {
   const sessions = listActiveSessions()
   return c.json({ success: true, data: sessions })
 })
 
-// ---- POST /auth/sessions/revoke —— 强制下线指定会话 ----
-route.post('/auth/sessions/revoke', authMiddleware, async (c) => {
+// ---- POST /sessions/revoke —— 强制下线指定会话 ----
+route.post('/sessions/revoke', authMiddleware, async (c) => {
   let body: unknown
   try { body = await c.req.json() } catch {
     return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)

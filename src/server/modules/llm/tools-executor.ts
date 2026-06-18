@@ -14,6 +14,7 @@ import { z } from 'zod'
 import { parseSupportedTools } from './tools-registry'
 import type { ToolDefinition } from './tools-registry'
 import { AVAILABLE_TOOLS } from './tools-registry'
+import { getCategory, query, formatAsContext } from '../../services/KnowledgeProvider'
 import * as https from 'node:https'
 import * as http from 'node:http'
 
@@ -326,7 +327,7 @@ const CLASSICS_DB: Record<string, string[]> = {
     '丁火十月："冬火微弱，急需甲木为助。甲木生丁，寒谷回春。更得庚金劈甲，为上格。"',
     // ── 癸水 ──
     '论癸水："癸水至弱，达于天津。得龙而运，功化斯神。癸水为雨露之水，至阴至柔。"',
-    '癸水七月："秋水通源，金白水清。取丙火调候，取辛金发源。丙辛两透，金水相涵。",
+    '癸水七月："秋水通源，金白水清。取丙火调候，取辛金发源。丙辛两透，金水相涵。"',
     '癸水十月："冬水汪洋，水冷金寒。取丙火暖局，取戊土制水。丙戊为尊，方可成器。"',
     // ── 丙火 ──
     '论丙火："丙火猛烈，欺霜侮雪。能锻庚金，逢辛反怯。丙火为太阳之火，普照万物，不可太过与不及。"',
@@ -369,6 +370,39 @@ async function executeClassicSearch(args: { query: string }) {
       }
     }
   }
+
+  // ── Phase 7 NEW: knowledge_assets 动态知识库检索 ──
+  try {
+    const knowledgeCategories = ['classics', 'shensha', 'personality', 'bazi', 'pattern']
+    for (const cat of knowledgeCategories) {
+      const catData = getCategory(cat)
+      for (const asset of catData.items) {
+        let relevance = 0
+        const searchTarget = `${asset.key} ${asset.description ?? ''} ${asset.value}`.toLowerCase()
+        if (searchTarget.includes(q)) {
+          relevance = 8
+          if (asset.key.toLowerCase().includes(q)) relevance = 12
+        } else {
+          const words = q.split(/\s+/).filter(w => w.length >= 1)
+          relevance = words.filter(w => searchTarget.includes(w)).length
+        }
+        if (relevance > 0) {
+          let snippet = asset.description || ''
+          try {
+            const parsed = JSON.parse(asset.value)
+            if (typeof parsed === 'object' && parsed !== null) {
+              snippet = `${asset.description ?? ''} ${JSON.stringify(parsed).slice(0, 200)}`
+            } else {
+              snippet = `${asset.description ?? ''} ${String(parsed).slice(0, 200)}`
+            }
+          } catch {
+            snippet = `${asset.description ?? ''} ${asset.value.slice(0, 200)}`
+          }
+          results.push({ source: `📚 知识资产·${cat}`, snippet: `[${asset.key}] ${snippet}`, relevance })
+        }
+      }
+    }
+  } catch { /* knowledge_assets 不可用时静默 fallback */ }
 
   // 当精确匹配结果很少时，对关键词做更宽松的匹配
   const highRelevanceResults = results.filter(r => r.relevance >= 10)
@@ -454,7 +488,36 @@ const FAMOUS_CHARTS: Array<{
 ]
 
 async function executeFamousChartCompare(args: { dayMaster?: string; pattern?: string }) {
-  const results = FAMOUS_CHARTS.filter(c => {
+  // ── Phase 8: 优先从 knowledge_assets 动态加载名人命例 ──
+  const kbCharts: typeof FAMOUS_CHARTS = []
+  try {
+    // 从 personality 和 pattern 分类加载可能包含命例的知识资产
+    for (const cat of ['personality', 'pattern']) {
+      const catData = getCategory(cat)
+      for (const asset of catData.items) {
+        try {
+          const parsed = JSON.parse(asset.value)
+          // 通过 pillars 字段判断是否为命例数据
+          if (parsed.pillars && parsed.dayMaster) {
+            kbCharts.push({
+              name: parsed.name || asset.key,
+              desc: parsed.desc || '',
+              era: parsed.era || '',
+              pillars: parsed.pillars,
+              dayMaster: parsed.dayMaster,
+              pattern: parsed.pattern || '',
+              keyFeatures: parsed.keyFeatures || '',
+            })
+          }
+        } catch { /* 跳过非 JSON 或格式不匹配的资产 */ }
+      }
+    }
+  } catch { /* knowledge_assets 不可用时静默回退 */ }
+
+  // 合并：知识库条目优先，硬编码兜底
+  const allCharts = [...kbCharts, ...FAMOUS_CHARTS]
+
+  const results = allCharts.filter(c => {
     if (args.dayMaster && !c.dayMaster.includes(args.dayMaster)) return false
     if (args.pattern && !c.pattern.includes(args.pattern)) return false
     return true
@@ -464,7 +527,8 @@ async function executeFamousChartCompare(args: { dayMaster?: string; pattern?: s
     filters: args,
     totalMatches: results.length,
     charts: results,
-    note: '以上命例来自历史记载和命理文献推算，仅作命理学习参考。每个八字都是独特的，不可简单类比。',
+    dynamicCount: kbCharts.length,
+    note: '以上命例来自知识库动态加载（可通过后台「命理规则字典」增删改）和历史记载推算，仅作命理学习参考。每个八字都是独特的，不可简单类比。',
   }
 }
 

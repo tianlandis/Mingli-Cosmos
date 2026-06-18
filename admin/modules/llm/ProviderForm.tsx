@@ -5,10 +5,11 @@
 // ============================================================
 
 import { useState, useEffect } from 'react'
-import { X, Key, Globe, Cpu, Thermometer, Hash } from 'lucide-react'
+import { X, Key, Globe, Cpu, Thermometer, Hash, HelpCircle, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 // ═══════════════════════════════════════
 // 类型
@@ -32,15 +33,15 @@ interface ProviderFormProps {
 }
 
 // ═══════════════════════════════════════
-// 预设 Provider
+// 预设 Provider（含推荐 Temperature，与 TuningPanel 保持一致）
 // ═══════════════════════════════════════
 
-const PROVIDER_PRESETS: Record<string, { baseUrl?: string; model?: string }> = {
-  openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
-  deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
-  siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V3' },
-  claude: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-20250514' },
-  local: { baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5-coder:7b' },
+const PROVIDER_PRESETS: Record<string, { baseUrl?: string; model?: string; temperature?: number }> = {
+  openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o', temperature: 0.7 },
+  deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', temperature: 0.3 },
+  siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V3', temperature: 0.5 },
+  claude: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-20250514', temperature: 0.7 },
+  local: { baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5-coder:7b', temperature: 0.8 },
   custom: {},
 }
 
@@ -69,6 +70,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [autoSynced, setAutoSynced] = useState<boolean>(false)
 
   const isEdit = !!initialData
 
@@ -94,7 +96,11 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
       provider: value,
       baseUrl: preset?.baseUrl ?? prev.baseUrl,
       model: preset?.model ?? prev.model,
+      temperature: preset?.temperature ?? prev.temperature,
     }))
+    // 闪动提示：自动同步完成
+    setAutoSynced(true)
+    setTimeout(() => setAutoSynced(false), 2000)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -170,13 +176,22 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </Select>
+            <div className="flex items-center gap-2">
+              <p className="text-[9px] text-[#4A4540]">选择 AI 服务商品牌，Base URL、推荐模型和 Temperature 将自动填入</p>
+              {autoSynced && (
+                <span className="inline-flex items-center gap-1 text-[8px] text-[#4D6BFE] bg-[#4D6BFE]/8 px-1.5 py-0.5 rounded-full border border-[#4D6BFE]/20 animate-pulse">
+                  <Sparkles size={8} />
+                  已自动填入
+                </span>
+              )}
+            </div>
           </div>
 
           {/* 显示名 */}
           <div className="space-y-1.5">
             <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
               <Key size={12} />
-              显示名称
+              显示名称 (Display Name)
             </Label>
             <Input
               value={form.label}
@@ -184,13 +199,14 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
               placeholder="如：SiliconFlow-DeepSeekV3"
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540]"
             />
+            <p className="text-[9px] text-[#4A4540]">在后台列表中展示的名称，方便区分不同供应商</p>
           </div>
 
           {/* API Key */}
           <div className="space-y-1.5">
             <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
               <Key size={12} />
-              API Key
+              API Key（接口密钥）
             </Label>
             <Input
               type="password"
@@ -199,27 +215,39 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
               placeholder={isEdit ? '留空则保留原 Key' : 'sk-...'}
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540]"
             />
+            <p className="text-[9px] text-[#4A4540]">
+              {isEdit ? '留空则保留当前密钥不修改；填入新值将覆盖原密钥' : '从 AI 服务商控制台获取的鉴权密钥，用于验证 API 调用身份'}
+            </p>
           </div>
 
           {/* Base URL */}
           <div className="space-y-1.5">
-            <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
-              <Globe size={12} />
-              Base URL
-            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Label className="text-[#A09888] text-xs flex items-center gap-1.5 cursor-help">
+                  <Globe size={12} />
+                  Base URL（接口地址）
+                  <HelpCircle size={10} className="text-[#4A4540]" />
+                </Label>
+              </TooltipTrigger>
+              <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
+                <p className="text-[10px]">AI 服务商的 API 端点地址（Endpoint）；支持 OpenAI 兼容接口以及本地 Ollama/vLLM 部署地址</p>
+              </TooltipContent>
+            </Tooltip>
             <Input
               value={form.baseUrl ?? ''}
               onChange={e => setForm(p => ({ ...p, baseUrl: e.target.value || undefined }))}
               placeholder="http://localhost:11434/v1"
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono text-xs"
             />
+            <p className="text-[9px] text-[#4A4540]">AI 服务商的 API 端点地址。切换供应商时自动填入推荐值，也可手动覆盖</p>
           </div>
 
           {/* 模型名 */}
           <div className="space-y-1.5">
             <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
               <Cpu size={12} />
-              默认模型
+              默认模型 (Default Model)
             </Label>
             <Input
               value={form.model ?? ''}
@@ -227,15 +255,24 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
               placeholder="qwen2.5-coder:14b"
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono text-xs"
             />
+            <p className="text-[9px] text-[#4A4540]">发给 LLM 的模型名称参数；不同供应商支持的模型列表不同，请查阅其文档</p>
           </div>
 
           {/* Temperature + MaxTokens 并排 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
-                <Thermometer size={12} />
-                Temperature
-              </Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label className="text-[#A09888] text-xs flex items-center gap-1.5 cursor-help">
+                    <Thermometer size={12} />
+                    Temperature（发散度）
+                    <HelpCircle size={10} className="text-[#4A4540]" />
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
+                  <p className="text-[10px]">值越大（如 0.8），AI 回答越发散有创意；值越小（如 0.2），回答越严谨保守。范围 0~2</p>
+                </TooltipContent>
+              </Tooltip>
               <Input
                 type="number"
                 step="0.1"
@@ -245,12 +282,21 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
                 onChange={e => setForm(p => ({ ...p, temperature: parseFloat(e.target.value) || 0.7 }))}
                 className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF]"
               />
+              <p className="text-[9px] text-[#4A4540]">切换供应商时自动填入推荐值。0~0.3 严谨保守，0.7~1.0 均衡，1.0~2.0 创意发散</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
-                <Hash size={12} />
-                Max Tokens
-              </Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label className="text-[#A09888] text-xs flex items-center gap-1.5 cursor-help">
+                    <Hash size={12} />
+                    Max Tokens（最大回复长度）
+                    <HelpCircle size={10} className="text-[#4A4540]" />
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
+                  <p className="text-[10px]">AI 单次输出最多能生成的 token 数量（约 1 token ≈ 0.7 个汉字）。值越大回复越完整但成本越高</p>
+                </TooltipContent>
+              </Tooltip>
               <Input
                 type="number"
                 step="256"
@@ -259,6 +305,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
                 onChange={e => setForm(p => ({ ...p, maxTokens: parseInt(e.target.value) || 2048 }))}
                 className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF]"
               />
+              <p className="text-[9px] text-[#4A4540]">单次回复最大 token 数。256~4096 适合对话，8192+ 适合长文分析</p>
             </div>
           </div>
 

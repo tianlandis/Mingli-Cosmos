@@ -13,6 +13,7 @@ import {
   Users,
   ShoppingCart,
   BookOpen,
+  Library,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -53,6 +54,12 @@ export const menuGroups: MenuGroup[] = [
         key: 'llm',
         label: 'LLM 供应商',
         icon: Cpu,
+      },
+      {
+        key: 'knowledge-dict',
+        label: '命理规则字典',
+        icon: Library,
+        badge: 'NEW',
       },
       {
         key: 'audit',

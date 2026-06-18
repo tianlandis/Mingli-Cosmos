@@ -21,7 +21,7 @@
 
 ---
 
-## 🟢 已完成（本 Sprint — v4.0.0 + Phase 3）
+## 🟢 已完成（本 Sprint — v4.0.0 + Phase 3 + Phase 8）
 
 | ID | 任务 | 轨道 | 完成日期 |
 |:---:|------|:---:|:--:|
@@ -39,6 +39,10 @@
 | — | **未来架构规划文档 (ARCHITECTURE-FUTURE.md)** | 设计轨 | 6/18 |
 | — | **动态双轨配置契约 (CONFIG-CONTRACT.md)** | 设计轨 | 6/18 |
 | — | **src/admin/ + src/server/db/ 目录结构规划** | 设计轨 | 6/18 |
+| — | **Phase 8 通用知识字典引擎 (Universal Dict Engine)** | 中台轨 | 6/19 |
+| — | **Phase 8 OpenClaw 风格 AI 调优驾驶舱** | 中台轨 | 6/19 |
+| — | **Phase 8 底层数据接口化 (KnowledgeProvider + Tools)** | 中台轨 | 6/19 |
+| — | **Phase 8 全站 UI 工业级质感 (Card 容器 + 自解释)** | 中台轨 | 6/19 |
 | UI-1~5 | P0 核心视觉重构全完成 | 设计轨 P0 | 6/17 |
 | UI-6 | 大运竖轴 | 设计轨 P1 | 6/18 |
 | UI-7 | 专题 Tab 化 | 设计轨 P1 | 6/18 |
@@ -75,15 +79,18 @@
 
 ---
 
-## 🚀 Phase 4: 动态配置与管理后台 ← 下一阶段
+## 🚀 Phase 9: 运营中台持续增强 ← 下一阶段
 
 | ID | 任务 | 
 |:---:|------|
-| M-1 | `src/admin/` 后台管理端 UI（React） |
-| M-2 | `src/server/db/` 数据库持久化模块（Drizzle + SQLite） |
-| M-3 | 动态双轨配置路由实现（DB优先 → .env 回退） |
-| M-4 | OpenClaw 风格 API Key 管理 + Prompt 模板编辑器 |
-| M-5 | 配置热更新机制 |
+| M-1 | `src/admin/` 后台管理端 UI（React） ← Phase 8 已完成 |
+| M-2 | `src/server/db/` 数据库持久化模块（Drizzle + SQLite） ← Phase 8 已完成 |
+| M-3 | 动态双轨配置路由实现（DB优先 → .env 回退） ← Phase 8 已完成 |
+| M-4 | OpenClaw 风格 API Key 管理 + Prompt 模板编辑器 ← Phase 8 已完成 |
+| M-5 | 配置热更新机制 ← Phase 8 已完成 |
+| M-6 | C 端用户管理模块 | 
+| M-7 | 订单与订阅管理 |
+| M-8 | 运营数据看板增强 (GA/埋点接入) |
 
 ---
 

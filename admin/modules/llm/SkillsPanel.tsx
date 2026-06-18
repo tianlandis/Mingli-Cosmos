@@ -36,8 +36,8 @@ interface SkillsPanelProps {
   providerId: number | null
   /** Provider 当前已激活的工具 Key 列表 */
   activeTools: string[]
-  /** API 请求头（含 JWT） */
-  apiHeaders: Record<string, string>
+  /** API 请求头工厂（含 JWT） */
+  apiHeaders: () => Record<string, string>
   /** 保存成功后回调 */
   onSaved?: () => void
 }
@@ -130,7 +130,7 @@ export default function SkillsPanel({
     let cancelled = false
     setRegistryLoading(true)
 
-    fetch('/api/v1/admin/llm/tools', { headers: apiHeaders })
+    fetch('/api/v1/admin/llm/tools', { headers: apiHeaders() })
       .then(r => r.json())
       .then(data => {
         if (!cancelled && data?.success && Array.isArray(data.data)) {
@@ -173,7 +173,7 @@ export default function SkillsPanel({
       const toolsArr = Array.from(localActive)
       const res = await fetch(`/api/v1/admin/llm/${providerId}/tools`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...apiHeaders },
+        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
         body: JSON.stringify({ supportedTools: toolsArr }),
       })
 

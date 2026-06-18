@@ -113,6 +113,23 @@ export const adminSessions = sqliteTable('admin_sessions', {
 })
 
 // ═══════════════════════════════════════
+// knowledge_assets [Phase 7 NEW] — 通用命理知识资产字典
+// ═══════════════════════════════════════
+
+export const knowledgeAssets = sqliteTable('knowledge_assets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  category: text('category').notNull(),             // 'classics' | 'shensha' | 'personality' | 'bazi' | 'pattern'
+  key: text('key').notNull(),                       // 唯一键名，如 'tianyi_gui_ren'、'INTJ'
+  value: text('value').notNull(),                   // JSON 值（结构化数据）
+  description: text('description'),                 // 中文说明
+  sortOrder: integer('sort_order').default(0),
+  version: integer('version').default(1),
+  isActive: integer('is_active').default(1),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
 // audit_logs — 管理后台操作审计
 // ═══════════════════════════════════════
 

@@ -1,13 +1,16 @@
+@import "tailwindcss";
+
 /* ============================================================
- * 墨白 管理后台 · 新中式暗色质感
- * 设计语言：墨底为纸 / 朱砂为印 / 金线为界 / 留白呼吸
+ * 墨白 管理后台 · 玄青朱砂 · 新中式暗色质感
+ * 设计语言：玄青为底 / 朱砂为印 / 金线为界 / 留白呼吸
  * ============================================================ */
 
-/* ═══ CSS 变量：全局暗色调色板 ═══ */
+/* ═══ CSS 变量：玄青暗色调色板 ═══ */
 :root {
-  --admin-bg: #12100E;
-  --admin-surface: #1A1816;
-  --admin-surface-raised: #211F1C;
+  --admin-bg: #0A1118;
+  --admin-bg-sidebar: #1A2332;
+  --admin-surface: #1A1F2E;
+  --admin-surface-raised: #222839;
   --admin-border: rgba(255, 255, 255, 0.06);
   --admin-border-raised: rgba(255, 255, 255, 0.10);
 
@@ -32,6 +35,16 @@
   --admin-radius-sm: 6px;
   --admin-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
   --admin-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.40);
+
+  /* shadcn/ui Card + 通用组件暗色变量 */
+  --background: #0A1118;
+  --foreground: #EDE8DF;
+  --card: #1A1F2E;
+  --card-foreground: #EDE8DF;
+  --muted: #1A2332;
+  --muted-foreground: #6B6459;
+  --border: rgba(255, 255, 255, 0.08);
+  --ring: #B8964A;
 
   font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
@@ -58,11 +71,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* ═══ 选择文字 ═══ */
@@ -93,4 +106,13 @@ body {
 }
 .animate-pulse-dot {
   animation: pulse-green 1.8s ease-in-out infinite;
+}
+
+/* ═══ 登录页专用动画 ═══ */
+@keyframes ink-spread {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-ink-spread {
+  animation: ink-spread 0.6s ease-out;
 }

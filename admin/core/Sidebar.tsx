@@ -1,7 +1,6 @@
 // ============================================================
-// Phase 4 — 侧边栏组件（新中式暗色质感）
+// Phase 4 — 侧边栏组件（玄青 · 朱砂 · 新中式暗色质感）
 // 文件：admin/core/Sidebar.tsx
-// 职责：渲染数据驱动菜单，disabled 项用 Tooltip 包裹并置灰
 // ============================================================
 
 import { menuGroups, type PageKey } from './menu.config'
@@ -11,7 +10,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, LogOut } from 'lucide-react'
 
 export interface SidebarProps {
   activePage: PageKey
@@ -23,9 +22,8 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
   return (
     <aside
       className={cn(
-        // 新中式暗色底座
         'w-60 h-screen flex flex-col shrink-0 select-none',
-        'bg-[#12100E] text-[#D8D2C8]',
+        'bg-[#1A2332] text-[#D8D2C8]',
         'border-r border-white/[0.06]',
       )}
     >
@@ -38,7 +36,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
               'size-8 flex items-center justify-center',
               'border-2 border-[#C04030] rounded-sm',
               'font-serif font-bold text-[#C04030] text-xs',
-              '-rotate-3',
+              '-rotate-3 shadow-[0_0_12px_rgba(192,64,48,0.15)]',
             )}
           >
             墨
@@ -57,13 +55,14 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
       {/* ═══ 导航区 ═══ */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
         {menuGroups.map((group) => (
-          <div key={group.label}>
+          <div key={group.label} className="flex flex-col">
             {/* 分组标头 */}
             <p className="px-3 mb-1.5 text-[10px] font-medium text-[#6B6459] uppercase tracking-[0.1em]">
               {group.label}
             </p>
 
-            <ul className="space-y-0.5">
+            {/* 导航项 — 使用 flex flex-col 替代 ul/li */}
+            <div className="flex flex-col gap-0.5">
               {group.items.map((item) => {
                 const isActive = activePage === item.key
                 const isDisabled = item.disabled ?? false
@@ -76,17 +75,18 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
                     }}
                     disabled={isDisabled}
                     className={cn(
-                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg',
+                      'flex items-center gap-2.5 px-3 py-2 rounded-lg w-full',
                       'text-sm transition-all duration-150',
                       'text-left outline-none',
                       // 激活态 - 朱砂色背景
                       isActive && [
-                        'bg-[#C04030]/20 text-[#E8A090]',
-                        'border border-[#C04030]/30',
+                        'bg-[#C04030]/15 text-[#E8A090]',
+                        'border border-[#C04030]/25',
+                        'shadow-[0_0_12px_rgba(192,64,48,0.1)]',
                       ],
                       // 禁用态 - 低对比度
                       isDisabled && [
-                        'text-[#4A453E] cursor-not-allowed',
+                        'text-[#4A4540] cursor-not-allowed',
                         'opacity-40',
                       ],
                       // 常态 hover
@@ -121,7 +121,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
                 // 禁用项用 Tooltip 包裹
                 if (isDisabled) {
                   return (
-                    <li key={item.key}>
+                    <div key={item.key}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="block">{link}</span>
@@ -129,21 +129,21 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
                         <TooltipContent
                           side="right"
                           className={cn(
-                            'bg-[#1C1914] text-[#D8D2C8]',
+                            'bg-[#222839] text-[#D8D2C8]',
                             'border border-white/[0.08]',
-                            'shadow-xl shadow-black/40',
+                            'shadow-xl shadow-black/40 rounded-lg',
                           )}
                         >
                           {item.disabledHint}
                         </TooltipContent>
                       </Tooltip>
-                    </li>
+                    </div>
                   )
                 }
 
-                return <li key={item.key}>{link}</li>
+                return <div key={item.key}>{link}</div>
               })}
-            </ul>
+            </div>
           </div>
         ))}
       </nav>
@@ -154,11 +154,11 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
           onClick={onLogout}
           className={cn(
             'w-full text-left text-xs text-[#6B6459]',
-            'hover:text-[#B8A898] transition-colors',
+            'hover:text-[#D06050] transition-colors duration-150',
             'flex items-center gap-2',
           )}
         >
-          <span className="text-[#C04030]">←</span>
+          <LogOut className="size-3" />
           退出登录
         </button>
       </div>

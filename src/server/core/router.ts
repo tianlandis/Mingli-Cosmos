@@ -7,7 +7,7 @@
 import { Hono } from 'hono'
 import { readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -46,7 +46,7 @@ export async function createAdminRouter(): Promise<Hono> {
   for (const moduleName of entries) {
     const indexPath = join(modulesDir, moduleName, 'index.ts')
     try {
-      const mod = await import(indexPath)
+      const mod = await import(pathToFileURL(indexPath).href)
 
       // 取出 router（支持 default export 或 named export 'route'）
       const subRouter: Hono | undefined = mod.default || mod.route

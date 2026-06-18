@@ -34,24 +34,54 @@ if (process.env.DB_ENABLED !== 'false') {
 
 const port = Number(process.env.SERVER_PORT) || 3001
 
-createApp({ isProduction, logEnabled }).then((app) => {
-  serve({ fetch: app.fetch, port }, (info) => {
-    const mode = isProduction ? 'production' : 'development'
-    logger.info('server', '服务器启动', {
-      port: info.port,
-      mode,
-      nodeVersion: process.version,
-      logEnabled,
+// ═══════════════════════════════════════
+// 启动辅助：带 TIME_WAIT 重试
+// ═══════════════════════════════════════
+
+function startServer(app: any, port: number, isProduction: boolean, retries = 10, delay = 3000) {
+  try {
+    const srv = serve({ fetch: app.fetch, port }, (info) => {
+      const mode = isProduction ? 'production' : 'development'
+      logger.info('server', '服务器启动', {
+        port: info.port,
+        mode,
+        nodeVersion: process.version,
+        logEnabled,
+      })
+      console.log(`[Server] Hono listening on http://localhost:${info.port}`)
+      console.log(`[Server] Mode: ${mode}`)
+      console.log(`[Server] Health:   http://localhost:${info.port}/api/health`)
+      console.log(`[Server] Admin V1: http://localhost:${info.port}/api/v1/admin/*`)
+      console.log(`[Server] Admin V0: http://localhost:${info.port}/api/admin/*  (DEPRECATED)`)
+      if (isProduction) {
+        console.log(`[Server] Frontend: http://localhost:${info.port}`)
+      }
     })
-    console.log(`[Server] Hono listening on http://localhost:${info.port}`)
-    console.log(`[Server] Mode: ${mode}`)
-    console.log(`[Server] Health:   http://localhost:${info.port}/api/health`)
-    console.log(`[Server] Admin V1: http://localhost:${info.port}/api/v1/admin/*`)
-    console.log(`[Server] Admin V0: http://localhost:${info.port}/api/admin/*  (DEPRECATED)`)
-    if (isProduction) {
-      console.log(`[Server] Frontend: http://localhost:${info.port}`)
+
+    srv.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE' && retries > 0) {
+        console.warn(`[Server] ⚠ 端口 ${port} 被占用(TIME_WAIT)，${delay/1000}s 后重试 (剩余 ${retries} 次)...`)
+        setTimeout(() => {
+          try { srv.close() } catch {}
+          startServer(app, port, isProduction, retries - 1, delay + 2000)
+        }, delay)
+        return
+      }
+      console.error('[Server] 致命错误:', err)
+      process.exit(1)
+    })
+  } catch (err: any) {
+    if (err.code === 'EADDRINUSE' && retries > 0) {
+      console.warn(`[Server] ⚠ 端口 ${port} 被占用(TIME_WAIT)，${delay/1000}s 后重试 (剩余 ${retries} 次)...`)
+      setTimeout(() => startServer(app, port, isProduction, retries - 1, delay + 2000), delay)
+      return
     }
-  })
+    throw err
+  }
+}
+
+createApp({ isProduction, logEnabled }).then((app) => {
+  startServer(app, port, isProduction)
 })
 
 // ═══════════════════════════════════════

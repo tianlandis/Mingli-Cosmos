@@ -100,6 +100,26 @@ export function runMigrations(sqlite: Database.Database) {
   safeAlter(sqlite, 'app_configs', "category TEXT DEFAULT 'general'")
 
   // ═══════════════════════════════════════
+  // Phase 7 NEW: 知识资产字典表
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS knowledge_assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      description TEXT,
+      sort_order INTEGER DEFAULT 0,
+      version INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_assets(category);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_key ON knowledge_assets(category, key);
+  `)
+
+  // ═══════════════════════════════════════
   // Phase 4 NEW: 全新表
   // ═══════════════════════════════════════
   sqlite.exec(`

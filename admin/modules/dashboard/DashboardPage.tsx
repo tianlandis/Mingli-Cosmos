@@ -1,7 +1,6 @@
 // ============================================================
-// Phase 4 — Dashboard 仪表盘页面
+// Phase 4 — Dashboard 仪表盘页面（玄青朱砂色板）
 // 文件：admin/modules/dashboard/DashboardPage.tsx
-// 职责：4 个核心指标卡片 + 新中式暗色数据可视化
 // ============================================================
 
 import { useEffect, useState, useCallback } from 'react'
@@ -22,6 +21,7 @@ import {
   Clock,
   Activity,
   HardDrive,
+  LayoutDashboard,
 } from 'lucide-react'
 
 // ═══════════════════════════════════════
@@ -82,15 +82,15 @@ function formatBytes(bytes: number): string {
 }
 
 function memoryColor(pct: number): string {
-  if (pct < 50) return 'bg-[#5B8C5A]'   // 松烟绿：安全
-  if (pct < 75) return 'bg-[#B8964A]'   // 金线：注意
-  return 'bg-[#C04030]'                 // 朱砂：紧张
+  if (pct < 50) return 'bg-[#5B8C5A]'
+  if (pct < 75) return 'bg-[#B8964A]'
+  return 'bg-[#C04030]'
 }
 
-function memoryBg(pct: number): string {
-  if (pct < 50) return 'bg-[#5B8C5A]/15'
-  if (pct < 75) return 'bg-[#B8964A]/15'
-  return 'bg-[#C04030]/15'
+function memoryTextColor(pct: number): string {
+  if (pct < 50) return 'text-[#5B8C5A]'
+  if (pct < 75) return 'text-[#B8964A]'
+  return 'text-[#C04030]'
 }
 
 // ═══════════════════════════════════════
@@ -113,9 +113,8 @@ function StatCard({
   return (
     <Card
       className={cn(
-        // 暗色卡片
-        'bg-[#1A1816] border-white/[0.06]',
-        'hover:border-white/[0.10] transition-colors duration-300',
+        'bg-[#1A1F2E] border-white/[0.06]',
+        'hover:border-white/[0.10] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300',
         className,
       )}
     >
@@ -154,13 +153,8 @@ function ServiceStatusCard({ stats }: { stats: DashboardStats }) {
   const isRunning = stats.dbStatus === 'connected'
 
   return (
-    <StatCard
-      icon={Server}
-      title="服务状态"
-      description={`PID ${stats.pid} · ${stats.nodeVersion}`}
-    >
+    <StatCard icon={Server} title="服务状态" description={`PID ${stats.pid} · ${stats.nodeVersion}`}>
       <div className="flex items-center gap-3 mb-3">
-        {/* 绿色脉冲点 */}
         <span className="relative flex size-3">
           <span className={cn(
             'absolute inline-flex h-full w-full rounded-full opacity-75',
@@ -171,29 +165,17 @@ function ServiceStatusCard({ stats }: { stats: DashboardStats }) {
             isRunning ? 'bg-[#5B8C5A]' : 'bg-[#D04040]',
           )} />
         </span>
-        <span className={cn(
-          'text-sm font-medium',
-          isRunning ? 'text-[#5B8C5A]' : 'text-[#D04040]',
-        )}>
+        <span className={cn('text-sm font-medium', isRunning ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
           {isRunning ? '运行中' : '异常'}
         </span>
       </div>
-
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-[#6B6459]">
-            <Clock className="size-3" />
-            运行时长
-          </span>
-          <span className="text-[#D8D2C8] font-mono tabular-nums">
-            {stats.uptimeHuman}
-          </span>
+          <span className="flex items-center gap-1.5 text-[#6B6459]"><Clock className="size-3" />运行时长</span>
+          <span className="text-[#D8D2C8] font-mono tabular-nums">{stats.uptimeHuman}</span>
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-[#6B6459]">
-            <Activity className="size-3" />
-            启动时间
-          </span>
+          <span className="flex items-center gap-1.5 text-[#6B6459]"><Activity className="size-3" />启动时间</span>
           <span className="text-[#A09888] font-mono tabular-nums text-[11px]">
             {new Date(stats.serverStartTime).toLocaleString('zh-CN')}
           </span>
@@ -209,48 +191,33 @@ function ServiceStatusCard({ stats }: { stats: DashboardStats }) {
 
 function MemoryCard({ stats }: { stats: DashboardStats }) {
   const pct = stats.memoryPercent
-  const barColor = memoryColor(pct)
 
   return (
-    <StatCard
-      icon={Cpu}
-      title="内存使用率"
-      description={pct >= 75 ? '注意：内存使用较高' : '堆内存监控'}
-    >
+    <StatCard icon={Cpu} title="内存使用率" description={pct >= 75 ? '注意：内存使用较高' : '堆内存监控'}>
       <div className="mb-3">
         <div className="flex justify-between items-baseline mb-2">
-          <span className={cn('text-2xl font-bold font-mono tabular-nums', {
-            'text-[#5B8C5A]': pct < 50,
-            'text-[#B8964A]': pct >= 50 && pct < 75,
-            'text-[#C04030]': pct >= 75,
-          })}>
+          <span className={cn('text-2xl font-bold font-mono tabular-nums', memoryTextColor(pct))}>
             {pct.toFixed(1)}%
           </span>
           <span className="text-[10px] text-[#6B6459]">
             {stats.memory.heapUsedMb.toFixed(1)} / {stats.memory.heapTotalMb.toFixed(1)} MB
           </span>
         </div>
-
         <Progress
           value={pct}
           max={100}
-          className="h-2 bg-white/[0.06]"
-          indicatorClassName={cn(barColor, 'shadow-sm')}
+          className="h-2 bg-white/[0.06] rounded-full"
+          indicatorClassName={cn(memoryColor(pct), 'shadow-sm rounded-full')}
         />
       </div>
-
       <div className="grid grid-cols-2 gap-2 text-[11px]">
-        <div className="flex justify-between px-2 py-1 rounded bg-white/[0.02]">
+        <div className="flex justify-between px-2 py-1 rounded bg-white/[0.03]">
           <span className="text-[#6B6459]">RSS</span>
-          <span className="text-[#D8D2C8] font-mono tabular-nums">
-            {stats.memory.rssMb.toFixed(1)} MB
-          </span>
+          <span className="text-[#D8D2C8] font-mono tabular-nums">{stats.memory.rssMb.toFixed(1)} MB</span>
         </div>
-        <div className="flex justify-between px-2 py-1 rounded bg-white/[0.02]">
+        <div className="flex justify-between px-2 py-1 rounded bg-white/[0.03]">
           <span className="text-[#6B6459]">External</span>
-          <span className="text-[#A09888] font-mono tabular-nums">
-            {formatBytes(stats.memory.external)}
-          </span>
+          <span className="text-[#A09888] font-mono tabular-nums">{formatBytes(stats.memory.external)}</span>
         </div>
       </div>
     </StatCard>
@@ -258,47 +225,27 @@ function MemoryCard({ stats }: { stats: DashboardStats }) {
 }
 
 // ═══════════════════════════════════════
-// 卡片三：DB 连接数
+// 卡片三：数据库
 // ═══════════════════════════════════════
 
 function DatabaseCard({ stats }: { stats: DashboardStats }) {
   return (
-    <StatCard
-      icon={Database}
-      title="数据库"
-      description={stats.dbType}
-    >
+    <StatCard icon={Database} title="数据库" description={stats.dbType}>
       <div className="flex items-center gap-2 mb-3">
-        <div className={cn(
-          'size-2 rounded-full',
-          stats.dbStatus === 'connected' ? 'bg-[#5B8C5A]' : 'bg-[#D04040]',
-        )} />
-        <span className={cn(
-          'text-sm',
-          stats.dbStatus === 'connected' ? 'text-[#5B8C5A]' : 'text-[#D04040]',
-        )}>
+        <div className={cn('size-2 rounded-full', stats.dbStatus === 'connected' ? 'bg-[#5B8C5A]' : 'bg-[#D04040]')} />
+        <span className={cn('text-sm', stats.dbStatus === 'connected' ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
           {stats.dbStatus === 'connected' ? '已连接' : '未连接'}
         </span>
       </div>
-
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-[#6B6459]">
-            <Activity className="size-3" />
-            活跃会话
-          </span>
-          <span className={cn(
-            'text-sm font-bold font-mono tabular-nums',
-            stats.activeSessions > 0 ? 'text-[#B8964A]' : 'text-[#D8D2C8]',
-          )}>
+          <span className="flex items-center gap-1.5 text-[#6B6459]"><Activity className="size-3" />活跃会话</span>
+          <span className={cn('text-sm font-bold font-mono tabular-nums', stats.activeSessions > 0 ? 'text-[#B8964A]' : 'text-[#D8D2C8]')}>
             {stats.activeSessions}
           </span>
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-[#6B6459]">
-            <HardDrive className="size-3" />
-            库文件大小
-          </span>
+          <span className="flex items-center gap-1.5 text-[#6B6459]"><HardDrive className="size-3" />库文件大小</span>
           <span className="text-[#A09888] font-mono tabular-nums">
             {stats.dbSizeMb > 0 ? `${stats.dbSizeMb.toFixed(2)} MB` : '—'}
           </span>
@@ -314,29 +261,21 @@ function DatabaseCard({ stats }: { stats: DashboardStats }) {
 
 function AuditSummaryCard({ stats }: { stats: DashboardStats }) {
   return (
-    <StatCard
-      icon={FileText}
-      title="审计日志"
-      description="操作记录概览"
-    >
+    <StatCard icon={FileText} title="审计日志" description="操作记录概览">
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col items-center py-2 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-          <span className="text-2xl font-bold font-mono tabular-nums text-[#D8D2C8]">
+        <div className="flex flex-col items-center py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
+          <span className="text-2xl font-bold font-mono tabular-nums text-[#EDE8DF]">
             {stats.auditCount.toLocaleString()}
           </span>
           <span className="text-[10px] text-[#6B6459] mt-1">总计</span>
         </div>
-        <div className="flex flex-col items-center py-2 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-          <span className={cn(
-            'text-2xl font-bold font-mono tabular-nums',
-            stats.auditToday > 0 ? 'text-[#B8964A]' : 'text-[#6B6459]',
-          )}>
+        <div className="flex flex-col items-center py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
+          <span className={cn('text-2xl font-bold font-mono tabular-nums', stats.auditToday > 0 ? 'text-[#B8964A]' : 'text-[#6B6459]')}>
             {stats.auditToday.toLocaleString()}
           </span>
           <span className="text-[10px] text-[#6B6459] mt-1">今日新增</span>
         </div>
       </div>
-
       {stats.auditToday > 0 && (
         <p className="text-[10px] text-[#6B6459] mt-3 text-center">
           今日有 {stats.auditToday} 条操作记录
@@ -347,10 +286,36 @@ function AuditSummaryCard({ stats }: { stats: DashboardStats }) {
 }
 
 // ═══════════════════════════════════════
+// Feature Badge
+// ═══════════════════════════════════════
+
+function FeatureBadge({
+  emoji, label, value, detail,
+}: {
+  emoji: string
+  label: string
+  value: string
+  status?: 'active' | 'inactive'
+  detail: string
+}) {
+  return (
+    <div className="bg-[#222839] border border-white/[0.04] rounded-lg p-3.5 hover:bg-[#2A3040] hover:border-white/[0.08] transition-all duration-200">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-base">{emoji}</span>
+        <span className="text-[11px] text-[#6B6459]">{label}</span>
+        <div className="ml-auto size-1.5 rounded-full bg-[#5B8C5A]" />
+      </div>
+      <div className="text-sm font-bold text-[#EDE8DF] mb-1.5">{value}</div>
+      <p className="text-[10px] text-[#6B6459] leading-relaxed line-clamp-2">{detail}</p>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════
 // 主页面
 // ═══════════════════════════════════════
 
-const REFRESH_INTERVAL = 15_000 // 15秒自动刷新
+const REFRESH_INTERVAL = 15_000
 
 export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -376,15 +341,13 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
   if (!stats && !error) {
     return (
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-[#D8D2C8] tracking-[0.04em]">
-          仪表盘
-        </h2>
+        <div className="flex items-center gap-2.5">
+          <LayoutDashboard size={20} className="text-[#B8964A]" />
+          <h2 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-[#1A1816] border border-white/[0.04] rounded-xl p-6 animate-pulse"
-            >
+            <div key={i} className="bg-[#1A1F2E] border border-white/[0.04] rounded-xl p-6 animate-pulse">
               <div className="h-4 w-20 bg-white/[0.04] rounded mb-4" />
               <div className="h-8 w-16 bg-white/[0.04] rounded" />
             </div>
@@ -398,10 +361,11 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-[#D8D2C8] tracking-[0.04em]">
-          仪表盘
-        </h2>
-        <Card className="bg-[#1A1816] border-[#D04040]/20">
+        <div className="flex items-center gap-2.5">
+          <LayoutDashboard size={20} className="text-[#B8964A]" />
+          <h2 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+        </div>
+        <Card className="bg-[#1A1F2E] border-[#D04040]/20">
           <CardContent className="py-8 text-center">
             <p className="text-[#D04040] text-sm">无法获取统计数据：{error}</p>
             <button
@@ -422,20 +386,17 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#D8D2C8] tracking-[0.04em]">
-            仪表盘
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <LayoutDashboard size={20} className="text-[#B8964A]" />
+            <h2 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+          </div>
           <p className="text-xs text-[#6B6459] mt-1">
             刷新间隔 15s · 最后更新 {new Date(stats!.timestamp).toLocaleTimeString('zh-CN')}
           </p>
         </div>
         <button
           onClick={load}
-          className={cn(
-            'px-3 py-1.5 rounded-lg text-xs',
-            'bg-white/[0.03] border border-white/[0.06] text-[#A09888]',
-            'hover:bg-white/[0.06] hover:text-[#D8D2C8] transition-colors',
-          )}
+          className="px-3 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-white/[0.06] text-[#A09888] hover:bg-white/[0.06] hover:text-[#D8D2C8] transition-colors"
         >
           刷新
         </button>
@@ -450,67 +411,22 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
       </div>
 
       {/* Phase 4 功能状态面板 */}
-      <div className="bg-[#1A1816] border border-white/[0.04] rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-[#D8D2C8] tracking-[0.04em] mb-4">
-          🔮 Phase 4 系统功能矩阵
+      <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em] mb-4 flex items-center gap-2">
+          <span className="size-1.5 rounded-full bg-[#B8964A]" />
+          Phase 4 系统功能矩阵
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <FeatureBadge
-            emoji="🗄️"
-            label="数据持久层"
-            value="8 张表"
-            status="active"
-            detail="api_keys / prompt_templates / versions / app_configs / sessions / admin_sessions / audit_logs / module_settings"
-          />
-          <FeatureBadge
-            emoji="🔧"
-            label="满血工具系统"
-            value="5 大工具"
-            status="active"
-            detail="solar_term_calc / calendar_lookup / classic_search / famous_chart_compare / web_search"
-          />
-          <FeatureBadge
-            emoji="🛡️"
-            label="L3 防幻觉护栏"
-            value="热编辑"
-            status="active"
-            detail="L1 8条规则提示词 + L2 排盘拦截 + L3 管理后台热配置"
-          />
-          <FeatureBadge
-            emoji="🤖"
-            label="Multi-Agent"
-            value="4 Agent"
-            status="active"
-            detail="Router(qwen2.5:7b) → 墨言(性格) / 墨行(事业) / 墨缘(婚姻) / 墨白(综合)"
-          />
+          <FeatureBadge emoji="🗄️" label="数据持久层" value="8 张表"
+            detail="api_keys / prompt_templates / versions / app_configs / sessions / admin_sessions / audit_logs / module_settings" />
+          <FeatureBadge emoji="🔧" label="满血工具系统" value="5 大工具"
+            detail="solar_term_calc / calendar_lookup / classic_search / famous_chart_compare / web_search" />
+          <FeatureBadge emoji="🛡️" label="L3 防幻觉护栏" value="热编辑"
+            detail="L1 8条规则提示词 + L2 排盘拦截 + L3 管理后台热配置" />
+          <FeatureBadge emoji="🤖" label="Multi-Agent" value="4 Agent"
+            detail="Router(qwen2.5:7b) → 墨言(性格) / 墨行(事业) / 墨缘(婚姻) / 墨白(综合)" />
         </div>
       </div>
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════
-// Phase 4 功能状态徽章
-// ═══════════════════════════════════════
-
-function FeatureBadge({
-  emoji, label, value, status, detail,
-}: {
-  emoji: string
-  label: string
-  value: string
-  status: 'active' | 'inactive'
-  detail: string
-}) {
-  return (
-    <div className="bg-[#211F1C] border border-white/[0.04] rounded-lg p-3.5 hover:bg-[#282420] transition-colors">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-base">{emoji}</span>
-        <span className="text-[11px] text-[#6B6459]">{label}</span>
-        <div className={`ml-auto size-1.5 rounded-full ${status === 'active' ? 'bg-[#5B8C5A]' : 'bg-[#A09888]/30'}`} />
-      </div>
-      <div className="text-sm font-bold text-[#D8D2C8] mb-1.5">{value}</div>
-      <p className="text-[10px] text-[#6B6459] leading-relaxed line-clamp-2">{detail}</p>
     </div>
   )
 }

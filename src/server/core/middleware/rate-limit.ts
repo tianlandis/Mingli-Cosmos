@@ -56,16 +56,17 @@ const userStore = new Map<string, AttemptRecord>()
 let activeRequests = 0
 
 // 定期清理过期记录（每 5 分钟）
+// 使用 schema 默认值：ipWindowSec=900s, userWindowSec=3600s
+const DEFAULT_IP_WINDOW_MS = 900 * 1000
+const DEFAULT_USER_WINDOW_MS = 3600 * 1000
+const MAX_WINDOW_MS = Math.max(DEFAULT_IP_WINDOW_MS, DEFAULT_USER_WINDOW_MS)
+
 setInterval(() => {
   const now = Date.now()
-  const maxWindow = Math.max(
-    rateLimitConfigSchema.shape.ipWindowSec._def.defaultValue() * 1000,
-    rateLimitConfigSchema.shape.userWindowSec._def.defaultValue() * 1000,
-  )
 
   for (const store of [ipStore, userStore]) {
     for (const [key, record] of store) {
-      record.timestamps = record.timestamps.filter(t => now - t < maxWindow)
+      record.timestamps = record.timestamps.filter(t => now - t < MAX_WINDOW_MS)
       if (record.timestamps.length === 0) store.delete(key)
       else record.earliestTime = record.timestamps[0]
     }
