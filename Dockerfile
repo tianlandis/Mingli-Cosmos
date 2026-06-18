@@ -13,7 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
 # 复制源码并构建
-COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts vitest.config.ts index.html ./
+COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts index.html ./
 COPY src/ ./src/
 COPY public/ ./public/
 RUN npm run build
