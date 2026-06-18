@@ -43,13 +43,22 @@ export function createModel(config: LLMConfig): LanguageModelV1 {
 
 /** 从环境变量构建 LLMConfig */
 export function loadConfig(): LLMConfig {
-  const provider = (process.env.LLM_PROVIDER ?? 'local') as ModelProvider
-  const apiKey = process.env.LLM_API_KEY ?? 'ollama'
+  // 兼容两种命名：LLM_API_KEY 优先，回退到 OPENAI_API_KEY
+  const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || 'ollama'
+  const baseUrl = process.env.LLM_BASE_URL || process.env.OPENAI_API_BASE
+  const model = process.env.LLM_MODEL || process.env.OPENAI_MODEL
+
+  // 自动推断 provider：有 OPENAI_API_KEY 且非本地 baseUrl → openai
+  const explicitProvider = process.env.LLM_PROVIDER as ModelProvider | undefined
+  const provider: ModelProvider = explicitProvider ?? (
+    (apiKey !== 'ollama' && baseUrl && !baseUrl.includes('localhost')) ? 'openai' : 'local'
+  )
+
   return {
     provider,
     apiKey,
-    baseUrl: process.env.LLM_BASE_URL,
-    model: process.env.LLM_MODEL,
+    baseUrl,
+    model,
     temperature: process.env.LLM_TEMPERATURE ? Number(process.env.LLM_TEMPERATURE) : undefined,
     maxTokens: process.env.LLM_MAX_TOKENS ? Number(process.env.LLM_MAX_TOKENS) : undefined,
   }
