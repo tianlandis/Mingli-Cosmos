@@ -55,18 +55,10 @@ async function calculateBaziFromLunarImpl(
   const { Lunar } = await import('lunar-typescript')
 
   // 构建农历对象
-  let lunar: Lunar
-  if (isLeapMonth) {
-    // 闰月处理：使用 Lunar.fromYmd 创建后再用 leap 属性标记
-    lunar = Lunar.fromYmd(lunarYear, lunarMonth, lunarDay)
-    // 尝试通过内部机制标记闰月（lunar-typescript 可能通过月份偏移处理）
-    const lunarAny = lunar as unknown as Record<string, unknown>
-    if (typeof lunarAny['setLeapMonth'] === 'function') {
-      (lunarAny['setLeapMonth'] as (m: number) => void)(lunarMonth)
-    }
-  } else {
-    lunar = Lunar.fromYmd(lunarYear, lunarMonth, lunarDay)
-  }
+  // lunar-typescript 内部使用负数月份表示闰月，fromYmdHms 原生支持
+  // 关键修复：之前使用 fromYmd() 丢失了 hour/minute，导致所有农历八字时柱都是子时
+  const effectiveMonth = isLeapMonth ? -lunarMonth : lunarMonth
+  const lunar = Lunar.fromYmdHms(lunarYear, effectiveMonth, lunarDay, hour, minute, 0)
 
   const eightChar = lunar.getEightChar()
   // 通过 Solar.fromLunar 获取对应的公历日期（用于年龄计算等）

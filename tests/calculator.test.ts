@@ -123,3 +123,45 @@ describe('五行属性', () => {
     expect(WUXING_LIST).toEqual(['金', '木', '水', '火', '土'])
   })
 })
+
+// ═══════════════════════════════════════════
+// 农历八字时柱正确性（回归测试：修复 fromYmd → fromYmdHms）
+// ═══════════════════════════════════════════
+describe('农历八字时辰计算（Bug 回归：hour/minute 不应丢失）', () => {
+  it('农历 1951年6月18日 午时(11:00) → 时柱应为丙午，非庚子', async () => {
+    const { calculateBaziFromLunar } = await import('../src/engine/calculator')
+    const result = await calculateBaziFromLunar(1951, 6, 18, 11, 0, '男', false)
+    const hourGZ = result.hourPillar.stem + result.hourPillar.branch
+    expect(hourGZ).toBe('丙午')
+  })
+
+  it('农历 1951年6月18日 子时(0:00) → 时柱应为庚子', async () => {
+    const { calculateBaziFromLunar } = await import('../src/engine/calculator')
+    const result = await calculateBaziFromLunar(1951, 6, 18, 0, 0, '男', false)
+    const hourGZ = result.hourPillar.stem + result.hourPillar.branch
+    expect(hourGZ).toBe('庚子')
+  })
+
+  it('农历 1951年6月18日 卯时(5:00) → 时柱应为癸卯', async () => {
+    const { calculateBaziFromLunar } = await import('../src/engine/calculator')
+    const result = await calculateBaziFromLunar(1951, 6, 18, 5, 0, '男', false)
+    const hourGZ = result.hourPillar.stem + result.hourPillar.branch
+    expect(hourGZ).toBe('癸卯')
+  })
+
+  it('农历 1951年6月18日 亥时(21:00) → 时柱应为辛亥', async () => {
+    const { calculateBaziFromLunar } = await import('../src/engine/calculator')
+    const result = await calculateBaziFromLunar(1951, 6, 18, 21, 0, '男', false)
+    const hourGZ = result.hourPillar.stem + result.hourPillar.branch
+    expect(hourGZ).toBe('辛亥')
+  })
+
+  it('公历路径不受影响：2000-01-01 午时 → 时柱正确', async () => {
+    const { calculateBazi } = await import('../src/engine/calculator')
+    const result = await calculateBazi(2000, 1, 1, 11, 0, '男')
+    const hourGZ = result.hourPillar.stem + result.hourPillar.branch
+    expect(hourGZ).toBeTruthy()
+    // 确保不是子时
+    expect(hourGZ).not.toBe('庚子')
+  })
+})
