@@ -129,7 +129,12 @@ export async function createApp(options: AppOptions): Promise<Hono> {
   // 全局错误处理
   // ═══════════════════════════════════════
   app.onError((err, c) => {
-    logger.error('server', '未捕获异常', err)
+    // 输出完整错误栈到 console + 结构化日志
+    console.error('[Server] 未捕获异常:', err instanceof Error ? err.message : String(err))
+    if (err instanceof Error && err.stack) {
+      console.error(err.stack)
+    }
+    logger.error('server', '未捕获异常', err instanceof Error ? err : String(err))
     return c.json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: '服务暂不可用，请稍后重试' },

@@ -71,6 +71,16 @@ chatRoute.post('/api/chat', async (c) => {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 chart 或 annotation 字段' }, 400)
   }
 
+  // 校验 chart 结构完整性（必须有 yearPillar + dayMaster 等排盘核心字段）
+  if (!body.chart.yearPillar || !body.chart.dayMaster) {
+    return c.json({
+      error: 'BAD_REQUEST',
+      message: 'chart 必须包含完整八字排盘结果',
+      hint: '请先调用 POST /api/report 完成排盘后，将返回的 chart + annotation 传入 /api/chat',
+      required: ['yearPillar', 'monthPillar', 'dayPillar', 'hourPillar', 'dayMaster'],
+    }, 400)
+  }
+
   if (!body.messages || body.messages.length === 0) {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 messages 字段' }, 400)
   }
@@ -243,6 +253,13 @@ chatRoute.post('/api/chat/route', async (c) => {
 
   if (!body.chart || !body.annotation) {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 chart 或 annotation 字段' }, 400)
+  }
+  if (!body.chart.yearPillar || !body.chart.dayMaster) {
+    return c.json({
+      error: 'BAD_REQUEST',
+      message: 'chart 必须包含完整八字排盘结果',
+      hint: '请先调用 POST /api/report 完成排盘后，将返回的 chart + annotation 传入 /api/chat/route',
+    }, 400)
   }
   if (!body.messages || body.messages.length === 0) {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 messages 字段' }, 400)
