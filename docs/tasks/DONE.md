@@ -4,7 +4,7 @@
 
 ---
 
-## 2026-06-18 — v4.0.0 里程碑发布
+## 2026-06-18 — v4.0.0 里程碑发布 + Phase 3 完成
 
 | 任务 | 说明 |
 |------|------|
@@ -16,9 +16,13 @@
 | **专题 Tab** | TopicTabs 六个专题水平切换 (UI-7) |
 | **ChatPanel** | SSE 流式对话 Copilot，逐字增量渲染 |
 | **品牌升级** | 项目更名为"数字命理推演引擎"，README 重写 |
+| **仓库迁移** | bazipaipan → Mingli-Cosmos，orphan 初始提交，敏感文档净化 |
 | **Dockerfile** | 多阶段构建：build → 极简生产镜像 |
 | **docker-compose.yml** | 端口映射 3001:3001，.env volumes 挂载，restart: always |
 | **Nginx 配置** | SSE 流式代理优化（proxy_buffering off + chunked_transfer_encoding on） |
+| **生产日志系统** | `src/server/lib/logger.ts`：结构化 JSON、请求耗时中间件、每日轮转、7天清理 |
+| **增强健康检查** | `/api/health` 返回 uptime/memory/node_version/env 7 指标 |
+| **Phase 3 全量验证** | build ✅ health ✅ static ✅ SPA ✅ SSE ✅ logs ✅ (8 项全通过) |
 | **路线图更新** | 双轨演进 v4.0.0+ 版本，Phase 0-6 + P0-P2 全更新 |
 | **未来架构规划** | `arch/ARCHITECTURE-FUTURE.md` + `arch/CONFIG-CONTRACT.md` |
 | **src/admin/ + db/** | Phase 4 管理后台 + 数据库持久化目录结构规划 |

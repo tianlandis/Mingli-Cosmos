@@ -3,7 +3,7 @@
 > **来源**: `ProjectPlan.md` §二 + §七 + `design/UI_DESIGN_RECOMMENDATIONS.md`
 > **用途**: 功能规划唯一来源，按阶段追踪
 > **更新频率**: 月级（每完成一个 Phase 更新一次）
-> **最后更新**: 2026-06-18（v4.0.0 容器化架构升级版）
+> **最后更新**: 2026-06-18（Phase 3 完成，转向 Phase 4）
 
 ---
 
@@ -16,10 +16,10 @@
 功能轨（引擎 + AI）                       设计轨（UI/UX 数字命书）
 ------------------                       -----------------------
 Phase 0  [✅] 基础排盘                    P0  [✅] 核心视觉重构 (v3.0 基础落成)
-Phase 1  [✅] 结构化批注                  P1  [⏳] 品质提升 & UI 重塑 ← 当前推进
-Phase 2  [✅] AI 深度集成 (本地/流式)      │   └─ 承接 P0 未尽任务，全面翻新简陋 UI
-Phase 3  [⏳] Docker 容器化与公网测试      P2  [ ] 细节打磨与动效适配
-Phase 4  [ ] 动态配置与管理后台 (OpenClaw)
+Phase 1  [✅] 结构化批注                  P1  [✅] 大运竖轴 + 专题Tab 完成
+Phase 2  [✅] AI 深度集成 (本地/流式)      │   └─ UI-6 LuckTimeline + UI-7 TopicTabs
+Phase 3  [✅] Docker 容器化 + 生产日志     P2  [ ] 细节打磨与动效适配
+Phase 4  [⏳] 动态配置与管理后台 ← 当前推进
 Phase 5  [ ] 移动端 + 增长
 Phase 6  [ ] 高级功能 + 生态
 ====================================================================
@@ -99,21 +99,24 @@ Phase 6  [ ] 高级功能 + 生态
 
 ---
 
-## Phase 3：Docker 容器化与公网测试 ⏳ 当前推进
+## Phase 3：Docker 容器化与公网测试 ✅ 已完成
 
 | ID | 任务 | 说明 | 状态 |
 |:---:|------|------|:--:|
 | D-1 | **Dockerfile 多阶段构建** | 第一阶段 npm run build → 第二阶段仅保留 dist/ + 生产依赖 | ✅ |
 | D-2 | **docker-compose.yml** | 端口映射 :3001, .env volumes 挂载, restart: always | ✅ |
 | D-3 | **Nginx 反向代理** | SSE 流式专项优化 (proxy_buffering off + chunked_transfer_encoding on) | ✅ |
-| D-4 | 测试域名绑定 + SSL 证书 | Let's Encrypt / acme.sh 自动续签 | ⬜ |
-| D-5 | Linux VPS 部署验证 | 两行命令拉起容器测试 | ⬜ |
-| D-6 | 公网流式对话体验验收 | 延迟、吞吐、并发压力测试 | ⬜ |
-| D-7 | 生产日志与监控 | 容器日志收集 + 健康检查告警 | ⬜ |
+| D-7 | **生产日志与监控** | 结构化 JSON 日志 + 请求耗时中间件 + 每日轮转 + 7天清理 | ✅ |
+| D-4 | 测试域名绑定 + SSL 证书 | Let's Encrypt / acme.sh 自动续签 | ⏸️ 待VPS |
+| D-5 | Linux VPS 部署验证 | 两行命令拉起容器测试 | ⏸️ 待VPS |
+| D-6 | 公网流式对话体验验收 | 延迟、吞吐、并发压力测试 | ⏸️ 待VPS |
+
+> **本地等价验证**（2026-06-18）：build ✅ health ✅ static ✅ SPA ✅ SSE(327 chunks) ✅ logs(8 lines) ✅ — 7/7 通过。
+> D-4~D-6 需真实 Linux VPS，Docker 镜像/编排/日志/SSE 均已就绪，VPS 就位后一键上线。
 
 ---
 
-## Phase 4：动态配置与管理后台 ⬜ 规划中
+## Phase 4：动态配置与管理后台 ⏳ 当前推进
 
 | ID | 任务 | 说明 |
 |:---:|------|------|
