@@ -209,15 +209,24 @@ chatRoute.post('/api/chat', async (c) => {
           console.log(`[Chat] ═══ 共 ${toolCallCount} 次工具调用 ═══\n`)
         }
 
-        // 兜底：非流式模型 → finish chunk 的 fc.text 未被 text-delta 推送
+        // 终极兜底：非流式模型 fullStream 只有 finish chunk（可能不含 .text）
+        //           使用 result.text (Promise<string>) 获取完整输出
         console.log(`[Chat DEBUG] fullText=${fullText.length} chars, toolCallCount=${toolCallCount}`)
-        if (fullText && toolCallCount === 0) {
-          console.log(`[Chat DEBUG] enqueuing fallback text-delta`)
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: 'text-delta', textDelta: fullText })}\n\n`,
-            ),
-          )
+        if (!fullText) {
+          try {
+            const awaitedText = await result.text
+            if (awaitedText && awaitedText.length > 0) {
+              console.log(`[Chat DEBUG] result.text() fallback: ${awaitedText.length} chars`)
+              fullText = awaitedText
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: 'text-delta', textDelta: awaitedText })}\n\n`,
+                ),
+              )
+            }
+          } catch (e) {
+            console.warn('[Chat DEBUG] result.text() failed:', e)
+          }
         }
 
         // 护栏检查
@@ -432,13 +441,22 @@ function createSSEStream(
           }
         }
 
-        // 兜底：非流式模型 → finish chunk 的 fc.text 未被 text-delta 推送
-        if (fullText && toolCallCount === 0) {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: 'text-delta', textDelta: fullText })}\n\n`,
-            ),
-          )
+        // 终极兜底：非流式模型 → await result.text() 获取完整输出
+        if (!fullText) {
+          try {
+            const awaitedText = await result.text
+            if (awaitedText && awaitedText.length > 0) {
+              console.log(`[Multi-Agent] result.text() fallback: ${awaitedText.length} chars`)
+              fullText = awaitedText
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: 'text-delta', textDelta: awaitedText })}\n\n`,
+                ),
+              )
+            }
+          } catch (e) {
+            console.warn('[Multi-Agent] result.text() failed:', e)
+          }
         }
 
         // 护栏检查

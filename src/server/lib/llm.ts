@@ -9,19 +9,21 @@ import type { LanguageModelV1 } from 'ai'
 import type { LLMConfig, ModelProvider, Try } from './types'
 
 const PROVIDER_DEFAULTS: Record<ModelProvider, { model: string }> = {
-  deepseek: { model: 'deepseek-chat' },
-  claude:   { model: 'claude-3-5-sonnet-20241022' },
-  openai:   { model: 'gpt-4o-mini' },
-  local:    { model: 'qwen2.5:7b' },
+  deepseek:    { model: 'deepseek-chat' },
+  siliconflow: { model: 'deepseek-ai/DeepSeek-V3' },
+  claude:      { model: 'claude-3-5-sonnet-20241022' },
+  openai:      { model: 'gpt-4o-mini' },
+  local:       { model: 'qwen2.5:7b' },
 }
 
 /** 根据 Provider 返回默认 baseUrl */
 function getDefaultBaseUrl(provider: ModelProvider): string {
   switch (provider) {
-    case 'deepseek': return 'https://api.deepseek.com/v1'
-    case 'claude':   return 'https://api.anthropic.com/v1'
-    case 'openai':   return 'https://api.openai.com/v1'
-    case 'local':    return 'http://localhost:11434/v1'
+    case 'deepseek':    return 'https://api.deepseek.com/v1'
+    case 'siliconflow': return 'https://api.siliconflow.cn/v1'
+    case 'claude':      return 'https://api.anthropic.com/v1'
+    case 'openai':      return 'https://api.openai.com/v1'
+    case 'local':       return 'http://localhost:11434/v1'
   }
 }
 
@@ -53,11 +55,17 @@ export function loadConfig(): LLMConfig {
   const baseUrl = process.env.LLM_BASE_URL || process.env.OPENAI_API_BASE
   const model = process.env.LLM_MODEL || process.env.OPENAI_MODEL
 
-  // 自动推断 provider：有 OPENAI_API_KEY 且非本地 baseUrl → openai
+  // 自动推断 provider：根据 baseUrl 特征 + API key 判断
   const explicitProvider = process.env.LLM_PROVIDER as ModelProvider | undefined
-  const provider: ModelProvider = explicitProvider ?? (
-    (apiKey !== 'ollama' && baseUrl && !baseUrl.includes('localhost')) ? 'openai' : 'local'
-  )
+  const provider: ModelProvider = explicitProvider ?? (() => {
+    const url = baseUrl ?? ''
+    if (url.includes('siliconflow')) return 'siliconflow'
+    if (url.includes('deepseek'))   return 'deepseek'
+    if (url.includes('anthropic'))  return 'claude'
+    if (url.includes('localhost'))  return 'local'
+    if (apiKey !== 'ollama')        return 'openai'
+    return 'local'
+  })()
 
   return {
     provider,

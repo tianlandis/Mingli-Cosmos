@@ -83,7 +83,7 @@ export interface GuardResult {
 // LLM Provider
 // ═══════════════════════════════════════
 
-export type ModelProvider = 'deepseek' | 'claude' | 'openai' | 'local'
+export type ModelProvider = 'deepseek' | 'siliconflow' | 'claude' | 'openai' | 'local'
 
 export interface LLMConfig {
   provider: ModelProvider
