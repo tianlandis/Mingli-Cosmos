@@ -208,6 +208,15 @@ chatRoute.post('/api/chat', async (c) => {
           console.log(`[Chat] ═══ 共 ${toolCallCount} 次工具调用 ═══\n`)
         }
 
+        // 兜底：非流式模型 → finish chunk 的 fc.text 未被 text-delta 推送
+        if (fullText && toolCallCount === 0) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'text-delta', textDelta: fullText })}\n\n`,
+            ),
+          )
+        }
+
         // 护栏检查
         if (fullText) {
           const guard = validateResponse(fullText)
@@ -418,6 +427,15 @@ function createSSEStream(
               break
             }
           }
+        }
+
+        // 兜底：非流式模型 → finish chunk 的 fc.text 未被 text-delta 推送
+        if (fullText && toolCallCount === 0) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'text-delta', textDelta: fullText })}\n\n`,
+            ),
+          )
         }
 
         // 护栏检查
