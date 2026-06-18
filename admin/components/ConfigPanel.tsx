@@ -16,17 +16,18 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
   const [status, setStatus] = useState('')
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/admin/config', { headers: apiHeaders() })
+    const res = await fetch('/api/v1/admin/config', { headers: apiHeaders() })
     const data = await res.json()
-    setConfigs(data.configs || [])
-    setUsingDb(data.usingDb || false)
+    // V1 API wraps response in { success, data: { configs, usingDb } }
+    setConfigs(data.data?.configs || [])
+    setUsingDb(data.data?.usingDb || false)
   }, [apiHeaders])
 
   useEffect(() => { load() }, [load])
 
   const handleAdd = async () => {
     if (!newKey || !newValue) return
-    await fetch('/api/admin/config', {
+    await fetch('/api/v1/admin/config', {
       method: 'POST',
       headers: apiHeaders(),
       body: JSON.stringify({ key: newKey, value: newValue, displayName: newKey }),
@@ -39,14 +40,14 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
   }
 
   const handleReload = async () => {
-    const res = await fetch('/api/admin/config/reload', { method: 'POST', headers: apiHeaders() })
+    const res = await fetch('/api/v1/admin/config/reload', { method: 'POST', headers: apiHeaders() })
     const data = await res.json()
-    setStatus(`配置已刷新，来源: ${data.source}`)
+    setStatus(`配置已刷新，来源: ${data.data?.source || data.source || 'unknown'}`)
     load()
   }
 
   const handleDelete = async (key: string) => {
-    await fetch(`/api/admin/config/${key}`, { method: 'DELETE', headers: apiHeaders() })
+    await fetch(`/api/v1/admin/config/${key}`, { method: 'DELETE', headers: apiHeaders() })
     load()
   }
 

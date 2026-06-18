@@ -23,16 +23,27 @@ export function getConfigValue(key: string): string | undefined {
   return row?.value
 }
 
-export function setConfig(key: string, value: string, displayName?: string, description?: string): ConfigRow {
+export function setConfig(
+  key: string,
+  value: string,
+  displayName?: string,
+  description?: string,
+  valueType?: string,
+  category?: string,
+): ConfigRow {
   const existing = getConfig(key)
+  const updateData: any = { value, displayName, description, updatedAt: new Date().toISOString() }
+  if (valueType !== undefined) updateData.valueType = valueType
+  if (category !== undefined) updateData.category = category
+
   if (existing) {
     return getDb().update(appConfigs)
-      .set({ value, displayName, description, updatedAt: new Date().toISOString() })
+      .set(updateData)
       .where(eq(appConfigs.key, key))
       .returning().get()
   }
   return getDb().insert(appConfigs)
-    .values({ key, value, displayName, description })
+    .values({ key, value, displayName, description, valueType, category })
     .returning().get()
 }
 

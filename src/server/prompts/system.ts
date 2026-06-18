@@ -3,7 +3,8 @@
 // ============================================================
 
 import type { BaZiResult, AnnotationResult } from '../../engine/index'
-import { buildAntiHallucinationPrompt } from '../lib/anti-hallucination'
+import { buildAntiHallucinationPromptDynamic } from '../lib/anti-hallucination'
+import { formatPillars, formatShiShen, formatDaYun, formatShenSha } from './formatters'
 
 /**
  * 构建 A 模式（对话 Copilot）的 System Prompt
@@ -28,37 +29,7 @@ export function buildSystemPrompt(
     `- 神煞：${formatShenSha(annotation.shenSha)}`,
     '',
     reportSummary ? `## 命书摘要\n${reportSummary}\n` : '',
-    // ⬇️ 防幻觉指令由独立模块管理，Phase 4 后可管理后台热更新
-    buildAntiHallucinationPrompt(chart, annotation),
+    // ⬇️ L3 热加载：优先 DB 配置，回退硬编码常量
+    buildAntiHallucinationPromptDynamic(chart, annotation),
   ].join('\n')
-}
-
-// ─── 格式化辅助函数 ───
-
-function formatPillars(chart: BaZiResult): string {
-  const p = [chart.yearPillar, chart.monthPillar, chart.dayPillar, chart.hourPillar]
-  const labels = ['年', '月', '日', '时']
-  return p.map((pillar, i) => `${labels[i]}柱：${pillar.ganZhi}`).join('，')
-}
-
-function formatShiShen(profile: AnnotationResult['shiShenProfile']): string {
-  return profile
-    .filter(p => p.count > 0)
-    .map(p => `${p.name}(${p.count})`)
-    .join('、')
-}
-
-function formatDaYun(luck: AnnotationResult['luckAnalysis']): string {
-  const current = luck.daYunList.find(d => d.quality !== undefined) ?? luck.daYunList[0]
-  return current
-    ? `${current.ganZhi}（${current.startAge}-${current.endAge}岁，${current.quality}）`
-    : '暂未起运'
-}
-
-function formatShenSha(shenSha: AnnotationResult['shenSha']): string {
-  if (!shenSha.items || shenSha.items.length === 0) return '无明显神煞'
-  return shenSha.items
-    .slice(0, 5)
-    .map(i => `${i.name}(${i.type}，${i.pillar})`)
-    .join('、')
 }

@@ -13,6 +13,7 @@
 // ============================================================
 
 import type { BaZiResult, AnnotationResult } from '../../engine/index'
+import { getConfig } from '../db/repositories/app-configs'
 
 // ═══════════════════════════════════════
 // L1: System Prompt 防越权指令
@@ -38,6 +39,11 @@ export function buildAntiHallucinationPrompt(
     '你的职责：根据下方已由系统精准计算完成的命盘数据，为用户提供专业的解读和分析。',
     '你绝对禁止：自行推算天干地支、计算起运时间、判断格局、排大运等任何排盘行为。',
     '所有命理计算已由专业算法引擎完成，你只需要基于结果"看图说话"。',
+    '',
+    '### 工具使用授权（重要）',
+    '你可以使用系统提供的工具函数（solar_term_calc、calendar_lookup、classic_search、famous_chart_compare 等）',
+    '来查询节气时间、万年历信息或命理典籍内容。调用工具不等于排盘——这些是查询/验证类操作，',
+    '工具返回的数据由系统算法保证准确性。请放心使用工具来增强分析质量。',
     '',
     '## 防越权规则（最高优先级）',
     '',
@@ -69,6 +75,87 @@ export function buildAntiHallucinationPrompt(
     '只回答与本命盘相关的命理问题。',
     '与命盘无关的闲聊、通用知识问答等问题，请礼貌拒绝。',
   ].join('\n')
+}
+
+// ═══════════════════════════════════════
+// L3: DB 动态热加载（Phase 4.11）
+// ═══════════════════════════════════════
+
+interface GuardRuleItem {
+  name: string
+  label: string
+  content: string
+}
+
+interface GuardsPayload {
+  l1Rules: GuardRuleItem[]
+  l1RejectMessage: string
+}
+
+/**
+ * 从 app_configs 表加载防幻觉护栏规则
+ * 若 DB 无自定义配置 → 回退到 buildAntiHallucinationPrompt 硬编码常量
+ */
+function loadGuardsFromDB(): GuardsPayload | null {
+  try {
+    const row = getConfig('anti_hallucination_rules')
+    if (row?.value) {
+      const parsed = JSON.parse(row.value) as GuardsPayload
+      if (parsed.l1Rules && parsed.l1Rules.length > 0) {
+        return parsed
+      }
+    }
+  } catch {
+    // DB 不可用时静默回退
+  }
+  return null
+}
+
+/**
+ * 构建防幻觉 System Prompt（优先 DB 配置，回退硬编码）
+ */
+export function buildAntiHallucinationPromptDynamic(
+  chart: BaZiResult,
+  annotation: AnnotationResult,
+): string {
+  const dbGuards = loadGuardsFromDB()
+
+  if (dbGuards) {
+    // ── 使用 DB 中的热编辑规则 ──
+    const sections: string[] = []
+    for (const rule of dbGuards.l1Rules) {
+      sections.push(`### ${rule.label}`)
+      sections.push(rule.content)
+      sections.push('')
+    }
+
+    const prompt = [
+      `## 防越权规则（最高优先级 — 管理后台 L3 热配置）`,
+      '',
+      ...sections,
+      `当前对话绑定的命盘是 ${chart.dayMaster}日主，出生日期 ${chart.birthDate}。`,
+      `日主强弱：${annotation.strengthAnalysis.strength}（${annotation.strengthAnalysis.score}/100）。`,
+      '',
+      `拒绝排盘标准话术：`,
+      `"${dbGuards.l1RejectMessage}"`,
+    ].join('\n')
+
+    return prompt
+  }
+
+  // ── 回退：内置硬编码常量 ──
+  return buildAntiHallucinationPrompt(chart, annotation)
+}
+
+/**
+ * 获取当前生效的 L2 拒绝话术（优先 DB，回退硬编码）
+ */
+export function getRejectMessage(): string {
+  const dbGuards = loadGuardsFromDB()
+  if (dbGuards?.l1RejectMessage) {
+    return dbGuards.l1RejectMessage
+  }
+  return REJECT_PAIPAN_MESSAGE
 }
 
 // ═══════════════════════════════════════
@@ -104,7 +191,7 @@ export function detectPaipanAttempt(
   const hasBirthData = hasDateNum || hasDateCN || hasBirth
 
   if (hasBirthData && hasPaipanIntent) {
-    return { blocked: true, message: REJECT_PAIPAN_MESSAGE }
+    return { blocked: true, message: getRejectMessage() }
   }
 
   return { blocked: false }

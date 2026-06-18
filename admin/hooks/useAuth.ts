@@ -18,18 +18,18 @@ export function useAuth() {
   })
 
   const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch('/api/admin/auth/login', {
+    const res = await fetch('/api/v1/admin/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     })
     if (!res.ok) {
       const err = await res.json()
-      throw new Error(err.message || '登录失败')
+      throw new Error(err.message || err.error?.message || '登录失败')
     }
     const data = await res.json()
-    localStorage.setItem(TOKEN_KEY, data.token)
-    setAuth({ token: data.token, isAuthenticated: true })
+    localStorage.setItem(TOKEN_KEY, data.data.token)
+    setAuth({ token: data.data.token, isAuthenticated: true })
   }, [])
 
   const logout = useCallback(() => {

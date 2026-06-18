@@ -1,7 +1,8 @@
 // ============================================================
-// Phase 4A — 数据库 Schema 定义 (Drizzle ORM + SQLite)
+// Phase 4 — 数据库 Schema 定义 (Drizzle ORM + SQLite)
 // 文件：src/server/db/schema.ts
-// 表：api_keys / prompt_templates / app_configs / sessions / audit_logs
+// 表：api_keys / prompt_templates / prompt_versions / app_configs /
+//      sessions / admin_sessions / audit_logs
 // ============================================================
 
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
@@ -22,12 +23,17 @@ export const apiKeys = sqliteTable('api_keys', {
   maxTokens: integer('max_tokens').default(2048),
   isActive: integer('is_active').default(1),      // 0=禁用, 1=启用
   sortOrder: integer('sort_order').default(0),
+  // [Phase 4 NEW] Skills/Tools 扩展字段
+  supportedTools: text('supported_tools').default('[]'),  // JSON: ["solar_term_calc","calendar_lookup"]
+  testedAt: text('tested_at'),                             // 最后测试时间 ISO
+  testStatus: text('test_status').default('untested'),     // 'untested' | 'ok' | 'failed'
+  testLatency: integer('test_latency'),                    // 测试延迟(ms)
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
 })
 
 // ═══════════════════════════════════════
-// prompt_templates — Prompt 模板版本管理
+// prompt_templates — Prompt 模板管理
 // ═══════════════════════════════════════
 
 export const promptTemplates = sqliteTable('prompt_templates', {
@@ -38,9 +44,27 @@ export const promptTemplates = sqliteTable('prompt_templates', {
   variables: text('variables').default('[]'),      // JSON 数组：['chart.dayMaster','annotation.patternName']
   version: integer('version').default(1),          // 版本号
   isActive: integer('is_active').default(1),
+  // [Phase 4 NEW] 模板类别与防越权
+  category: text('category').default('custom'),   // 'builtin' | 'custom'
+  isBuiltin: integer('is_builtin').default(0),     // 0=用户创建, 1=系统内置（不可删除）
   description: text('description'),               // 模板用途说明
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// prompt_versions [Phase 4 NEW] — 版本历史
+// ═══════════════════════════════════════
+
+export const promptVersions = sqliteTable('prompt_versions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  promptId: integer('prompt_id').notNull()
+    .references(() => promptTemplates.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull(),
+  content: text('content').notNull(),
+  changeNote: text('change_note'),
+  createdBy: text('created_by').default('admin'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
 })
 
 // ═══════════════════════════════════════
@@ -53,6 +77,9 @@ export const appConfigs = sqliteTable('app_configs', {
   value: text('value').notNull(),                 // JSON 值
   displayName: text('display_name'),              // 显示名
   description: text('description'),
+  // [Phase 4 NEW] 值类型标记与分类
+  valueType: text('value_type').default('string'), // 'string' | 'json' | 'number' | 'boolean'
+  category: text('category').default('general'),   // 'general' | 'llm' | 'security' | 'ui'
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
 })
 
@@ -67,6 +94,22 @@ export const sessions = sqliteTable('sessions', {
   messageCount: integer('message_count').default(0),
   lastActive: text('last_active').default(sql`(datetime('now'))`),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// admin_sessions [Phase 4 NEW] — 管理员会话
+// ═══════════════════════════════════════
+
+export const adminSessions = sqliteTable('admin_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  tokenJti: text('token_jti').notNull().unique(), // JWT jti
+  username: text('username').notNull(),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  isActive: integer('is_active').default(1),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  logoutAt: text('logout_at'),
 })
 
 // ═══════════════════════════════════════

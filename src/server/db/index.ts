@@ -10,6 +10,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import * as schema from './schema'
 import { runMigrations } from './migrate'
+import { seedDefaults, seedLocalProvider } from './seed'
 
 let _db: ReturnType<typeof drizzle> | null = null
 let _sqlite: Database.Database | null = null
@@ -41,6 +42,11 @@ export function getDb() {
 export function initDb() {
   getDb()
   runMigrations(_sqlite!)
+
+  // 首次启动：写入默认配置 + 本地 Provider
+  seedDefaults()
+  seedLocalProvider()
+
   console.log(`[DB] initialized: ${process.env.DB_PATH || 'data/mingli.db'}`)
 }
 
@@ -56,6 +62,7 @@ export function closeDb() {
 export { schema }
 export * from './repositories/api-keys'
 export * from './repositories/prompts'
+export * from './repositories/prompt-versions'
 export * from './repositories/app-configs'
 export * from './repositories/sessions'
 export * from './repositories/audit-logs'
