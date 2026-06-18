@@ -28,7 +28,11 @@ function getDefaultBaseUrl(provider: ModelProvider): string {
 /**
  * 创建模型实例
  * 通过 @ai-sdk/openai 的 createOpenAI() 实现多 Provider 兼容
- * （DeepSeek / Anthropic / Ollama 都兼容 OpenAI API 格式）
+ * （DeepSeek / Anthropic / Ollama / SiliconFlow 都兼容 OpenAI API 格式）
+ *
+ * ⚠️ v3 默认 provider(modelId) 调用 Responses API (/responses)，
+ *    三方兼容 API 只支持 Chat Completions (/chat/completions)，
+ *    因此显式使用 provider.chat(modelId)
  */
 export function createModel(config: LLMConfig): LanguageModelV1 {
   const { model: defaultModel } = PROVIDER_DEFAULTS[config.provider]
@@ -38,7 +42,8 @@ export function createModel(config: LLMConfig): LanguageModelV1 {
     baseURL: config.baseUrl ?? getDefaultBaseUrl(config.provider),
   })
 
-  return provider(config.model ?? defaultModel)
+  // @ts-expect-error @ai-sdk/openai v3 返回 LanguageModelV3，与 ai v6 的 LanguageModelV1 结构兼容
+  return provider.chat(config.model ?? defaultModel)
 }
 
 /** 从环境变量构建 LLMConfig */
