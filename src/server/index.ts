@@ -93,9 +93,13 @@ if (isProduction) {
   app.get('/favicon.svg', serveStatic({ root: distDir }))
 
   // SPA 兜底：所有非 API 请求返回 index.html
+  // ⚠️ HTML 必须 no-store：Vite 构建产物 JS/CSS 文件名含 content-hash，
+  //    若浏览器缓存旧 HTML 会引用已不存在的旧 hash 文件，导致白屏或旧逻辑
   app.get('/*', (c) => {
     try {
       const html = readFileSync(join(distDir, 'index.html'), 'utf-8')
+      c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+      c.header('Pragma', 'no-cache')
       return c.html(html)
     } catch {
       return c.json(
