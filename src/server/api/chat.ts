@@ -6,7 +6,8 @@ import { Hono } from 'hono'
 import { streamText } from 'ai'
 import type { ChatRequest, ChatMessage } from '../lib/types'
 import { buildSystemPrompt } from '../prompts/system'
-import { validateResponse, guardInput } from '../lib/guardrail'
+import { validateResponse } from '../lib/guardrail'
+import { detectPaipanAttempt, buildBlockSSE } from '../lib/anti-hallucination'
 import { createModel, loadConfig } from '../lib/llm'
 
 /** 滑动窗口：最多保留最近 N 条消息 */
@@ -30,22 +31,12 @@ chatRoute.post('/api/chat', async (c) => {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 messages 字段' }, 400)
   }
 
-  // L2 输入护栏：检测用户是否在对话中要求排盘
+  // 防幻觉 L2：用户输入检测 → 拦截排盘请求
   const lastUserMsg = body.messages.filter(m => m.role === 'user').pop()
   if (lastUserMsg) {
-    const inputGuard = guardInput(lastUserMsg.content)
-    if (inputGuard.blocked) {
-      const encoder = new TextEncoder()
-      const sseStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-delta', textDelta: inputGuard.message })}\n\n`))
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
-          controller.close()
-        },
-      })
-      return new Response(sseStream, {
-        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
-      })
+    const attempt = detectPaipanAttempt(lastUserMsg.content)
+    if (attempt.blocked) {
+      return buildBlockSSE(attempt.message)
     }
   }
 

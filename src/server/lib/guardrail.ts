@@ -1,55 +1,11 @@
 // ============================================================
-// 护栏 & 安全设计（精确版）
+// 护栏 & 安全设计
 // 文件：src/server/lib/guardrail.ts
-// 职责：
-//   - 输入校验：检测排盘请求，拒绝大模型越权计算
-//   - 输出校验：敏感词/医疗建议/免责声明
+// 职责：输出校验 — 敏感词/医疗建议/免责声明
+// 注意：输入护栏（防排盘请求）已迁移至 anti-hallucination.ts
 // ============================================================
 
 import type { GuardResult } from './types'
-
-// ═══════════════════════════════════════
-// 输入护栏：检测用户是否试图让 LLM 排盘
-// ═══════════════════════════════════════
-
-/** 出生日期模式：1990-01-01、1990年1月1日 等 */
-const BIRTH_DATE_PATTERN = /\d{4}\s*[年\-\/\.]\s*\d{1,2}\s*[月\-\/\.]?\s*\d{0,2}/
-/** 中文日期：1990年、农历、正月、子时等 */
-const CN_DATE_PATTERN = /(\d{4}年|农历|阴历|公历|阳历|[一二三四五六七八九十廿卅]+月|[子丑寅卯辰巳午未申酉戌亥]时|时辰)/
-/** 出生/八字关键词 */
-const BIRTH_KEYWORDS = /(出生|生日|八字|排盘|算命|批命)/
-
-/** 排盘意图关键词 */
-const PAIPAN_INTENT = /(帮我算|给我算|算一下|排一下|批一下|排盘|算命|批命|帮我排|我的八字|他的八字|她的八字)/
-
-/**
- * 输入护栏：检测用户是否在对话中要求排盘
- * @returns null 表示安全，字符串表示拒绝原因
- */
-export function guardInput(
-  lastUserMessage: string,
-): { blocked: true; message: string } | { blocked: false } {
-  const hasDateNum = BIRTH_DATE_PATTERN.test(lastUserMessage)
-  const hasDateCN = CN_DATE_PATTERN.test(lastUserMessage)
-  const hasBirth = BIRTH_KEYWORDS.test(lastUserMessage)
-  const hasPaipanIntent = PAIPAN_INTENT.test(lastUserMessage)
-
-  const hasBirthData = hasDateNum || hasDateCN || hasBirth
-
-  if (hasBirthData && hasPaipanIntent) {
-    return {
-      blocked: true,
-      message: '由于排盘涉及极其严谨的天文历法与节气交点计算，为保证准确性，' +
-        '请您回到主界面的【专业排盘表单】中输入出生信息，' +
-        '生成新的命盘后，我们再针对新命盘进行深度探讨。',
-    }
-  }
-  return { blocked: false }
-}
-
-// ═══════════════════════════════════════
-// 输出护栏
-// ═══════════════════════════════════════
 
 /** 建议句式模式：只有这些句式出现时才触发敏感词检测 */
 const ADVICE_PATTERNS = /(你应该|建议你|去买|去查|服用|投资|买入|卖出)/
