@@ -545,11 +545,12 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
             <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
               {providers.map((p) => {
                 const isSelected = p.id === selectedId
+                const isOnline = p.isActive === 1
                 return (
                   <button
                     key={p.id}
                     onClick={() => setSelectedId(p.id)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all duration-150 group ${
+                    className={`w-full text-left p-3 rounded-lg border transition-all duration-150 relative ${
                       isSelected
                         ? 'border-[#B8964A]/60 bg-[#222839] shadow-[0_0_12px_rgba(184,150,74,0.06)]'
                         : 'border-white/[0.04] bg-[#1A1F2E] hover:border-white/[0.10] hover:bg-[#1E2435]'
@@ -569,6 +570,17 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         </div>
                         <ProviderBadge type={p.provider} />
                       </div>
+                      {/* 在线/离线状态指示 */}
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium shrink-0 ${
+                          isOnline
+                            ? 'text-[#5B8C5A] bg-[#5B8C5A]/10 border border-[#5B8C5A]/20'
+                            : 'text-[#4A4540] bg-white/[0.03] border border-white/[0.04]'
+                        }`}
+                      >
+                        <span className={`size-1.5 rounded-full ${isOnline ? 'bg-[#5B8C5A] shadow-[0_0_4px_rgba(91,140,90,0.5)]' : 'bg-[#4A4540]'}`} />
+                        {isOnline ? '在线' : '离线'}
+                      </span>
                     </div>
                     {p.model && (
                       <p className="text-[10px] text-[#6B6459] font-mono truncate mb-1.5">{p.model}</p>
@@ -579,19 +591,45 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       <span className="ml-auto text-[#A09888] font-mono">T={p.temperature?.toFixed(1)}</span>
                     </div>
 
-                    {/* 操作按钮 */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+                    {/* 操作按钮栏 — 始终可见 */}
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/[0.04]">
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditTarget(p); setFormOpen(true) }}
-                        className="p-1 rounded text-[#4A4540] hover:text-[#B8964A] hover:bg-white/[0.06] transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[9px] text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors"
+                        title="编辑此供应商"
                       >
-                        <Pencil size={10} />
+                        <Pencil size={9} />
+                        编辑
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          // 切换在线/离线
+                          const newActive = isOnline ? 0 : 1
+                          await fetch(`/api/v1/admin/llm/${p.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', ...apiHeaders() },
+                            body: JSON.stringify({ isActive: newActive }),
+                          })
+                          fetchProviders()
+                        }}
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-[9px] transition-colors ${
+                          isOnline
+                            ? 'text-[#A09888] hover:text-[#C08040] hover:bg-[#C08040]/10'
+                            : 'text-[#4A4540] hover:text-[#5B8C5A] hover:bg-[#5B8C5A]/10'
+                        }`}
+                        title={isOnline ? '点击下线' : '点击上线'}
+                      >
+                        <Circle size={9} className={isOnline ? 'fill-[#5B8C5A] text-[#5B8C5A]' : ''} />
+                        {isOnline ? '下线' : '上线'}
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }}
-                        className="p-1 rounded text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors"
+                        className="flex items-center gap-1 ml-auto px-2 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors"
+                        title="删除此供应商"
                       >
-                        <Trash2 size={10} />
+                        <Trash2 size={9} />
+                        删除
                       </button>
                     </div>
                   </button>
@@ -611,11 +649,22 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       <Cpu size={18} className="text-[#B8964A]" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-sm font-semibold text-[#EDE8DF]">{selected.label}</h3>
                         <ProviderBadge type={selected.provider} />
-                        {selected.testStatus === 'ok' && (
+                        {selected.isActive === 1 ? (
                           <Badge className="bg-[#5B8C5A]/15 text-[#5B8C5A] border-[#5B8C5A]/25 text-[9px]">
+                            <span className="size-1.5 rounded-full bg-[#5B8C5A] shadow-[0_0_4px_rgba(91,140,90,0.5)] mr-1 inline-block" />
+                            在线
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-white/[0.03] text-[#4A4540] border-white/[0.05] text-[9px]">
+                            <span className="size-1.5 rounded-full bg-[#4A4540] mr-1 inline-block" />
+                            离线
+                          </Badge>
+                        )}
+                        {selected.testStatus === 'ok' && (
+                          <Badge className="bg-[#5B8C5A]/10 text-[#4A8A4A] border-[#5B8C5A]/15 text-[9px]">
                             <CheckCircle2 size={8} /> 连接正常
                           </Badge>
                         )}

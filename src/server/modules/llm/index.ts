@@ -24,6 +24,7 @@ const providerBodySchema = z.object({
   model: z.string().optional(),
   temperature: z.number().min(0).max(2).optional().default(0.7),
   maxTokens: z.number().int().positive().optional().default(2048),
+  isActive: z.number().min(0).max(1).optional().default(1),  // 0=禁用, 1=启用
   supportedTools: z.array(z.string()).optional().default([]),
 })
 
