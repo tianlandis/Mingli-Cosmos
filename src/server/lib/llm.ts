@@ -7,6 +7,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModelV1 } from 'ai'
 import type { LLMConfig, ModelProvider, Try } from './types'
+import { getAppConfig, isUsingDbConfig } from '../config'
 
 const PROVIDER_DEFAULTS: Record<ModelProvider, { model: string }> = {
   deepseek:    { model: 'deepseek-chat' },
@@ -48,14 +49,35 @@ export function createModel(config: LLMConfig): LanguageModelV1 {
   return provider.chat(config.model ?? defaultModel)
 }
 
-/** 从环境变量构建 LLMConfig */
+/** 从环境变量构建 LLMConfig（DB 优先 → .env 回退） */
 export function loadConfig(): LLMConfig {
-  // 兼容两种命名：LLM_API_KEY 优先，回退到 OPENAI_API_KEY
+  // 优先使用数据库配置（管理后台可热更新，60s 缓存）
+  if (isUsingDbConfig()) {
+    const db = getAppConfig()
+    // 从 DB 配置推断 provider（若未明确指定则自动推断）
+    const provider: ModelProvider = (process.env.LLM_PROVIDER as ModelProvider) ?? (() => {
+      const url = db.baseUrl ?? ''
+      if (url.includes('siliconflow')) return 'siliconflow'
+      if (url.includes('deepseek'))   return 'deepseek'
+      if (url.includes('anthropic'))  return 'claude'
+      if (url.includes('localhost'))  return 'local'
+      return 'openai'
+    })()
+    return {
+      provider,
+      apiKey: db.apiKey || process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || 'ollama',
+      baseUrl: db.baseUrl,
+      model: db.model,
+      temperature: db.temperature,
+      maxTokens: db.maxTokens,
+    }
+  }
+
+  // 回退到环境变量
   const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || 'ollama'
   const baseUrl = process.env.LLM_BASE_URL || process.env.OPENAI_API_BASE
   const model = process.env.LLM_MODEL || process.env.OPENAI_MODEL
 
-  // 自动推断 provider：根据 baseUrl 特征 + API key 判断
   const explicitProvider = process.env.LLM_PROVIDER as ModelProvider | undefined
   const provider: ModelProvider = explicitProvider ?? (() => {
     const url = baseUrl ?? ''
