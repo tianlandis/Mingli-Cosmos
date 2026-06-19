@@ -85,9 +85,9 @@
 |:---:|------|
 | M-1 | `src/admin/` 后台管理端 UI（React） ← Phase 8 已完成 |
 | M-2 | `src/server/db/` 数据库持久化模块（Drizzle + SQLite） ← Phase 8 已完成 |
-| M-3 | 动态双轨配置路由实现（DB优先 → .env 回退） ← Phase 8 已完成 |
+| M-3 | 动态双轨配置路由实现（DB优先 → .env 回退） ← Phase 8.3 彻底打通（loadConfig DB-first） |
 | M-4 | OpenClaw 风格 API Key 管理 + Prompt 模板编辑器 ← Phase 8 已完成 |
-| M-5 | 配置热更新机制 ← Phase 8 已完成 |
+| M-5 | 配置热更新机制 ← Phase 8.3 已验证（Admin POST /config → reload → 立即生效） |
 | M-6 | C 端用户管理模块 | 
 | M-7 | 订单与订阅管理 |
 | M-8 | 运营数据看板增强 (GA/埋点接入) |

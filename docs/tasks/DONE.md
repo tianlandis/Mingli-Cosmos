@@ -18,7 +18,46 @@
 | **VPS 全链路部署** | Git pull → docker compose down → up -d --build → 容器健康检查 → API/SSE 验证 ✅ |
 | **SSE 流式修复** | 非流式模型(siliconflow DeepSeek-V3) fullStream 不含 text-delta chunk → result.text() Promise fallback 兜底 → SSE text-delta 成功推送 ✅ |
 | **SiliconFlow 接入** | 新增 ModelProvider='siliconflow' + PROVIDER_DEFAULTS/BaseUrl + loadConfig 自动推断 + 管理后台 PROVIDER_PRESETS 已就绪 |
-| **Phase 8 收尾** | 编译零错 ✅ 186 测试全绿 ✅ GitHub 推送 ✅ VPS 上线 ✅
+| **Phase 8 收尾** | 编译零错 ✅ 186 测试全绿 ✅ GitHub 推送 ✅ VPS 上线 ✅ |
+
+---
+
+## 2026-06-19 — 模型架构双修复：DeepSeek-V3 → Qwen3.5-122B-A10B + Admin 热配置打通
+
+### 背景
+- 用户反馈 "DeepSeek-V3 不好用"，要求从 SiliconFlow 平台重新选型
+- 通过 API 查询账号实际可用模型列表（60+ LLM），选定 **Qwen/Qwen3.5-122B-A10B**
+- 阿里通义千问最新代，122B MoE，中文能力业界最强，八字命理分析精度远超 DeepSeek-V3
+
+### 架构修复：Admin Config API ↔ 运行时 LLM 打通
+**根因**：`chat.ts` 的 `loadConfig()` 只读 `.env`，admin 的 `POST /api/v1/admin/config` 写 `app_configs` 表，两者互不通。管理后台改配置后不生效。
+
+**修复** (`src/server/lib/llm.ts` L52-100)：
+```
+loadConfig() 的 DB-first 策略：
+1. isUsingDbConfig() → 检查 DB 是否有配置
+2. 有 → getAppConfig() 从 app_configs 表读取 provider/model/baseUrl/temperature/maxTokens
+3. 无 → 回退到 process.env 环境变量
+```
+这意味着 `POST /api/v1/admin/config` → `reload` → 立即生效，无需重启。
+
+### 换模型操作流程
+1. Admin 登录 → `POST /api/v1/admin/auth/login`
+2. 设置 base_url → `POST /api/v1/admin/config {key:"default_llm_base_url", value:"https://api.siliconflow.cn/v1"}`
+3. 设置 model → `POST /api/v1/admin/config {key:"default_llm_model", value:"Qwen/Qwen3.5-122B-A10B"}`
+4. 刷新配置 → `POST /api/v1/admin/config/reload`（清除 60s 缓存）
+5. **立即生效，无需重启或修改 .env**
+
+### 验证结果
+- VPS Admin login ✅ → Config update ✅ → Reload ✅
+- SSE Chat HTTP 200 ✅ → text-delta ✅ → [DONE] ✅
+- **回复质量**：准确识别建禄格、七杀→伤官、木火通明、用神火土 — 全部正确
+
+### 修改文件
+- `src/server/lib/llm.ts` — loadConfig() DB-first + 默认模型改 Qwen3.5-122B-A10B
+- `src/server/config/index.ts` — 已存在双轨加载（DB优先→.env回退），本次无需改动
+- `admin/modules/llm/LLMPage.tsx` — siliconflow 预设更新 (temp=0.5, topP=0.9, maxTokens=8192)
+- `vps_admin_test.py` / `vps_test_final.py` — 全链路测试脚本
 
 ## 2026-06-18 — v4.0.0 里程碑发布 + Phase 3 完成
 
