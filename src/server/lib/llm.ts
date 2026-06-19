@@ -10,7 +10,7 @@ import type { LLMConfig, ModelProvider, Try } from './types'
 
 const PROVIDER_DEFAULTS: Record<ModelProvider, { model: string }> = {
   deepseek:    { model: 'deepseek-chat' },
-  siliconflow: { model: 'deepseek-ai/DeepSeek-V3' },
+  siliconflow: { model: 'Qwen/Qwen3.5-122B-A10B' },
   claude:      { model: 'claude-3-5-sonnet-20241022' },
   openai:      { model: 'gpt-4o-mini' },
   local:       { model: 'qwen2.5:7b' },
