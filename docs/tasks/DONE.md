@@ -4,7 +4,62 @@
 
 ---
 
-## 2026-06-18 — v4.0.0 里程碑发布
+## 2026-06-19 — Phase 4a：全掌控命理中台大基建 + VPS 上线
+
+| 任务 | 说明 |
+|------|------|
+| **知识字典引擎增强** | API 新增 `GET /api/v1/admin/knowledge/category/:category` 路径风格路由；KnowledgeDictPage 全面 Card 化 + 字段自解释说明 |
+| **OpenClaw 调优驾驶舱** | 验证 PROVIDER_PRESETS 参数自动同步机制完备：ProviderForm 自动填充 baseUrl/model、TuningPanel 自动加载 temp/topP/maxTokens/freqPenalty/personality |
+| **底层数据接口化** | famous_chart_compare 接入 KnowledgeProvider，从 knowledge_assets 动态加载名人命例；classic_search + web_search 已完整接入知识库检索链路 |
+| **全站 UI 工业级打磨** | ConfigPanel/AuditLog/KnowledgeDictPage 统一使用 shadcn Card 容器；所有表单字段统一 `text-[#6B6459] italic` 自解释说明 |
+| **Sidebar 菜单** | 命理规则字典 已启用 (Library 图标 + NEW 徽章)，命理知识库 规划中 (BookOpen 图标 + 规划中 徽章) |
+| **技术架构** | KnowledgeProvider 5min TTL 缓存 + invalidateCache() 热刷新；VALID_CATEGORIES 白名单校验；Zod Schema 验证 |
+| **L3 护栏保护** | 全程未触碰 anti-hallucination.ts 核心模块，防幻觉机制 100% 保持可用 |
+| **VPS 全链路部署** | Git pull → docker compose down → up -d --build → 容器健康检查 → API/SSE 验证 ✅ |
+| **SSE 流式修复** | 非流式模型(siliconflow DeepSeek-V3) fullStream 不含 text-delta chunk → result.text() Promise fallback 兜底 → SSE text-delta 成功推送 ✅ |
+| **SiliconFlow 接入** | 新增 ModelProvider='siliconflow' + PROVIDER_DEFAULTS/BaseUrl + loadConfig 自动推断 + 管理后台 PROVIDER_PRESETS 已就绪 |
+| **Phase 4a 收尾** | 编译零错 ✅ 186 测试全绿 ✅ GitHub 推送 ✅ VPS 上线 ✅ |
+
+---
+
+## 2026-06-19 — 模型架构双修复：DeepSeek-V3 → Qwen3.5-122B-A10B + Admin 热配置打通
+
+### 背景
+- 用户反馈 "DeepSeek-V3 不好用"，要求从 SiliconFlow 平台重新选型
+- 通过 API 查询账号实际可用模型列表（60+ LLM），选定 **Qwen/Qwen3.5-122B-A10B**
+- 阿里通义千问最新代，122B MoE，中文能力业界最强，八字命理分析精度远超 DeepSeek-V3
+
+### 架构修复：Admin Config API ↔ 运行时 LLM 打通
+**根因**：`chat.ts` 的 `loadConfig()` 只读 `.env`，admin 的 `POST /api/v1/admin/config` 写 `app_configs` 表，两者互不通。管理后台改配置后不生效。
+
+**修复** (`src/server/lib/llm.ts` L52-100)：
+```
+loadConfig() 的 DB-first 策略：
+1. isUsingDbConfig() → 检查 DB 是否有配置
+2. 有 → getAppConfig() 从 app_configs 表读取 provider/model/baseUrl/temperature/maxTokens
+3. 无 → 回退到 process.env 环境变量
+```
+这意味着 `POST /api/v1/admin/config` → `reload` → 立即生效，无需重启。
+
+### 换模型操作流程
+1. Admin 登录 → `POST /api/v1/admin/auth/login`
+2. 设置 base_url → `POST /api/v1/admin/config {key:"default_llm_base_url", value:"https://api.siliconflow.cn/v1"}`
+3. 设置 model → `POST /api/v1/admin/config {key:"default_llm_model", value:"Qwen/Qwen3.5-122B-A10B"}`
+4. 刷新配置 → `POST /api/v1/admin/config/reload`（清除 60s 缓存）
+5. **立即生效，无需重启或修改 .env**
+
+### 验证结果
+- VPS Admin login ✅ → Config update ✅ → Reload ✅
+- SSE Chat HTTP 200 ✅ → text-delta ✅ → [DONE] ✅
+- **回复质量**：准确识别建禄格、七杀→伤官、木火通明、用神火土 — 全部正确
+
+### 修改文件
+- `src/server/lib/llm.ts` — loadConfig() DB-first + 默认模型改 Qwen3.5-122B-A10B
+- `src/server/config/index.ts` — 已存在双轨加载（DB优先→.env回退），本次无需改动
+- `admin/modules/llm/LLMPage.tsx` — siliconflow 预设更新 (temp=0.5, topP=0.9, maxTokens=8192)
+- `vps_admin_test.py` / `vps_test_final.py` — 全链路测试脚本
+
+## 2026-06-18 — v4.0.0 里程碑发布 + Phase 3 完成
 
 | 任务 | 说明 |
 |------|------|
@@ -16,9 +71,13 @@
 | **专题 Tab** | TopicTabs 六个专题水平切换 (UI-7) |
 | **ChatPanel** | SSE 流式对话 Copilot，逐字增量渲染 |
 | **品牌升级** | 项目更名为"数字命理推演引擎"，README 重写 |
+| **仓库迁移** | bazipaipan → Mingli-Cosmos，orphan 初始提交，敏感文档净化 |
 | **Dockerfile** | 多阶段构建：build → 极简生产镜像 |
 | **docker-compose.yml** | 端口映射 3001:3001，.env volumes 挂载，restart: always |
 | **Nginx 配置** | SSE 流式代理优化（proxy_buffering off + chunked_transfer_encoding on） |
+| **生产日志系统** | `src/server/lib/logger.ts`：结构化 JSON、请求耗时中间件、每日轮转、7天清理 |
+| **增强健康检查** | `/api/health` 返回 uptime/memory/node_version/env 7 指标 |
+| **Phase 3 全量验证** | build ✅ health ✅ static ✅ SPA ✅ SSE ✅ logs ✅ (8 项全通过) |
 | **路线图更新** | 双轨演进 v4.0.0+ 版本，Phase 0-6 + P0-P2 全更新 |
 | **未来架构规划** | `arch/ARCHITECTURE-FUTURE.md` + `arch/CONFIG-CONTRACT.md` |
 | **src/admin/ + db/** | Phase 4 管理后台 + 数据库持久化目录结构规划 |
@@ -31,7 +90,7 @@
 | **P0 Bug 修复** | `getShiShenName()` 参数颠倒，十神判断此前全颠倒 |
 | **测试体系** | vitest 安装配置，39 单元测试 100% 通过 |
 | **CI/CD** | `.github/workflows/ci.yml` (lint→typecheck→test→build) |
-| **UI P0 改造** | 全面视觉重构：宣纸底 + 朱砂印 + 章节化 + 思源字体 |
+| **UI S0 改造** | 全面视觉重构：宣纸底 + 朱砂印 + 章节化 + 思源字体 |
 | UI-1 调色板 | 深棕黑→宣纸底 `#FBF7F0`，墨色 `#1C1914`，朱砂 `#B83A2E` |
 | UI-2 英雄区 | 四柱大字居中 + 日主朱砂印章（`.seal-stamp`） |
 | UI-3 章节化 | 卡片→`.chapter` 流式 + 淡墨线分隔，`max-w-3xl` 书页宽 |

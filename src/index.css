@@ -8,6 +8,16 @@
   font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
   background-color: #FBF7F0;
   color: #1C1914;
+
+  /* shadcn/ui Card 组件所需变量（深色主题适配 Admin 后台） */
+  --background: #0A1118;
+  --foreground: #EDE8DF;
+  --card: #1A1F2E;
+  --card-foreground: #EDE8DF;
+  --muted: #1A2332;
+  --muted-foreground: #6B6459;
+  --border: rgba(255, 255, 255, 0.08);
+  --ring: #B8964A;
 }
 
 body {

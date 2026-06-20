@@ -1,10 +1,10 @@
 // ============================================================
-// ChatPanel — A 模式对话面板
+// ChatPanel — A/C 模式对话面板 (Phase 4.12 Multi-Agent)
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { BaZiResult, AnnotationResult } from '../engine/index'
-import { useAgentChat, type StreamingMessage, type ChatMessage } from '../hooks/useAgentChat'
+import { useAgentChat, type StreamingMessage, type ChatMessage, type RouteInfo } from '../hooks/useAgentChat'
 
 interface ChatPanelProps {
   chart: BaZiResult
@@ -14,7 +14,12 @@ interface ChatPanelProps {
 }
 
 export default function ChatPanel({ chart, annotation, reportSummary, onClose }: ChatPanelProps) {
-  const { messages, streaming, loading, error, sendMessage, stop, reset } = useAgentChat()
+  const {
+    messages, streaming, loading, error,
+    mode, activeAgent,
+    sendMessage, stop, reset, toggleMode,
+  } = useAgentChat()
+
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -47,14 +52,29 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
     <div className="flex flex-col h-[500px] bg-white border border-[#D8D2C8] rounded-sm overflow-hidden">
       {/* 标题栏 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#D8D2C8] bg-[#FAF7F2] shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🧘</span>
-          <span className="text-sm font-bold text-[#5B5040] tracking-wider">墨白 · 命理问答</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-lg">{mode === 'multi' ? '🔮' : '🧘'}</span>
+          <span className="text-sm font-bold text-[#5B5040] tracking-wider truncate">
+            {mode === 'multi' ? '墨白 · 多Agent调度' : '墨白 · 命理问答'}
+          </span>
           {loading && (
-            <div className="inline-block animate-spin rounded-full h-3 w-3 border border-[#B83A2E] border-t-transparent" />
+            <div className="inline-block animate-spin rounded-full h-3 w-3 border border-[#B83A2E] border-t-transparent shrink-0" />
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Multi-Agent 模式切换 */}
+          <button
+            type="button"
+            onClick={toggleMode}
+            className={`text-[10px] px-2 py-1 rounded-sm font-medium transition-colors ${
+              mode === 'multi'
+                ? 'bg-[#B83A2E] text-white'
+                : 'bg-[#E8E3D8] text-[#8B7A5E] hover:bg-[#DDD6C8]'
+            }`}
+            title={mode === 'direct' ? '切换到多Agent智能调度模式' : '切换到单Agent直接对话模式'}
+          >
+            {mode === 'direct' ? '⚡ 单Agent' : '🔮 Multi-Agent'}
+          </button>
           <button
             type="button"
             onClick={reset}
@@ -74,15 +94,30 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
         </div>
       </div>
 
+      {/* Multi-Agent 路由状态栏 */}
+      {mode === 'multi' && activeAgent && (
+        <AgentRouteBar agent={activeAgent} />
+      )}
+
       {/* 消息列表 */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {!hasContent && (
           <div className="text-center py-12">
             <div className="text-4xl mb-3 opacity-20">☯</div>
             <p className="text-[#B0A898] text-xs tracking-wider leading-relaxed">
-              命书已生成，可在此追问命理问题
-              <br />
-              例如：我的事业方向、婚姻缘分、财运流年
+              {mode === 'multi' ? (
+                <>
+                  开启 Multi-Agent 智能调度
+                  <br />
+                  系统自动分析问题类型，分派给专精 Agent 回答
+                </>
+              ) : (
+                <>
+                  命书已生成，可在此追问命理问题
+                  <br />
+                  例如：我的事业方向、婚姻缘分、财运流年
+                </>
+              )}
             </p>
           </div>
         )}
@@ -109,7 +144,11 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入你的命理问题..."
+            placeholder={
+              mode === 'multi'
+                ? '说点什么，系统会自动分派给合适的 Agent...'
+                : '输入你的命理问题...'
+            }
             rows={1}
             className="flex-1 resize-none rounded-sm border border-[#D8D2C8] px-3 py-2 text-sm bg-white placeholder:text-[#B0A898] focus:outline-none focus:border-[#B83A2E] transition-colors"
             disabled={loading}
@@ -136,6 +175,25 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
           墨白基于命盘数据作答 · 仅供参考，不构成人生建议
         </p>
       </form>
+    </div>
+  )
+}
+
+// ─── Multi-Agent 路由状态栏 ───
+
+function AgentRouteBar({ agent }: { agent: RouteInfo }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-medium animate-in fade-in slide-in-from-top-1"
+      style={{
+        background: `${agent.agentColor}10`,
+        borderBottom: `1px solid ${agent.agentColor}30`,
+        color: agent.agentColor,
+      }}
+    >
+      <span className="text-sm">{agent.agentEmoji}</span>
+      <span>{agent.agentName}</span>
+      <span className="text-[10px] opacity-60 ml-auto">已调度</span>
     </div>
   )
 }

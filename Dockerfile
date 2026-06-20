@@ -13,8 +13,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
 # 复制源码并构建
-COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts vitest.config.ts index.html ./
+COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts index.html ./
 COPY src/ ./src/
+COPY admin/ ./admin/
 COPY public/ ./public/
 RUN npm run build
 
@@ -23,9 +24,12 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# 安装生产依赖（仅 tsx + hono + ai-sdk + dotenv + zod）
+# 安装生产依赖 + better-sqlite3 原生编译工具链
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN apk add --no-cache python3 make g++ && \
+    npm ci --omit=dev && \
+    npm rebuild better-sqlite3 && \
+    apk del python3 make g++
 
 # 从构建阶段复制产物
 COPY --from=builder /app/dist ./dist

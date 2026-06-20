@@ -56,16 +56,21 @@ describe('A 模式 — buildSystemPrompt 回归', () => {
       expect(prompt).toContain(fixt.annotation.patternAnalysis.quality)
     })
 
-    it(`${caseId} — System Prompt 包含 6 条规则`, () => {
+    it(`${caseId} — System Prompt 包含防越权规则`, () => {
       const fixt = loadFixture(caseId)
       const prompt = buildSystemPrompt(fixt.chart, fixt.annotation)
 
-      expect(prompt).toContain('1. 所有回答必须基于以上数据')
-      expect(prompt).toContain('2. 禁止绝对化断言')
-      expect(prompt).toContain('3. 禁止提供医疗、法律、投资建议')
-      expect(prompt).toContain('4. 语气平和客观')
-      expect(prompt).toContain('5. 每次回复末尾附')
-      expect(prompt).toContain('6. 拒绝回答与命盘无关的闲聊问题')
+      // 核心定位
+      expect(prompt).toContain('解盘者')
+      expect(prompt).toContain('排盘者')
+      // 防越权规则
+      expect(prompt).toContain('严禁私自排盘')
+      expect(prompt).toContain('数据锁定')
+      expect(prompt).toContain('禁止绝对化')
+      expect(prompt).toContain('安全边界')
+      expect(prompt).toContain('表达风格')
+      expect(prompt).toContain('话题边界')
+      expect(prompt).toContain('以上分析仅供参考')
     })
 
     it(`${caseId} — System Prompt 非空且 > 200 字符`, () => {

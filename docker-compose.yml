@@ -2,8 +2,6 @@
 # 数字命理推演引擎 — Docker Compose 生产编排
 # ============================================================
 
-version: "3.9"
-
 services:
   bazipaipan:
     build:

@@ -49,9 +49,9 @@ export default function BirthForm({ onCalculate }: Props) {
 
   const checkLeapMonth = async (lunarYear: number) => {
     try {
-      const { Lunar } = await import('lunar-typescript')
-      const lunar = Lunar.fromYmd(lunarYear, 1, 1)
-      const lm = (lunar as unknown as Record<string, () => number>)['getLeapMonth']?.() ?? 0
+      const { LunarYear } = await import('lunar-typescript')
+      const y = LunarYear.fromYear(lunarYear)
+      const lm = y.getLeapMonth()
       setLeapMonth(lm)
       if (lm === 0 || month !== lm) {
         setIsLeapMonth(false)

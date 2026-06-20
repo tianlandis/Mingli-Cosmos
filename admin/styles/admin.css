@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+/* ============================================================
+ * 墨白 管理后台 · 玄青朱砂 · 新中式暗色质感
+ * 设计语言：玄青为底 / 朱砂为印 / 金线为界 / 留白呼吸
+ * ============================================================ */
+
+/* ═══ CSS 变量：玄青暗色调色板 ═══ */
+:root {
+  --admin-bg: #0A1118;
+  --admin-bg-sidebar: #1A2332;
+  --admin-surface: #1A1F2E;
+  --admin-surface-raised: #222839;
+  --admin-border: rgba(255, 255, 255, 0.06);
+  --admin-border-raised: rgba(255, 255, 255, 0.10);
+
+  /* 文字层级 */
+  --admin-text-primary: #EDE8DF;      /* 宣纸白 */
+  --admin-text-secondary: #A09888;     /* 淡墨灰 */
+  --admin-text-muted: #6B6459;         /* 水痕灰 */
+  --admin-text-disabled: #3E3A33;      /* 残墨 */
+
+  /* 朱砂 / 金色点缀 */
+  --admin-accent: #C04030;             /* 朱砂红 */
+  --admin-accent-soft: #E8A090;        /* 浅朱砂 */
+  --admin-accent-gold: #B8964A;        /* 金线 */
+
+  /* 状态色 */
+  --admin-success: #5B8C5A;            /* 松烟绿 */
+  --admin-warning: #C08040;            /* 琥珀 */
+  --admin-danger: #D04040;             /* 残红 */
+
+  /* 圆角 / 阴影 */
+  --admin-radius: 10px;
+  --admin-radius-sm: 6px;
+  --admin-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --admin-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.40);
+
+  /* shadcn/ui Card + 通用组件暗色变量 */
+  --background: #0A1118;
+  --foreground: #EDE8DF;
+  --card: #1A1F2E;
+  --card-foreground: #EDE8DF;
+  --muted: #1A2332;
+  --muted-foreground: #6B6459;
+  --border: rgba(255, 255, 255, 0.08);
+  --ring: #B8964A;
+
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--admin-bg);
+  color: var(--admin-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══ 滚动条 — 暗色墨痕 ═══ */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ═══ 选择文字 ═══ */
+::selection {
+  background: rgba(192, 64, 48, 0.30);
+  color: var(--admin-text-primary);
+}
+
+/* ═══ 工具类：新中式卡片 ═══ */
+.admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-card-raised {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border-raised);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-lg);
+}
+
+/* ═══ 脉冲动画：服务状态点 ═══ */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.animate-pulse-dot {
+  animation: pulse-green 1.8s ease-in-out infinite;
+}
+
+/* ═══ 登录页专用动画 ═══ */
+@keyframes ink-spread {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-ink-spread {
+  animation: ink-spread 0.6s ease-out;
+}
