@@ -4,7 +4,7 @@
 
 ---
 
-## 2026-06-19 — Phase 8：全掌控命理中台大基建 + VPS 上线
+## 2026-06-19 — Phase 4a：全掌控命理中台大基建 + VPS 上线
 
 | 任务 | 说明 |
 |------|------|
@@ -18,7 +18,7 @@
 | **VPS 全链路部署** | Git pull → docker compose down → up -d --build → 容器健康检查 → API/SSE 验证 ✅ |
 | **SSE 流式修复** | 非流式模型(siliconflow DeepSeek-V3) fullStream 不含 text-delta chunk → result.text() Promise fallback 兜底 → SSE text-delta 成功推送 ✅ |
 | **SiliconFlow 接入** | 新增 ModelProvider='siliconflow' + PROVIDER_DEFAULTS/BaseUrl + loadConfig 自动推断 + 管理后台 PROVIDER_PRESETS 已就绪 |
-| **Phase 8 收尾** | 编译零错 ✅ 186 测试全绿 ✅ GitHub 推送 ✅ VPS 上线 ✅ |
+| **Phase 4a 收尾** | 编译零错 ✅ 186 测试全绿 ✅ GitHub 推送 ✅ VPS 上线 ✅ |
 
 ---
 
@@ -90,7 +90,7 @@ loadConfig() 的 DB-first 策略：
 | **P0 Bug 修复** | `getShiShenName()` 参数颠倒，十神判断此前全颠倒 |
 | **测试体系** | vitest 安装配置，39 单元测试 100% 通过 |
 | **CI/CD** | `.github/workflows/ci.yml` (lint→typecheck→test→build) |
-| **UI P0 改造** | 全面视觉重构：宣纸底 + 朱砂印 + 章节化 + 思源字体 |
+| **UI S0 改造** | 全面视觉重构：宣纸底 + 朱砂印 + 章节化 + 思源字体 |
 | UI-1 调色板 | 深棕黑→宣纸底 `#FBF7F0`，墨色 `#1C1914`，朱砂 `#B83A2E` |
 | UI-2 英雄区 | 四柱大字居中 + 日主朱砂印章（`.seal-stamp`） |
 | UI-3 章节化 | 卡片→`.chapter` 流式 + 淡墨线分隔，`max-w-3xl` 书页宽 |
