@@ -159,6 +159,19 @@ route.post('/login', loginRateLimit(), async (c) => {
   })
 })
 
+// ---- GET /verify — 验证当前 token 是否有效（前端启动时调用）----
+route.get('/verify', authMiddleware, (c) => {
+  const user = c.get('adminUser')
+  return c.json({
+    success: true,
+    data: {
+      username: user?.username,
+      authenticated: true,
+      expiresAt: user?.exp,
+    },
+  })
+})
+
 // ---- POST /logout ----
 route.post('/logout', authMiddleware, (c) => {
   const user = c.get('adminUser')

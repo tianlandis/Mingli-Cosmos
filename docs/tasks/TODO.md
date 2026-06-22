@@ -1,7 +1,7 @@
 # 📋 当前待办 — Sprint Backlog
 
-> **更新**: 2026-06-20 | **AI 每次任务优先读取本文件**
-> **Sprint**: Phase 4a ✅ 完成 → VPS 上线验证 ✅ → Phase 4b 规划
+> **更新**: 2026-06-21 | **AI 每次任务优先读取本文件**
+> **Sprint**: Phase 4a 主体完成 → Phase 4a 打磨补完 → Phase 4b 规划
 
 ---
 
@@ -79,6 +79,23 @@
 
 ---
 
+## 🔧 Phase 4a 打磨补完 ← 当前优先（按 PP_ENGINEERING_SOP 标准）
+
+> Phase 4a 主体 5 项已完成，以下 6 项为收尾打磨，按 SOP 四条铁律逐项验收。
+
+| ID | 任务 | 轨道 | 依赖 | 预估 |
+|:---:|------|:---:|------|:--:|
+| 4a-R1 | **Prompt 模板护栏热生效闭环** | 中台轨 | GuardPanel API ✅ | 0.5d |
+| 4a-R2 | **Prompt 编辑器 UI 自解释强化** | 中台轨 | PromptEditor ✅ | 0.5d |
+| 4a-R3 | **Debug Panel 闭环测试** | 中台轨 | Debug API ✅ | 0.5d |
+| 4a-R4 | **L3 护栏热编辑 + 回退兜底验证** | 中台轨 | anti-hallucination.ts ✅ | 0.5d |
+| 4a-R5 | **全站表单自解释收尾** | 中台轨 | — | 0.5d |
+| 4a-R6 | **Prompt 版本回滚演练** | 中台轨 | prompt_versions 表 ✅ | 0.5d |
+
+> **打磨标准**：每条完成后执行 tsc --noEmit → 功能验证 → 写回 DONE.md
+
+---
+
 ## 🚀 Phase 4b: 运营中台持续增强 ← 下一阶段
 
 | ID | 任务 | 
@@ -121,12 +138,13 @@
 | 指标 | 数值 |
 |------|:--:|
 | Phase 0-3 已完成 | ✅ 全部 |
-| Phase 3 VPS 上线（待 VPS） | 3 |
+| Phase 4a 主体已完成 | ✅ 5 项 |
+| Phase 4a 打磨补完 | 6 |
 | Phase 4b 下一阶段 | 5 |
 | Phase 5-6 封存 | 8 |
 | UI S1 品质提升 | 3 |
 | UI S2 封存 | 4 |
-| 远期总计 | 15 |
+| 远期总计 | 21 |
 
 ---
 

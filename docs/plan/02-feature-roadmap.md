@@ -117,7 +117,9 @@ Phase 6  [ ] 高级功能 + 生态
 
 ---
 
-## Phase 4a：动态配置与管理后台 ✅ 已完成 (大基建)
+## Phase 4a：动态配置与管理后台 ✅ 主体完成 (大基建)
+
+### 已完成 ✅ (2026-06-19)
 
 | ID | 任务 | 说明 |
 |:---:|------|------|
@@ -128,6 +130,19 @@ Phase 6  [ ] 高级功能 + 生态
 | M-5 | **配置热更新** | 管理后台修改配置后无需重启服务 |
 
 > **以上 5 项全部在 Phase 4a（2026-06-19）中完成**，含 SiliconFlow 接入 + Qwen3.5-122B-A10B 模型切换 + Admin Config API ↔ 运行时 LLM DB-first 打通。
+
+### Phase 4a 打磨补完 ⬜ (按 PP_ENGINEERING_SOP 标准)
+
+| ID | 任务 | 说明 | 预估 |
+|:---:|------|------|:--:|
+| 4a-R1 | **Prompt 模板护栏热生效闭环** | GuardPanel 修改 → DB 写入 → 下一轮对话自动生效，端到端验证链路完备 | 0.5d |
+| 4a-R2 | **Prompt 编辑器 UI 自解释强化** | 所有字段 helper text + tooltip + 中英对照，达到「零文档可用」标准 | 0.5d |
+| 4a-R3 | **Debug Panel 闭环测试** | 沙盒调试 → 保存模板 → 实际对话验证，全链路无断点 | 0.5d |
+| 4a-R4 | **L3 护栏热编辑 + 回退兜底验证** | buildAntiHallucinationPromptDynamic() 热加载 + 回退硬编码 双重保险 | 0.5d |
+| 4a-R5 | **全站表单自解释收尾** | LLM ProviderForm / ConfigPanel / KnowledgeDictPage 统一自解释标准 | 0.5d |
+| 4a-R6 | **Prompt 版本回滚演练** | prompt_versions 表回滚 → 历史版本对比 → 一键恢复 | 0.5d |
+
+> 以上 6 项为 Phase 4a 收尾打磨，按 PP_ENGINEERING_SOP 四条铁律逐项验收。完成后 Phase 4a 标记为 ✅ 终极完成。
 
 ---
 

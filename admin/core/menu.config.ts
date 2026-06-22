@@ -12,7 +12,6 @@ import {
   ScrollText,
   Users,
   ShoppingCart,
-  BookOpen,
   Library,
   type LucideIcon,
 } from 'lucide-react'
@@ -85,14 +84,7 @@ export const menuGroups: MenuGroup[] = [
         disabled: true,
         disabledHint: '功能开发中，敬请期待',
       },
-      {
-        key: 'knowledge',
-        label: '命理知识库',
-        icon: BookOpen,
-        disabled: true,
-        disabledHint: '功能开发中，敬请期待',
-        badge: '规划中',
-      },
+
     ],
   },
 ]

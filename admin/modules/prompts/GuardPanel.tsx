@@ -20,8 +20,11 @@ import {
   ChevronUp,
   Globe,
   MessageSquareOff,
+  HelpCircle,
+  Info,
 } from 'lucide-react'
 import { api } from '../../lib/api'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 // ═══════════════════════════════════════
 // 类型定义
@@ -109,6 +112,21 @@ const BUILTIN_DEFAULTS: GuardsPayload = {
     '由于排盘涉及极其严谨的天文历法与节气交点计算，为保证准确性，' +
     '请您回到主界面的【专业排盘表单】中输入出生信息，' +
     '生成新的命盘后，我们再针对新命盘进行深度探讨。',
+}
+
+// ═══════════════════════════════════════
+// 每条规则的自解释 Tooltip（业务含义 + 生效位置）
+// ═══════════════════════════════════════
+
+const RULE_TOOLTIPS: Record<string, string> = {
+  corePositioning: '定义 LLM 的根本角色边界：只能解读已排好的命盘，严禁自行推算。注入到 System Prompt 最顶部（最高优先级）',
+  toolAuthorization: '明确告知 LLM：调用工具（节气查询、典籍检索等）是合法操作，不等于排盘。防止 LLM 因过度保守而拒绝使用系统工具',
+  rule0_noPaipan: '最关键的拦截规则：当用户在对话中直接提供出生时间要求排盘时，LLM 必须立刻拒绝，并回复下方规定的拒绝话术',
+  rule1_dataLock: '锁定 LLM 的信息来源：所有回答只能基于"命盘数据"中的内容，不得编造天干地支、五行分布等任何数据',
+  rule2_noAbsolute: '禁止使用"一定""必然""保证""绝对"等绝对化断言词，防止 LLM 给出过于武断的命理结论',
+  rule3_safety: '安全底线：禁止 LLM 提供医疗诊断、法律建议、投资理财建议，避免法律风险',
+  rule4_style: '设定 LLM 的语气风格：平和客观、有典籍气质但不晦涩，并在每次回复末尾附加免责声明',
+  rule5_topicBoundary: '话题边界控制：LLM 只回答与本命盘相关的命理问题，拒绝闲聊和通用知识问答',
 }
 
 // ═══════════════════════════════════════
@@ -369,9 +387,21 @@ export default function GuardPanel() {
                   <span className="w-5 h-5 rounded-full bg-[#B8964A]/10 border border-[#B8964A]/20 flex items-center justify-center shrink-0 text-[10px] font-mono text-[#B8964A]">
                     {idx + 1}
                   </span>
-                  <span className="text-xs font-medium text-[#EDE8DF] truncate">
-                    {rule.label}
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs font-medium text-[#EDE8DF] truncate cursor-help flex items-center gap-1">
+                        {rule.label}
+                        {RULE_TOOLTIPS[rule.name] && (
+                          <Info size={10} className="text-[#4A4540] shrink-0" />
+                        )}
+                      </span>
+                    </TooltipTrigger>
+                    {RULE_TOOLTIPS[rule.name] && (
+                      <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-72">
+                        <p className="text-[10px] leading-relaxed">{RULE_TOOLTIPS[rule.name]}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                   {rule.content !==
                     BUILTIN_DEFAULTS.l1Rules.find(r => r.name === rule.name)
                       ?.content && (
@@ -414,13 +444,21 @@ export default function GuardPanel() {
         })}
       </div>
 
-      {/* ── 底部操作说明 ── */}
-      <div className="shrink-0 px-5 py-3 border-t border-[#2A2622]">
+      {/* ── 底部操作说明 + 热生效闭环验证 ── */}
+      <div className="shrink-0 px-5 py-3 border-t border-[#2A2622] space-y-2">
         <div className="flex items-start gap-2 text-[10px] text-[#4A4540]">
           <Shield size={12} className="mt-0.5 shrink-0" />
           <span>
             L3 护栏规则保存后将在<strong className="text-[#6B6459]">下一轮对话</strong>
             中自动生效。所有修改均记录审计日志，可在「审计日志」页面查看。
+          </span>
+        </div>
+        <div className="flex items-start gap-2 text-[10px] text-[#4A4540] bg-[#1A1816] rounded-md px-3 py-2 border border-[#2A2622]">
+          <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-[#5B8C5A]" />
+          <span>
+            <strong className="text-[#5B8C5A]">端到端验证链路</strong>：管理员修改护栏规则（如免责声明话术）→ 点击"保存并热生效"
+            → 下一轮用户对话时，<code className="text-[#6B6459] bg-[#12100E] px-1 rounded text-[9px]">buildAntiHallucinationPromptDynamic()</code> 从 DB 实时加载最新规则
+            → LLM 输出立刻携带新的免责声明。无需重启服务，全程审计可追溯。
           </span>
         </div>
       </div>
