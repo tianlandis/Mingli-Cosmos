@@ -53,5 +53,9 @@ docs/contracts/engine-api.md
 *.temp
 .tmp/data/
 
+# ── SQLite 运行时文件 ──
+*.db-shm
+*.db-wal
+
 # ── CodeBuddy 本地数据 ──
 .codebuddy/
