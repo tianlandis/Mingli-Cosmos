@@ -45,6 +45,149 @@ const toolsUpdateSchema = z.object({
 )
 
 // ═══════════════════════════════════════
+// 厂商模型提取工具函数
+// ═══════════════════════════════════════
+
+interface FetchModelsResult {
+  success: boolean
+  models?: string[]
+  error?: string
+  provider?: string  // 检测到的厂商格式
+}
+
+/**
+ * 从厂商 API 提取模型列表
+ * 策略：优先标准 OpenAI /v1/models，失败回退 Google Gemini 格式
+ */
+async function fetchModelsFromProvider(baseUrl: string, apiKey: string, timeoutMs = 15000): Promise<FetchModelsResult> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  // 清理 baseUrl 末尾斜杠
+  const cleanBase = baseUrl.replace(/\/+$/, '')
+
+  // 安全 JSON 解析辅助函数（容错非 JSON 响应）
+  const safeJson = async (res: Response): Promise<any | null> => {
+    try {
+      const text = await res.text()
+      if (!text || text.trim().length === 0) return null
+      return JSON.parse(text)
+    } catch {
+      return null
+    }
+  }
+
+  try {
+    // ── 策略 A：标准 OpenAI 兼容 /v1/models ──
+    const openAiUrl = `${cleanBase}/models`
+    const res = await fetch(openAiUrl, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    })
+
+    if (res.ok) {
+      const json = await safeJson(res)
+      // OpenAI 格式: { data: [{ id: "model-name" }] }
+      if (json?.data && Array.isArray(json.data)) {
+        const models = json.data
+          .map((m: any) => m.id ?? m.name)
+          .filter((id: string) => typeof id === 'string' && id.length > 0)
+        if (models.length > 0) {
+          return { success: true, models, provider: 'openai-compatible' }
+        }
+      }
+      // 其他格式：直接返回数组
+      if (Array.isArray(json)) {
+        const models = json
+          .map((m: any) => m.id ?? m.name ?? m)
+          .filter((id: any) => typeof id === 'string' && id.length > 0)
+        if (models.length > 0) {
+          return { success: true, models, provider: 'array' }
+        }
+      }
+      // 200 但无法解析模型列表（如返回空对象或非标准结构）
+      if (!json) {
+        return { success: false, error: '厂商返回了空响应或非 JSON 内容，请检查 Base URL' }
+      }
+    }
+
+    // ── 策略 B：Google Gemini 格式 ──
+    // URL: https://generativelanguage.googleapis.com/v1beta/openai/models?key=xxx
+    // 或: https://generativelanguage.googleapis.com/v1beta/models?key=xxx
+    const geminiUrl = cleanBase.includes('generativelanguage.googleapis.com')
+      ? `${cleanBase}/models?key=${apiKey}`
+      : null
+
+    if (geminiUrl) {
+      const geminiRes = await fetch(geminiUrl, {
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      })
+      if (geminiRes.ok) {
+        const json = await safeJson(geminiRes)
+        // Gemini 格式: { models: [{ name: "models/gemini-2.0-flash" }] }
+        if (json?.models && Array.isArray(json.models)) {
+          const models = json.models
+            .map((m: any) => m.name?.replace(/^models\//, '') ?? m.id)
+            .filter((id: string) => typeof id === 'string' && id.length > 0)
+          if (models.length > 0) {
+            return { success: true, models, provider: 'google-gemini' }
+          }
+        }
+      }
+    }
+
+    // ── 策略 C：策略 A 返回非 200 但非 401/403 时，尝试去除 /v1 前缀的裸 /models ──
+    // 某些非标准 OpenAI 兼容端点（如部分反向代理）不遵循 /v1/models 路径
+    if (res.status !== 401 && res.status !== 403) {
+      // 如果 cleanBase 已包含 /v1，尝试替换为裸路径
+      const bareUrl = cleanBase.replace(/\/v1\/?$/, '') + '/models'
+      if (bareUrl !== `${cleanBase}/models`) {
+        try {
+          const fbRes = await fetch(bareUrl, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+          })
+          if (fbRes.ok) {
+            const json = await safeJson(fbRes)
+            if (json?.data && Array.isArray(json.data)) {
+              const models = json.data
+                .map((m: any) => m.id ?? m.name)
+                .filter((id: string) => typeof id === 'string' && id.length > 0)
+              if (models.length > 0) {
+                return { success: true, models, provider: 'openai-compatible-bare' }
+              }
+            }
+          }
+        } catch { /* 静默失败，继续报错 */ }
+      }
+    }
+
+    // 区分不同 HTTP 状态码给出针对性错误
+    if (res.status === 401 || res.status === 403) {
+      return { success: false, error: `认证失败 (HTTP ${res.status})，请检查 API Key 是否正确` }
+    }
+    if (res.status === 404) {
+      return { success: false, error: `端点不存在 (HTTP 404)，请检查 Base URL 是否正确（需包含 /v1 前缀？）` }
+    }
+    return { success: false, error: `厂商返回非标准响应 (HTTP ${res.status})，请手动输入模型名` }
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      return { success: false, error: `请求超时 (${timeoutMs / 1000}s)，请检查 Base URL 是否正确` }
+    }
+    return { success: false, error: `请求失败: ${err.message || '未知网络错误'}` }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+// ═══════════════════════════════════════
 // 导出路由
 // ═══════════════════════════════════════
 
@@ -179,6 +322,125 @@ route.delete('/:id', (c) => {
   deleteApiKey(id)
   logAudit(c, { action: 'delete', resource: 'llm_provider', resourceId: id })
   return c.json({ success: true, data: { ok: true } })
+})
+
+// ---- POST /llm/fetch-models — 代理请求厂商 /v1/models（解决跨域）----
+route.post('/fetch-models', async (c) => {
+  let body: { baseUrl?: string; apiKey?: string; providerId?: number }
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
+  }
+
+  let { baseUrl, apiKey, providerId } = body
+
+  // 如果未传 apiKey 但传了 providerId，从数据库读取已存储的 Key
+  if (!apiKey && providerId) {
+    const existing = getApiKey(providerId)
+    if (!existing) {
+      return c.json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: `Provider ID ${providerId} 不存在` },
+      }, 404)
+    }
+    apiKey = (existing as any).apiKey
+    // 如果数据库里也没有 baseUrl，用 Provider 已存储的
+    if (!baseUrl) {
+      baseUrl = (existing as any).baseUrl
+    }
+  }
+
+  if (!baseUrl || !apiKey) {
+    return c.json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'baseUrl 和 apiKey 为必填参数（或提供有效的 providerId 以读取已存储配置）' },
+    }, 400)
+  }
+
+  const result = await fetchModelsFromProvider(baseUrl, apiKey)
+
+  logAudit(c, {
+    action: 'fetch_models',
+    resource: 'llm_provider',
+    detail: JSON.stringify({ baseUrl, modelCount: result.models?.length ?? 0, provider: result.provider }),
+  })
+
+  if (!result.success) {
+    return c.json({
+      success: false,
+      error: { code: 'FETCH_MODELS_FAILED', message: result.error },
+    }, 502)
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      models: result.models,
+      count: result.models!.length,
+      provider: result.provider,
+    },
+  })
+})
+
+// ---- POST /llm/migrate — 存量数据迁移：从 .env / app_configs 导入旧配置到 api_keys ----
+route.post('/migrate', async (c) => {
+  // 读取当前 .env 中的 LLM 配置（通过 app_configs 或环境变量）
+  const { getAppConfig } = await import('../../config/index')
+  const config = getAppConfig()
+
+  if (config.source !== 'env' && config.source !== 'db') {
+    return c.json({
+      success: false,
+      error: { code: 'NO_LEGACY_CONFIG', message: '未检测到旧配置数据' },
+    }, 404)
+  }
+
+  // 检查是否已有同名 Provider（去重）
+  const existing = listApiKeys()
+  const label = `迁移-${config.provider}-${config.model?.split('/')?.pop() ?? 'default'}`
+  const duplicate = existing.find(p => p.label === label)
+  if (duplicate) {
+    return c.json({
+      success: false,
+      error: {
+        code: 'DUPLICATE',
+        message: `已存在同名 Provider "${label}" (ID: ${duplicate.id})，无需重复导入`,
+      },
+    }, 409)
+  }
+
+  // 创建新 Provider
+  const result = createApiKey({
+    provider: config.provider || 'custom',
+    label,
+    apiKey: config.apiKey || '',
+    baseUrl: config.baseUrl || '',
+    model: config.model || '',
+    temperature: config.temperature ?? 0.7,
+    maxTokens: config.maxTokens ?? 2048,
+    isActive: 1,
+    sortOrder: existing.length,
+    supportedTools: '[]',
+    testStatus: 'untested',
+  } as any)
+
+  logAudit(c, {
+    action: 'migrate',
+    resource: 'llm_provider',
+    resourceId: result.id,
+    detail: JSON.stringify({ source: config.source, provider: config.provider, model: config.model }),
+  })
+
+  return c.json({
+    success: true,
+    data: {
+      id: result.id,
+      label: result.label,
+      provider: result.provider,
+      model: result.model,
+      source: config.source,
+    },
+    message: `已从 ${config.source === 'env' ? '.env 环境变量' : '数据库配置'} 导入为 "${label}"`,
+  })
 })
 
 export default route

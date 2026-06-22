@@ -29,6 +29,8 @@ import {
   Sparkles,
   Lightbulb,
   BookOpen,
+  Upload,
+  Loader2,
 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
@@ -72,11 +74,14 @@ interface LLMPageProps {
 
 function ProviderBadge({ type }: { type: string }) {
   const map: Record<string, { label: string; color: string }> = {
-    openai: { label: 'OpenAI', color: '#10A37F' },
-    deepseek: { label: 'DeepSeek', color: '#4D6BFE' },
-    siliconflow: { label: 'SiliconFlow', color: '#8250DF' },
-    claude: { label: 'Claude', color: '#D97706' },
-    local: { label: '本地部署', color: '#5B8C5A' },
+    openai:      { label: 'OpenAI',          color: '#10A37F' },
+    deepseek:    { label: 'DeepSeek',        color: '#4D6BFE' },
+    siliconflow: { label: 'SiliconFlow',     color: '#8250DF' },
+    claude:      { label: 'Claude',          color: '#D97706' },
+    ollama:      { label: 'Ollama 本地',     color: '#5B8C5A' },
+    local:       { label: '本地部署',        color: '#5B8C5A' },
+    xai:         { label: 'xAI Grok',        color: '#1DA1F2' },
+    google:      { label: 'Google Gemini',   color: '#4285F4' },
   }
   const info = map[type] ?? { label: type, color: '#6B6459' }
   return (
@@ -175,17 +180,29 @@ const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     systemPromptHint: '你是一位精通八字命理与五行生克制化的玄学大师，分析严谨，引经据典。',
     personality: '🧠 推理型' },
   siliconflow: { temp: 0.5, topP: 0.9, freqPenalty: 0.1, maxTokens: 8192,
-    desc: 'Qwen3.5-122B 推荐：阿里通义千问 · 中文推理顶尖',
+    desc: '硅基流动 Qwen3.5-122B 推荐：阿里通义千问 · 中文推理顶尖',
     systemPromptHint: '你是一位精通八字命理与五行生克制化的玄学大师，分析严谨，引经据典。',
     personality: '🧠 推理型' },
   claude: { temp: 0.7, topP: 1.0, freqPenalty: 0, maxTokens: 4096,
     desc: 'Claude 推荐：自然对话 · 深度思考',
     systemPromptHint: 'You are an erudite BaZi consultant who explains complex metaphysical concepts with clarity and depth.',
     personality: '🎨 人文型' },
+  ollama: { temp: 0.8, topP: 0.95, freqPenalty: 0.2, maxTokens: 2048,
+    desc: 'Ollama 本地推荐：GPU 私有化 · 创意偏向',
+    systemPromptHint: '你是八字命理助手，请根据输入信息给出专业、清晰的命理分析。',
+    personality: '🔧 泛化型' },
   local: { temp: 0.8, topP: 0.95, freqPenalty: 0.2, maxTokens: 2048,
     desc: '本地模型推荐：创意偏向 · 适应泛化',
     systemPromptHint: '你是八字命理助手，请根据输入信息给出专业、清晰的命理分析。',
     personality: '🔧 泛化型' },
+  xai: { temp: 0.7, topP: 1.0, freqPenalty: 0, maxTokens: 4096,
+    desc: 'Grok 推荐：实时知识 · 幽默风格',
+    systemPromptHint: 'You are a BaZi consultant with a sharp wit and deep knowledge of Chinese metaphysics.',
+    personality: '⚡ 实时型' },
+  google: { temp: 0.7, topP: 1.0, freqPenalty: 0, maxTokens: 4096,
+    desc: 'Gemini 推荐：多模态 · 长上下文',
+    systemPromptHint: 'You are a knowledgeable BaZi master who excels at synthesizing complex astrological patterns.',
+    personality: '🔮 综合型' },
   custom: { temp: 0.7, topP: 1.0, freqPenalty: 0, maxTokens: 4096,
     desc: '自定义供应商：默认参数',
     systemPromptHint: '请在 Prompt 模板中配置适用于此供应商的系统指令。',
@@ -421,6 +438,8 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
 
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [migrating, setMigrating] = useState(false)
+  const [migrateMsg, setMigrateMsg] = useState('')
 
   // ═══════════════════════════════
   // 拉取 Provider 列表
@@ -513,14 +532,57 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
             {providers.length} 个 Provider · 配置参数 & 工具能力
           </p>
         </div>
-        <button
-          onClick={() => { setEditTarget(null); setFormOpen(true) }}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#EDE8DF] bg-[#C04030] hover:bg-[#A03024] rounded-md transition-colors"
-        >
-          <Plus size={14} />
-          新增 Provider
-        </button>
+        <div className="flex items-center gap-2">
+          {/* ── 存量迁移按钮 ── */}
+          <button
+            onClick={async () => {
+              setMigrating(true)
+              setMigrateMsg('')
+              try {
+                const res = await fetch('/api/v1/admin/llm/migrate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...apiHeaders() },
+                })
+                const data = await res.json()
+                if (data?.success) {
+                  setMigrateMsg(`✅ ${data.message || '导入成功'}`)
+                  fetchProviders()
+                } else {
+                  setMigrateMsg(`⚠️ ${data?.error?.message || '无需导入'}`)
+                }
+              } catch {
+                setMigrateMsg('❌ 请求失败')
+              } finally {
+                setMigrating(false)
+                setTimeout(() => setMigrateMsg(''), 5000)
+              }
+            }}
+            disabled={migrating}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#A09888] hover:text-[#EDE8DF] bg-[#1A1F2E] hover:bg-[#222839] border border-white/[0.06] hover:border-white/[0.10] rounded-md transition-all"
+            title="从 .env 或数据库旧配置导入为新 Provider"
+          >
+            {migrating ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+            导入旧配置
+          </button>
+          <button
+            onClick={() => { setEditTarget(null); setFormOpen(true) }}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#EDE8DF] bg-[#C04030] hover:bg-[#A03024] rounded-md transition-colors"
+          >
+            <Plus size={14} />
+            新增 Provider
+          </button>
+        </div>
       </div>
+      {/* ── 迁移结果提示 ── */}
+      {migrateMsg && (
+        <div className={`px-3 py-2 rounded-md text-xs ${
+          migrateMsg.startsWith('✅')
+            ? 'bg-[#5B8C5A]/10 border border-[#5B8C5A]/20 text-[#5B8C5A]'
+            : 'bg-[#C08040]/10 border border-[#C08040]/20 text-[#C08040]'
+        }`}>
+          {migrateMsg}
+        </div>
+      )}
 
       {/* ── 主内容 ── */}
       {providers.length === 0 ? (

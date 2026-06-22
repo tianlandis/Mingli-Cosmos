@@ -5,7 +5,7 @@
 // ============================================================
 
 import { useState, useEffect } from 'react'
-import { X, Key, Globe, Cpu, Thermometer, Hash, HelpCircle, Sparkles } from 'lucide-react'
+import { X, Key, Globe, Cpu, Thermometer, Hash, HelpCircle, Sparkles, Download, RotateCw, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
@@ -33,25 +33,29 @@ interface ProviderFormProps {
 }
 
 // ═══════════════════════════════════════
-// 预设 Provider（含推荐 Temperature，与 TuningPanel 保持一致）
+// 全生态厂商预设（OpenClaw 级别 —— 含推荐 Base URL / Model / Temperature / MaxTokens）
 // ═══════════════════════════════════════
 
-const PROVIDER_PRESETS: Record<string, { baseUrl?: string; model?: string; temperature?: number }> = {
-  openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o', temperature: 0.7 },
-  deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', temperature: 0.3 },
-  siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V3', temperature: 0.5 },
-  claude: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-20250514', temperature: 0.7 },
-  local: { baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5-coder:7b', temperature: 0.8 },
-  custom: {},
+const PROVIDER_PRESETS: Record<string, { baseUrl?: string; model?: string; temperature?: number; maxTokens?: number }> = {
+  openai:     { baseUrl: 'https://api.openai.com/v1',                          model: 'gpt-4o',                     temperature: 0.7, maxTokens: 4096 },
+  deepseek:   { baseUrl: 'https://api.deepseek.com/v1',                        model: 'deepseek-chat',              temperature: 0.3, maxTokens: 8192 },
+  siliconflow:{ baseUrl: 'https://api.siliconflow.cn/v1',                      model: 'Qwen/Qwen3.5-122B',          temperature: 0.5, maxTokens: 8192 },
+  claude:     { baseUrl: 'https://api.anthropic.com/v1',                       model: 'claude-sonnet-4-20250514',   temperature: 0.7, maxTokens: 4096 },
+  ollama:     { baseUrl: 'http://127.0.0.1:11434/v1',                          model: 'qwen2.5-coder:14b',          temperature: 0.8, maxTokens: 2048 },
+  xai:        { baseUrl: 'https://api.x.ai/v1',                                model: 'grok-3-beta',                temperature: 0.7, maxTokens: 4096 },
+  google:     { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash',    temperature: 0.7, maxTokens: 4096 },
+  custom:     {},
 }
 
 const PROVIDER_OPTIONS = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'siliconflow', label: 'SiliconFlow' },
-  { value: 'claude', label: 'Anthropic Claude' },
-  { value: 'local', label: '本地部署 (Ollama/vLLM)' },
-  { value: 'custom', label: '自定义' },
+  { value: 'openai',      label: 'OpenAI' },
+  { value: 'deepseek',    label: 'DeepSeek（深度求索）' },
+  { value: 'siliconflow', label: 'SiliconFlow（硅基流动）' },
+  { value: 'claude',      label: 'Anthropic Claude' },
+  { value: 'ollama',      label: 'Ollama（本地私有化）' },
+  { value: 'xai',         label: 'xAI / Grok' },
+  { value: 'google',      label: 'Google AI Pro (Gemini)' },
+  { value: 'custom',      label: '自定义（OpenAI 兼容）' },
 ]
 
 // ═══════════════════════════════════════
@@ -71,6 +75,12 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [autoSynced, setAutoSynced] = useState<boolean>(false)
+
+  // ── 模型列表提取状态 ──
+  const [fetchingModels, setFetchingModels] = useState(false)
+  const [fetchedModels, setFetchedModels] = useState<string[]>([])
+  const [fetchError, setFetchError] = useState('')
+  const [modelSelectMode, setModelSelectMode] = useState<'text' | 'select'>('text')
 
   const isEdit = !!initialData
 
@@ -97,10 +107,66 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
       baseUrl: preset?.baseUrl ?? prev.baseUrl,
       model: preset?.model ?? prev.model,
       temperature: preset?.temperature ?? prev.temperature,
+      maxTokens: preset?.maxTokens ?? prev.maxTokens,
     }))
     // 闪动提示：自动同步完成
     setAutoSynced(true)
     setTimeout(() => setAutoSynced(false), 2000)
+    // 切换供应商时重置模型提取状态
+    setFetchedModels([])
+    setFetchError('')
+    setModelSelectMode('text')
+  }
+
+  // ── 获取模型列表（走后端代理，避免跨域）──
+  async function handleFetchModels() {
+    const baseUrl = form.baseUrl?.trim()
+    const apiKey = form.apiKey?.trim()
+
+    // 基础校验
+    if (!baseUrl) {
+      setFetchError('请先填写 Base URL')
+      return
+    }
+
+    // 编辑模式下 apiKey 可能为空（用户保留了原 Key），尝试通过 providerId 走后端查询
+    const providerId = (initialData as any)?.id as number | undefined
+
+    if (!apiKey && !providerId) {
+      setFetchError('请先填写 API Key（编辑模式下如保留原 Key，系统将自动从数据库读取）')
+      return
+    }
+
+    setFetchingModels(true)
+    setFetchError('')
+    setFetchedModels([])
+
+    try {
+      // 如果 apiKey 为空但 providerId 存在（编辑模式），走后端按 ID 代理
+      const payload: Record<string, any> = { baseUrl }
+      if (apiKey) {
+        payload.apiKey = apiKey
+      } else if (providerId) {
+        payload.providerId = providerId
+      }
+
+      const res = await fetch('/api/v1/admin/llm/fetch-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (data?.success && data.data?.models?.length > 0) {
+        setFetchedModels(data.data.models)
+        setModelSelectMode('select')
+      } else {
+        setFetchError(data?.error?.message ?? '未获取到模型列表，请检查 API Key 和 Base URL')
+      }
+    } catch (err: any) {
+      setFetchError(err?.message ?? '网络请求失败')
+    } finally {
+      setFetchingModels(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -177,7 +243,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
               ))}
             </Select>
             <div className="flex items-center gap-2">
-              <p className="text-[9px] text-[#4A4540]">选择 AI 服务商品牌，Base URL、推荐模型和 Temperature 将自动填入</p>
+              <p className="text-[9px] text-[#4A4540]">选择 AI 服务商品牌，Base URL、推荐模型、Temperature 和 MaxTokens 将自动填入（与微调台预设一致）</p>
               {autoSynced && (
                 <span className="inline-flex items-center gap-1 text-[8px] text-[#4D6BFE] bg-[#4D6BFE]/8 px-1.5 py-0.5 rounded-full border border-[#4D6BFE]/20 animate-pulse">
                   <Sparkles size={8} />
@@ -243,19 +309,89 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
             <p className="text-[9px] text-[#4A4540]">AI 服务商的 API 端点地址。切换供应商时自动填入推荐值，也可手动覆盖</p>
           </div>
 
-          {/* 模型名 */}
+          {/* 模型名 — 双态切换：文本输入 / 下拉选择 */}
           <div className="space-y-1.5">
-            <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
-              <Cpu size={12} />
-              默认模型 (Default Model)
-            </Label>
-            <Input
-              value={form.model ?? ''}
-              onChange={e => setForm(p => ({ ...p, model: e.target.value || undefined }))}
-              placeholder="qwen2.5-coder:14b"
-              className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono text-xs"
-            />
-            <p className="text-[9px] text-[#4A4540]">发给 LLM 的模型名称参数；不同供应商支持的模型列表不同，请查阅其文档</p>
+            <div className="flex items-center justify-between">
+              <Label className="text-[#A09888] text-xs flex items-center gap-1.5">
+                <Cpu size={12} />
+                默认模型 (Default Model)
+              </Label>
+              {modelSelectMode === 'select' && fetchedModels.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setModelSelectMode('text')}
+                  className="text-[9px] text-[#4D6BFE] hover:text-[#6B8AFF] transition-colors"
+                >
+                  切回手动输入
+                </button>
+              )}
+            </div>
+
+            {/* 获取模型按钮 + 状态 */}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                type="button"
+                onClick={handleFetchModels}
+                disabled={fetchingModels}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  fetchingModels
+                    ? 'bg-[#3A3630] text-[#6B6459] cursor-wait'
+                    : fetchedModels.length > 0
+                      ? 'bg-[#5B8C5A]/10 text-[#5B8C5A] border border-[#5B8C5A]/25 hover:bg-[#5B8C5A]/20'
+                      : 'bg-[#4D6BFE]/10 text-[#4D6BFE] border border-[#4D6BFE]/25 hover:bg-[#4D6BFE]/20'
+                }`}
+              >
+                {fetchingModels ? (
+                  <RotateCw size={12} className="animate-spin" />
+                ) : fetchedModels.length > 0 ? (
+                  <CheckCircle2 size={12} />
+                ) : (
+                  <Download size={12} />
+                )}
+                {fetchingModels
+                  ? '正在获取...'
+                  : fetchedModels.length > 0
+                    ? `已获取 ${fetchedModels.length} 个模型`
+                    : '获取模型列表'}
+              </button>
+              {modelSelectMode === 'select' && fetchedModels.length > 0 && (
+                <span className="text-[9px] text-[#5B8C5A] bg-[#5B8C5A]/8 px-1.5 py-0.5 rounded border border-[#5B8C5A]/15">
+                  下拉选择
+                </span>
+              )}
+            </div>
+
+            {/* 模型输入 / 选择 */}
+            {modelSelectMode === 'select' && fetchedModels.length > 0 ? (
+              <Select
+                value={form.model ?? ''}
+                onChange={e => setForm(p => ({ ...p, model: e.target.value }))}
+              >
+                <option value="">-- 请选择模型 --</option>
+                {fetchedModels.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </Select>
+            ) : (
+              <Input
+                value={form.model ?? ''}
+                onChange={e => setForm(p => ({ ...p, model: e.target.value || undefined }))}
+                placeholder="qwen2.5-coder:14b"
+                className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono text-xs"
+              />
+            )}
+
+            {/* 获取失败提示 */}
+            {fetchError && (
+              <div className="flex items-start gap-1.5 mt-1 px-2 py-1.5 rounded bg-[#C04030]/8 border border-[#C04030]/20 text-[#D06050] text-[9px]">
+                <AlertTriangle size={10} className="shrink-0 mt-0.5" />
+                <span>{fetchError}</span>
+              </div>
+            )}
+
+            <p className="text-[9px] text-[#4A4540]">
+              点击「获取模型列表」将通过后端代理请求厂商 /v1/models 接口，无需担心跨域；获取成功后自动切换为下拉选择
+            </p>
           </div>
 
           {/* Temperature + MaxTokens 并排 */}
