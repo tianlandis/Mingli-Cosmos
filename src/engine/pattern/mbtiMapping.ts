@@ -1,14 +1,24 @@
 // ============================================================
 // MBTI 映射模块
 // 来源：八字格局与MBTI类型映射.md（三阶精修版）
+//
+// Phase 4c：MBTI 映射数据全面剥离至 knowledge_assets
+//   - SHISHEN_MBTI_FUNCTION → category: personality
+//   - COMBINATION_MBTI_MAP / INDUSTRY_MATCHES / ENERGY_ADJUSTMENTS → category: pattern
+//   - export let 实现 ES Module live binding 热更新
+//   - reloadMBTIMappings() 从 KnowledgeRegistry 动态接管
+//   - _PRIVATE 常量保留硬编码兜底
 // ============================================================
 
 import type { PatternCombination, PoGeRisk } from './patternRules'
+import { KnowledgeRegistry } from '../knowledge-registry'
 
-// ─── 十神 → MBTI主功能映射 ───
+// ═══════════════════════════════════════
+// _PRIVATE 硬编码兜底
+// ═══════════════════════════════════════
 
 /** 十神格局组合 → 认知功能组合（主导+辅助） */
-export const SHISHEN_MBTI_FUNCTION: Record<string, { dominant: string; auxiliary: string; mbtiTypes: string[] }> = {
+const _SHISHEN_MBTI_FUNCTION: Record<string, { dominant: string; auxiliary: string; mbtiTypes: string[] }> = {
   '正官': { dominant: 'Te', auxiliary: 'Si/Ni', mbtiTypes: ['ESTJ', 'INTJ'] },
   '七杀': { dominant: 'Ti', auxiliary: 'Ne/Se', mbtiTypes: ['INTP', 'ESTP'] },
   '正印': { dominant: 'Ne', auxiliary: 'Fi/Ti', mbtiTypes: ['ENFP', 'ENTP'] },
@@ -34,8 +44,7 @@ export interface MBTIProfile {
   portrait: string
 }
 
-/** 格局组合 → MBTI 映射表 */
-const COMBINATION_MBTI_MAP: Record<string, MBTIProfile> = {
+const _COMBINATION_MBTI_MAP: Record<string, MBTIProfile> = {
   '官印相生': {
     combinationName: '官印相生',
     cognitiveFunctions: 'Te + Ne',
@@ -117,7 +126,7 @@ export interface IndustryMatch {
   riskWarning: string
 }
 
-const INDUSTRY_MATCHES: Record<string, IndustryMatch> = {
+const _INDUSTRY_MATCHES: Record<string, IndustryMatch> = {
   '伤官格': {
     combination: '伤官格（ENFP/ENFJ）',
     industries: ['新媒体运营', '创意策划', '心理咨询'],
@@ -159,7 +168,7 @@ export interface EnergyAdjustment {
   practicalMethods: string[]
 }
 
-const ENERGY_ADJUSTMENTS: EnergyAdjustment[] = [
+const _ENERGY_ADJUSTMENTS: EnergyAdjustment[] = [
   {
     initialState: '印格无官杀',
     weakness: '缺乏结构化执行力',
@@ -185,6 +194,36 @@ const ENERGY_ADJUSTMENTS: EnergyAdjustment[] = [
     practicalMethods: ['寻找规则漏洞', '探索新的可能性', '提升灵活应变能力'],
   },
 ]
+
+
+// ═══════════════════════════════════════
+// export let — ES Module live binding（Phase 4c）
+// ═══════════════════════════════════════
+
+export let SHISHEN_MBTI_FUNCTION: Record<string, { dominant: string; auxiliary: string; mbtiTypes: string[] }> = _SHISHEN_MBTI_FUNCTION
+export let COMBINATION_MBTI_MAP: Record<string, MBTIProfile> = _COMBINATION_MBTI_MAP
+export let INDUSTRY_MATCHES: Record<string, IndustryMatch> = _INDUSTRY_MATCHES
+export let ENERGY_ADJUSTMENTS: EnergyAdjustment[] = _ENERGY_ADJUSTMENTS
+
+
+// ═══════════════════════════════════════
+// Phase 4c — 从 KnowledgeRegistry 动态接管
+// ═══════════════════════════════════════
+
+/**
+ * 从 Registry 重新加载全部 MBTI 映射字典。
+ * 由 KnowledgeProvider.bootKnowledgeRegistry() 在启动/热更新时调用。
+ */
+export function reloadMBTIMappings(): void {
+  SHISHEN_MBTI_FUNCTION = KnowledgeRegistry.getOrFallback<Record<string, { dominant: string; auxiliary: string; mbtiTypes: string[] }>>(
+    'personality.shishen_mbti_function', _SHISHEN_MBTI_FUNCTION)
+  COMBINATION_MBTI_MAP = KnowledgeRegistry.getOrFallback<Record<string, MBTIProfile>>(
+    'pattern.combination_mbti_map', _COMBINATION_MBTI_MAP)
+  INDUSTRY_MATCHES = KnowledgeRegistry.getOrFallback<Record<string, IndustryMatch>>(
+    'pattern.industry_matches', _INDUSTRY_MATCHES)
+  ENERGY_ADJUSTMENTS = KnowledgeRegistry.getOrFallback<EnergyAdjustment[]>(
+    'pattern.energy_adjustments', _ENERGY_ADJUSTMENTS)
+}
 
 // ─── 主入口函数 ───
 

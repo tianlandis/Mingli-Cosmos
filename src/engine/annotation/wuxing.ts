@@ -2,6 +2,8 @@
 // 五行生克工具函数
 // ============================================================
 
+import { KnowledgeRegistry } from '../knowledge-registry'
+
 /** 五行相生: 金→水→木→火→土→金 */
 export const WUXING_SHENG: Record<string, string> = {
   '金': '水', '水': '木', '木': '火', '火': '土', '土': '金',
@@ -72,8 +74,9 @@ export function getShiShenName(
 }
 
 
-/** 十二长生表（五行在地支的长生状态） */
-export const CHANG_SHENG: Record<string, Record<string, string>> = {
+// ─── _PRIVATE 硬编码兜底（DB 故障时引擎不死机） ───
+
+const _CHANG_SHENG: Record<string, Record<string, string>> = {
   '木': {'亥':'长生','子':'沐浴','丑':'冠带','寅':'临官','卯':'帝旺','辰':'衰','巳':'病','午':'死','未':'墓','申':'绝','酉':'胎','戌':'养'},
   '火': {'寅':'长生','卯':'沐浴','辰':'冠带','巳':'临官','午':'帝旺','未':'衰','申':'病','酉':'死','戌':'墓','亥':'绝','子':'胎','丑':'养'},
   '土': {'申':'长生','酉':'沐浴','戌':'冠带','亥':'临官','子':'帝旺','丑':'衰','寅':'病','卯':'死','辰':'墓','巳':'绝','午':'胎','未':'养'},
@@ -81,8 +84,7 @@ export const CHANG_SHENG: Record<string, Record<string, string>> = {
   '水': {'申':'长生','酉':'沐浴','戌':'冠带','亥':'临官','子':'帝旺','丑':'衰','寅':'病','卯':'死','辰':'墓','巳':'绝','午':'胎','未':'养'},
 }
 
-/** 月令旺衰表（五行在各月令的旺衰状态） */
-export const MONTH_POWER: Record<string, Record<number, string>> = {
+const _MONTH_POWER: Record<string, Record<number, string>> = {
   '木': {1:'旺',2:'旺',3:'余气',4:'休',5:'休',6:'休',7:'囚',8:'囚',9:'囚',10:'相',11:'相',12:'相'},
   '火': {1:'相',2:'相',3:'相',4:'旺',5:'旺',6:'余气',7:'休',8:'休',9:'休',10:'囚',11:'囚',12:'囚'},
   '金': {1:'囚',2:'囚',3:'囚',4:'相',5:'相',6:'相',7:'旺',8:'旺',9:'余气',10:'休',11:'休',12:'休'},
@@ -90,9 +92,28 @@ export const MONTH_POWER: Record<string, Record<number, string>> = {
   '土': {1:'余气',2:'休',3:'休',4:'囚',5:'囚',6:'相',7:'相',8:'相',9:'休',10:'休',11:'余气',12:'旺'},
 }
 
-/** 每个地支的本气 */
-export const DI_ZHI_BEN_QI_WUXING: Record<string, string> = {
+const _DI_ZHI_BEN_QI_WUXING: Record<string, string> = {
   '子': '水', '丑': '土', '寅': '木', '卯': '木',
   '辰': '土', '巳': '火', '午': '火', '未': '土',
   '申': '金', '酉': '金', '戌': '土', '亥': '水',
+}
+
+// ─── ES Module Live Binding（初始值 = _PRIVATE 兜底，reload 后动态接管） ───
+
+export let CHANG_SHENG: Record<string, Record<string, string>> = _CHANG_SHENG
+export let MONTH_POWER: Record<string, Record<number, string>> = _MONTH_POWER
+export let DI_ZHI_BEN_QI_WUXING: Record<string, string> = _DI_ZHI_BEN_QI_WUXING
+
+// ─── reload：从 KnowledgeRegistry 动态接管 ───
+
+export function reloadWuXingTables() {
+  CHANG_SHENG = KnowledgeRegistry.getOrFallback<Record<string, Record<string, string>>>(
+    'bazi.chang_sheng', _CHANG_SHENG
+  )
+  MONTH_POWER = KnowledgeRegistry.getOrFallback<Record<string, Record<number, string>>>(
+    'bazi.month_power', _MONTH_POWER
+  )
+  DI_ZHI_BEN_QI_WUXING = KnowledgeRegistry.getOrFallback<Record<string, string>>(
+    'bazi.di_zhi_ben_qi_wuxing', _DI_ZHI_BEN_QI_WUXING
+  )
 }

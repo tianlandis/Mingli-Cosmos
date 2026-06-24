@@ -16,6 +16,7 @@ import {
   updateKnowledgeAsset,
   deleteKnowledgeAsset,
 } from '../../db'
+import { reloadKnowledgeRegistry } from '../../services/KnowledgeProvider'
 
 // ═══════════════════════════════════════
 // Zod 验证
@@ -101,6 +102,10 @@ route.post('/', async (c) => {
   const result = createKnowledgeAsset(parsed.data)
   logAudit(c, { action: 'create', resource: 'knowledge_asset', resourceId: result.id,
     detail: JSON.stringify({ category: result.category, key: result.key }) })
+
+  // 热更新引擎侧 Registry
+  reloadKnowledgeRegistry()
+
   return c.json({ success: true, data: result })
 })
 
@@ -126,6 +131,10 @@ route.put('/:id', async (c) => {
 
   logAudit(c, { action: 'update', resource: 'knowledge_asset', resourceId: id,
     detail: JSON.stringify({ category: result.category, key: result.key }) })
+
+  // 热更新引擎侧 Registry
+  reloadKnowledgeRegistry()
+
   return c.json({ success: true, data: result })
 })
 
@@ -138,6 +147,10 @@ route.delete('/:id', (c) => {
   const ok = deleteKnowledgeAsset(id)
   logAudit(c, { action: 'delete', resource: 'knowledge_asset', resourceId: id,
     detail: JSON.stringify({ category: item.category, key: item.key }) })
+
+  // 热更新引擎侧 Registry
+  reloadKnowledgeRegistry()
+
   return c.json({ success: true, data: { ok } })
 })
 
@@ -226,6 +239,9 @@ route.post('/import', async (c) => {
 
   logAudit(c, { action: 'import', resource: 'knowledge_asset', resourceId: 0,
     detail: JSON.stringify({ mode, created, updated, skipped, total: incoming.length }) })
+
+  // 批量导入后热更新引擎侧 Registry
+  reloadKnowledgeRegistry()
 
   return c.json({
     success: true,

@@ -2,6 +2,36 @@
 
 ---
 
+## v4.1.0 — Phase 4d 规则字典大闭环 (2026-06-24)
+
+> **主题**：35/35 项全量规则字典 + 五分类完整体系
+>
+> GitHub: [tianlandis/bazipaipan](https://github.com/tianlandis/bazipaipan)
+
+### 📚 知识字典全量收网
+
+- **35 项规则资产全部入库**，五分类完整体系：
+  - **bazi** (17 项) — 冲合刑害、空亡、藏干、长生、月令旺衰等
+  - **shensha** (9 项) — 天乙贵人、文昌、桃花、驿马、魁罡等
+  - **classics** (4 项) — 五行性格、十神性格、五行健康、行业适配
+  - **pattern** (4 项) — MBTI 组合映射、行业匹配、能量调整、格局吉凶
+  - **personality** (1 项) — 十神 MBTI 认知功能映射
+- **Phase 4d 新增 10 项**：hidden_stems / hidden_stems_days / chang_sheng / month_power / di_zhi_ben_qi_wuxing / pattern_ji_xiong / wuxing_personality / shishen_personality / wuxing_health / industry_map
+- `knowledge-registry.ts` 白名单注册表，`KnowledgeProvider` 全品类覆盖
+
+### 🔌 引擎层改造
+
+- `relation.ts` / `patternRules.ts` / `mbtiMapping.ts` / `shenShaRules.ts` / `wuxing.ts` / `specialTopics.ts` — 引用端全面接入 KnowledgeProvider
+- `GET /api/v1/admin/knowledge/export/all` — 35 条全量导出验证通过
+
+### 🧪 线上验证
+
+- 按 category 逐个 HTTP 200 ✅
+- sortOrder 递增一致性 ✅
+- 前后端联调无断点 ✅
+
+---
+
 ## v4.0.0 — 生产就绪 MVP (2026-06-18)
 
 > **主题**：容器化 + 品牌升级 + 未来架构规划

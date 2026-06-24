@@ -3,6 +3,8 @@
 // 来源：八字取格判断规则引导词（V2.0）+ 从月令取用到实战策略的完整解析 + 八字格局与MBTI类型映射
 // ============================================================
 
+import { KnowledgeRegistry } from './knowledge-registry'
+
 export const TIAN_GAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'] as const
 export type TianGan = typeof TIAN_GAN[number]
 
@@ -27,8 +29,23 @@ export const DI_ZHI_WUXING: Record<string, string> = {
 
 
 
+export const WUXING_COLORS: Record<string, string> = {
+  '木': '#22C55E', '火': '#EF4444', '土': '#F59E0B',
+  '金': '#F5F0E1', '水': '#3B82F6',
+}
+
+export const WUXING_LIST = ['金', '木', '水', '火', '土'] as const
+
+/** 藏干天数分段表（固定刻度尺，V2.0规则）
+ *  按照时间顺序排列：余气→中气→本气
+ *  每月固定30天，供月令分金算法使用
+ */
+export interface HiddenStemSegment { stem: string; days: number }
+
+// ─── _PRIVATE 硬编码兜底（DB 故障时引擎不死机） ───
+
 /** 地支藏干表（余气→中气/墓气→本气顺序，对齐 Python MCP） */
-export const HIDDEN_STEMS: Record<string, string[]> = {
+const _HIDDEN_STEMS: Record<string, string[]> = {
   '子': ['癸'],
   '丑': ['癸', '辛', '己'],
   '寅': ['戊', '丙', '甲'],
@@ -43,19 +60,7 @@ export const HIDDEN_STEMS: Record<string, string[]> = {
   '亥': ['戊', '甲', '壬'],
 }
 
-export const WUXING_COLORS: Record<string, string> = {
-  '木': '#22C55E', '火': '#EF4444', '土': '#F59E0B',
-  '金': '#F5F0E1', '水': '#3B82F6',
-}
-
-export const WUXING_LIST = ['金', '木', '水', '火', '土'] as const
-
-/** 藏干天数分段表（固定刻度尺，V2.0规则）
- *  按照时间顺序排列：余气→中气→本气
- *  每月固定30天，供月令分金算法使用
- */
-export interface HiddenStemSegment { stem: string; days: number }
-export const HIDDEN_STEMS_DAYS: Record<string, HiddenStemSegment[]> = {
+const _HIDDEN_STEMS_DAYS: Record<string, HiddenStemSegment[]> = {
   '子': [{ stem: '癸', days: 30 }],
   '丑': [{ stem: '癸', days: 9 }, { stem: '辛', days: 6 }, { stem: '己', days: 15 }],
   '寅': [{ stem: '戊', days: 4 },  { stem: '丙', days: 6 }, { stem: '甲', days: 20 }],
@@ -68,6 +73,22 @@ export const HIDDEN_STEMS_DAYS: Record<string, HiddenStemSegment[]> = {
   '酉': [{ stem: '辛', days: 30 }],
   '戌': [{ stem: '辛', days: 9 },  { stem: '丁', days: 6 }, { stem: '戊', days: 15 }],
   '亥': [{ stem: '戊', days: 2 },  { stem: '甲', days: 7 }, { stem: '壬', days: 21 }],
+}
+
+// ─── ES Module Live Binding（初始值 = _PRIVATE 兜底，reload 后动态接管） ───
+
+export let HIDDEN_STEMS: Record<string, string[]> = _HIDDEN_STEMS
+export let HIDDEN_STEMS_DAYS: Record<string, HiddenStemSegment[]> = _HIDDEN_STEMS_DAYS
+
+// ─── reload：从 KnowledgeRegistry 动态接管 ───
+
+export function reloadTypesData() {
+  HIDDEN_STEMS = KnowledgeRegistry.getOrFallback<Record<string, string[]>>(
+    'bazi.hidden_stems', _HIDDEN_STEMS
+  )
+  HIDDEN_STEMS_DAYS = KnowledgeRegistry.getOrFallback<Record<string, HiddenStemSegment[]>>(
+    'bazi.hidden_stems_days', _HIDDEN_STEMS_DAYS
+  )
 }
 
 export type ShiShen =

@@ -3,7 +3,7 @@
 > **来源**: `ProjectPlan.md` §二 + §七 + `design/UI_DESIGN_RECOMMENDATIONS.md`
 > **用途**: 功能规划唯一来源，按阶段追踪
 > **更新频率**: 月级（每完成一个 Phase 更新一次）
-> **最后更新**: 2026-06-20（Phase 4+4a 完成，VPS 上线，转向 Phase 4b）
+> **最后更新**: 2026-06-24（Phase 4d 规则字典大闭环完成，35/35 项全量就位）
 
 ---
 
@@ -20,6 +20,7 @@ Phase 1  [✅] 结构化批注                  S1  [✅] 大运竖轴 + 专题T
 Phase 2  [✅] AI 深度集成 (本地/流式)      │   └─ UI-6 LuckTimeline + UI-7 TopicTabs
 Phase 3  [✅] Docker 容器化 + 生产日志     S2  [⏳] 细节打磨与动效适配
 Phase 4a [✅] 动态配置与管理后台 (大基建)
+Phase 4d [✅] 规则字典大闭环 35/35 项
 Phase 4b [⏳] 运营中台持续增强 ← 当前推进
 Phase 5  [ ] 移动端 + 增长
 Phase 6  [ ] 高级功能 + 生态
@@ -143,6 +144,33 @@ Phase 6  [ ] 高级功能 + 生态
 | 4a-R6 | **Prompt 版本回滚演练** | prompt_versions 表回滚 → 历史版本对比 → 一键恢复 | 0.5d |
 
 > 以上 6 项为 Phase 4a 收尾打磨，按 PP_ENGINEERING_SOP 四条铁律逐项验收。完成后 Phase 4a 标记为 ✅ 终极完成。
+
+---
+
+## Phase 4d：规则字典大闭环 ✅ 已完成 (2026-06-24)
+
+### 已完成
+
+| ID | 任务 | 说明 |
+|:---:|------|------|
+| 4d-1 | **bazi 分类补全** | +5 项：hidden_stems(藏干表) / hidden_stems_days(藏干天数) / chang_sheng(长生十二宫) / month_power(月令旺衰) / di_zhi_ben_qi_wuxing(地支本气五行) |
+| 4d-2 | **classics 分类新建** | +4 项：wuxing_personality(五行性格) / shishen_personality(十神性格) / wuxing_health(五行健康) / industry_map(行业适配) |
+| 4d-3 | **pattern 分类补全** | +1 项：pattern_ji_xiong(格局吉凶映射) |
+| 4d-4 | **knowledge-registry.ts** | 白名单注册表 + SortOrder 递增约束 |
+| 4d-5 | **引擎层接入** | relation/patternRules/mbtiMapping/shenShaRules/wuxing/specialTopics → KnowledgeProvider |
+| 4d-6 | **线上全量验证** | GET export/all → 35 条 / 5 分类 / HTTP 200 ✅ |
+
+### 五分类全量收网
+
+```
+bazi        (17项) █████████████████  ← 12 + 5 new
+shensha     ( 9项) █████████
+classics    ( 4项) ████               ← 全新建模
+pattern     ( 4项) ████               ← 3 + 1 new
+personality ( 1项) █
+────────────────────────────
+合计         35 项                    ← 大闭环！
+```
 
 ---
 

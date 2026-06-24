@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-06-24 — Phase 4d：规则字典大闭环 🎉
+
+### 背景
+Phase 4a 建成了知识字典引擎架构（KnowledgeProvider + knowledge_assets 表 + 管理后台 CRUD），但规则资产填充不完整。Phase 4d 目标：补全所有未填充的字典键值，实现 35/35 项全量规则字典大闭环。
+
+### 新增 10 项字典资产
+
+| 分类 | Key | SortOrder | 内容 |
+|:---:|------|:--:|------|
+| **bazi** | `hidden_stems` | 110 | 地支藏干完整表（子→亥） |
+| **bazi** | `hidden_stems_days` | 120 | 藏干天数分配（月令分金依据） |
+| **bazi** | `chang_sheng` | 130 | 长生十二宫（天干在地支的旺衰状态） |
+| **bazi** | `month_power` | 140 | 月令旺衰强度表（当令/次旺/休囚等） |
+| **bazi** | `di_zhi_ben_qi_wuxing` | 150 | 地支本气五行映射 |
+| **pattern** | `pattern_ji_xiong` | 40 | 格局吉凶判定映射（建禄/七杀/正官等 → 吉凶） |
+| **classics** | `wuxing_personality` | 10 | 五行性格特质（金木水火土 → 性格描述） |
+| **classics** | `shishen_personality` | 20 | 十神性格特质（比肩/劫财/正印等 → 性格描述） |
+| **classics** | `wuxing_health` | 30 | 五行健康映射（五行 → 对应脏腑/易患疾病） |
+| **classics** | `industry_map` | 40 | 行业适配映射（五行 → 适合行业方向） |
+
+### 五分类全量分布
+
+| Category | 数量 | 资产 |
+|----------|:--:|------|
+| **bazi** | 17 | chong_map, he_map, he_hua_wuxing, san_he, ban_he, san_hui, xing_map, zi_xing, po_map, hai_map, kong_wang_xun, jia_zi_order, hidden_stems, hidden_stems_days, chang_sheng, month_power, di_zhi_ben_qi_wuxing |
+| **shensha** | 9 | lu_map, gui_ren_map, taohua_map, yi_ma, xue_zai, wang_shen, tian_yi_gui_ren, wen_chang, kuigang |
+| **classics** | 4 | wuxing_personality, shishen_personality, wuxing_health, industry_map |
+| **pattern** | 4 | combination_mbti_map, industry_matches, energy_adjustments, pattern_ji_xiong |
+| **personality** | 1 | shishen_mbti_function |
+| **合计** | **35** | 全量就位 ✅ |
+
+### 代码变更
+- `src/server/db/seed.ts` — 新增 10 项 seed 注册
+- `src/server/modules/knowledge/index.ts` — 补充 API 路由
+- `src/server/services/KnowledgeProvider.ts` — 扩展 provider 方法
+- `src/engine/knowledge-registry.ts` — 新建 knowledge_keys 白名单注册表（35 项）
+- `src/engine/relation.ts` / `types.ts` / `patternRules.ts` / `mbtiMapping.ts` / `shenShaRules.ts` / `wuxing.ts` / `specialTopics.ts` — 引用端替换为 KnowledgeProvider
+
+### 线上验证
+`GET /api/v1/admin/knowledge/export/all` → **35 条资产，5 分类全量** ✅
+按 category 逐个 HTTP 200 + sortOrder 递增验证通过 ✅
+
+### 结论
+**35/35 全量规则字典大闭环，Phase 4d 圆满完成！**
+
+---
+
 ## 2026-06-19 — Phase 4a：全掌控命理中台大基建 + VPS 上线
 
 | 任务 | 说明 |

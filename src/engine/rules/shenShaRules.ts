@@ -2,29 +2,37 @@
 // 八字命理神煞规则（非择日神煞）
 // 以日干/年干/日支/年支为基准推演
 // 来源：八字取格判断规则引导词（V2.0）+ 经典命理口诀
+//
+// Phase 4c：神煞字典全面剥离至 knowledge_assets（category: shensha）
+//   - export let 实现 ES Module live binding 热更新
+//   - reloadShenShaRules() 从 KnowledgeRegistry 动态接管
+//   - _PRIVATE 常量保留硬编码兜底，确保 DB 故障时引擎不死机
 // ============================================================
 
 import type { BaZiResult } from '../types'
 import type { ShenShaItem, ShenShaAnalysis } from '../annotation/types'
+import { KnowledgeRegistry } from '../knowledge-registry'
 
-// ── 辅助：日干/年干 → 地支映射 ──
+// ═══════════════════════════════════════
+// _PRIVATE 硬编码兜底（仅 DB 故障时使用）
+// ═══════════════════════════════════════
 
 /** 禄位映射（天干→地支） */
-const LU_MAP: Record<string, string> = {
+const _LU_MAP: Record<string, string> = {
   '甲': '寅', '乙': '卯', '丙': '巳', '丁': '午',
   '戊': '巳', '己': '午', '庚': '申', '辛': '酉',
   '壬': '亥', '癸': '子',
 }
 
 /** 帝旺位映射（天干→地支） */
-const WANG_MAP: Record<string, string> = {
+const _WANG_MAP: Record<string, string> = {
   '甲': '卯', '乙': '寅', '丙': '午', '丁': '巳',
   '戊': '午', '己': '巳', '庚': '酉', '辛': '申',
   '壬': '子', '癸': '亥',
 }
 
 /** 天乙贵人（口诀：甲戊庚牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸兔蛇藏，六辛逢马虎） */
-const TIAN_YI_MAP: Record<string, [string, string]> = {
+const _TIAN_YI_MAP: Record<string, [string, string]> = {
   '甲': ['丑', '未'], '戊': ['丑', '未'], '庚': ['丑', '未'],
   '乙': ['子', '申'], '己': ['子', '申'],
   '丙': ['亥', '酉'], '丁': ['亥', '酉'],
@@ -33,32 +41,69 @@ const TIAN_YI_MAP: Record<string, [string, string]> = {
 }
 
 /** 文昌贵人（口诀：甲巳乙午报君知，丙戊申宫丁己鸡，庚猪辛鼠壬逢虎，癸人见兔入云梯） */
-const WEN_CHANG_MAP: Record<string, string> = {
+const _WEN_CHANG_MAP: Record<string, string> = {
   '甲': '巳', '乙': '午', '丙': '申', '丁': '酉',
   '戊': '申', '己': '酉', '庚': '亥', '辛': '子',
   '壬': '寅', '癸': '卯',
 }
 
 /** 桃花/咸池（寅午戌见卯，申子辰见酉，巳酉丑见午，亥卯未见子） */
-const TAO_HUA_SAN_HE: [string, string, string][] = [
+const _TAO_HUA_SAN_HE: [string, string, string][] = [
   ['寅', '午', '戌'],
   ['申', '子', '辰'],
   ['巳', '酉', '丑'],
   ['亥', '卯', '未'],
 ]
-const TAO_HUA_RESULT: string[] = ['卯', '酉', '午', '子'] // 对应上面四组
+/** 桃花结果（对应上面四组的子、卯、午、酉位置） */
+const _TAO_HUA_RESULT: string[] = ['卯', '酉', '午', '子']
 
 /** 驿马（口诀同上三合局，寅午戌马在申，申子辰马在寅，巳酉丑马在亥，亥卯未马在巳） */
-const YI_MA_RESULT: string[] = ['申', '寅', '亥', '巳']
+const _YI_MA_RESULT: string[] = ['申', '寅', '亥', '巳']
 
 /** 华盖（口诀同上，寅午戌见戌，申子辰见辰，巳酉丑见丑，亥卯未见未） */
-const HUA_GAI_RESULT: string[] = ['戌', '辰', '丑', '未']
+const _HUA_GAI_RESULT: string[] = ['戌', '辰', '丑', '未']
 
 /** 金舆（口诀：甲龙乙蛇丙戊羊，丁己猴歌庚犬方，辛猪壬牛癸逢虎） */
-const JIN_YU_MAP: Record<string, string> = {
+const _JIN_YU_MAP: Record<string, string> = {
   '甲': '辰', '乙': '巳', '丙': '未', '丁': '申',
   '戊': '未', '己': '申', '庚': '戌', '辛': '亥',
   '壬': '丑', '癸': '寅',
+}
+
+
+// ═══════════════════════════════════════
+// export let — ES Module live binding（Phase 4c）
+// ═══════════════════════════════════════
+
+export let LU_MAP: Record<string, string> = _LU_MAP
+export let WANG_MAP: Record<string, string> = _WANG_MAP
+export let TIAN_YI_MAP: Record<string, [string, string]> = _TIAN_YI_MAP
+export let WEN_CHANG_MAP: Record<string, string> = _WEN_CHANG_MAP
+export let TAO_HUA_SAN_HE: [string, string, string][] = _TAO_HUA_SAN_HE
+export let TAO_HUA_RESULT: string[] = _TAO_HUA_RESULT
+export let YI_MA_RESULT: string[] = _YI_MA_RESULT
+export let HUA_GAI_RESULT: string[] = _HUA_GAI_RESULT
+export let JIN_YU_MAP: Record<string, string> = _JIN_YU_MAP
+
+
+// ═══════════════════════════════════════
+// Phase 4c — 从 KnowledgeRegistry 动态接管
+// ═══════════════════════════════════════
+
+/**
+ * 从 Registry 重新加载全部神煞字典。
+ * 由 KnowledgeProvider.bootKnowledgeRegistry() 在启动/热更新时调用。
+ */
+export function reloadShenShaRules(): void {
+  LU_MAP = KnowledgeRegistry.getOrFallback<Record<string, string>>('shensha.lu_map', _LU_MAP)
+  WANG_MAP = KnowledgeRegistry.getOrFallback<Record<string, string>>('shensha.wang_map', _WANG_MAP)
+  TIAN_YI_MAP = KnowledgeRegistry.getOrFallback<Record<string, [string, string]>>('shensha.tian_yi_map', _TIAN_YI_MAP)
+  WEN_CHANG_MAP = KnowledgeRegistry.getOrFallback<Record<string, string>>('shensha.wen_chang_map', _WEN_CHANG_MAP)
+  TAO_HUA_SAN_HE = KnowledgeRegistry.getOrFallback<[string, string, string][]>('shensha.tao_hua_san_he', _TAO_HUA_SAN_HE)
+  TAO_HUA_RESULT = KnowledgeRegistry.getOrFallback<string[]>('shensha.tao_hua_result', _TAO_HUA_RESULT)
+  YI_MA_RESULT = KnowledgeRegistry.getOrFallback<string[]>('shensha.yi_ma_result', _YI_MA_RESULT)
+  HUA_GAI_RESULT = KnowledgeRegistry.getOrFallback<string[]>('shensha.hua_gai_result', _HUA_GAI_RESULT)
+  JIN_YU_MAP = KnowledgeRegistry.getOrFallback<Record<string, string>>('shensha.jin_yu_map', _JIN_YU_MAP)
 }
 
 

@@ -9,6 +9,7 @@ import {
   HIDDEN_STEMS_DAYS, type HiddenStemSegment,
 } from '../types'
 import { getShiShenName } from '../annotation/wuxing'
+import { KnowledgeRegistry } from '../knowledge-registry'
 
 // ─── 常量定义 ───
 
@@ -27,7 +28,7 @@ const SHISHEN_TO_PATTERN: Record<string, string> = {
 }
 
 /** 格局吉凶分类 */
-export const PATTERN_JI_XIONG: Record<string, { type: '吉' | '凶' | '中性'; desc: string }> = {
+const _PATTERN_JI_XIONG: Record<string, { type: '吉' | '凶' | '中性'; desc: string }> = {
   '正官格':   { type: '吉',   desc: '喜生扶，忌克制、混杂' },
   '正印格':   { type: '吉',   desc: '喜生扶，忌财星破印' },
   '偏印格':   { type: '吉',   desc: '喜生扶，忌财星破印' },
@@ -38,6 +39,18 @@ export const PATTERN_JI_XIONG: Record<string, { type: '吉' | '凶' | '中性'; 
   '伤官格':   { type: '凶',   desc: '喜制化（伤官配印/伤官生财），忌见官星' },
   '羊刃格':   { type: '凶',   desc: '喜制化（官杀制刃/食伤泄刃），忌财星党杀' },
   '建禄格':   { type: '中性', desc: '喜顺局（财官印食引导），忌冲禄、禄刃交汇' },
+}
+
+// ─── ES Module Live Binding ───
+
+export let PATTERN_JI_XIONG: Record<string, { type: '吉' | '凶' | '中性'; desc: string }> = _PATTERN_JI_XIONG
+
+// ─── reload：从 KnowledgeRegistry 动态接管 ───
+
+export function reloadPatternRulesData() {
+  PATTERN_JI_XIONG = KnowledgeRegistry.getOrFallback<Record<string, { type: '吉' | '凶' | '中性'; desc: string }>>(
+    'pattern.pattern_ji_xiong', _PATTERN_JI_XIONG
+  )
 }
 
 // ─── 辅助函数 ───

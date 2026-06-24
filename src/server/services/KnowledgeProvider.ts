@@ -6,6 +6,14 @@
 // ============================================================
 
 import { listKnowledgeAssets, getKnowledgeAssetByKey, type KnowledgeAsset } from '../db'
+import { KnowledgeRegistry, type KnowledgeAssetInput } from '../../engine/knowledge-registry'
+import { reloadBranchRelations } from '../../engine/relation'
+import { reloadShenShaRules } from '../../engine/rules/shenShaRules'
+import { reloadMBTIMappings } from '../../engine/pattern/mbtiMapping'
+import { reloadTypesData } from '../../engine/types'
+import { reloadWuXingTables } from '../../engine/annotation/wuxing'
+import { reloadPatternRulesData } from '../../engine/pattern/patternRules'
+import { reloadSpecialTemplates } from '../../engine/annotation/specialTopics'
 
 // ═══════════════════════════════════════
 // 类型定义
@@ -151,4 +159,65 @@ export function formatAsContext(categories?: string[]): string {
   }
 
   return lines.join('\n')
+}
+
+// ═══════════════════════════════════════
+// Phase 4b — 引擎侧 Registry 引导
+// ═══════════════════════════════════════
+
+/**
+ * 从数据库加载全部活跃知识资产，解析 JSON value，
+ * 注入到引擎侧 KnowledgeRegistry 内存单例。
+ *
+ * 调用时机：
+ *   - 服务启动时（initDb 之后）
+ *   - 知识资产 CRUD 操作后（热更新）
+ */
+export function bootKnowledgeRegistry(): { loaded: number; errors: number } {
+  const all = listKnowledgeAssets().filter(a => a.isActive === 1)
+
+  const inputs: KnowledgeAssetInput[] = []
+  let errors = 0
+
+  for (const row of all) {
+    try {
+      const parsed = JSON.parse(row.value)
+      inputs.push({
+        category: row.category,
+        key: row.key,
+        value: parsed,
+        version: row.version,
+      })
+    } catch {
+      // value 不是有效 JSON 时跳过，避免崩溃整个加载流程
+      errors++
+    }
+  }
+
+  KnowledgeRegistry.init(inputs)
+
+  // Phase 4b：同步更新地支关系 live binding
+  reloadBranchRelations()
+  // Phase 4c：同步更新神煞字典 live binding
+  reloadShenShaRules()
+  // Phase 4c：同步更新 MBTI/格局映射 live binding
+  reloadMBTIMappings()
+  // Phase 4d：同步更新藏干/长生/旺衰 live binding
+  reloadTypesData()
+  reloadWuXingTables()
+  // Phase 4d：同步更新格局吉凶 live binding
+  reloadPatternRulesData()
+  // Phase 4d：同步更新专题经典模板 live binding
+  reloadSpecialTemplates()
+
+  return { loaded: inputs.length, errors }
+}
+
+/**
+ * 强制刷新：先清缓存，再重新加载 Registry。
+ * 用于知识资产 CRUD 操作后的热更新。
+ */
+export function reloadKnowledgeRegistry(): { loaded: number; errors: number } {
+  invalidateCache()
+  return bootKnowledgeRegistry()
 }

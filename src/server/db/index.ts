@@ -10,7 +10,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import * as schema from './schema'
 import { runMigrations } from './migrate'
-import { seedDefaults, seedLocalProvider } from './seed'
+import { seedDefaults, seedLocalProvider, seedKnowledgeAssets } from './seed'
 
 let _db: ReturnType<typeof drizzle> | null = null
 let _sqlite: Database.Database | null = null
@@ -46,6 +46,9 @@ export function initDb() {
   // 首次启动：写入默认配置 + 本地 Provider
   seedDefaults()
   seedLocalProvider()
+
+  // Phase 4b：写入命理基础数据种子（地支关系 12 项）
+  seedKnowledgeAssets()
 
   console.log(`[DB] initialized: ${process.env.DB_PATH || 'data/mingli.db'}`)
 }

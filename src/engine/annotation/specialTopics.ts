@@ -7,9 +7,12 @@ import type { BaZiResult, ShiShenItem, DiZhi } from '../types'
 import { TIAN_GAN_WUXING, DI_ZHI_WUXING } from '../types'
 import { CHONG_MAP, HE_MAP, XING_MAP, PO_MAP, HAI_MAP, getKongWang } from '../relation'
 import type { SpecialTopics } from './types'
+import { KnowledgeRegistry } from '../knowledge-registry'
+
+// ─── _PRIVATE 硬编码兜底（DB 故障时引擎不死机） ───
 
 /** 五行 → 性格特征 */
-const WUXING_PERSONALITY: Record<string, string[]> = {
+const _WUXING_PERSONALITY: Record<string, string[]> = {
   '木': ['仁慈正直', '有上进心', '注重成长', '有时固执'],
   '火': ['热情开朗', '行动力强', '急躁冲动', '富有感染力'],
   '土': ['诚信稳重', '包容力强', '保守谨慎', '脚踏实地'],
@@ -18,7 +21,7 @@ const WUXING_PERSONALITY: Record<string, string[]> = {
 }
 
 /** 十神 → 性格特征 */
-const SHISHEN_PERSONALITY: Record<string, string> = {
+const _SHISHEN_PERSONALITY: Record<string, string> = {
   '正官': '正直守规，责任心强，有领导力',
   '偏官': '果敢进取，魄力十足，但易冲动',
   '正印': '仁慈好学，智慧内敛，重视精神生活',
@@ -30,6 +33,52 @@ const SHISHEN_PERSONALITY: Record<string, string> = {
   '正财': '踏实务实，善于理财，注重物质',
   '偏财': '慷慨大方，善于投资，人缘佳',
 }
+
+/** 五行 → 器官健康 */
+const _WUXING_HEALTH: Record<string, string> = {
+  '木': '肝胆、筋骨',
+  '火': '心血管、眼目',
+  '土': '脾胃、消化系统',
+  '金': '肺、呼吸道、皮肤',
+  '水': '肾脏、泌尿系统',
+}
+
+/** 日主五行 → 行业方向 */
+const _INDUSTRY_MAP: Record<string, string> = {
+  '木': '教育、医疗、文化、环保',
+  '火': '传媒、能源、餐饮、科技',
+  '土': '房地产、建筑、农业、金融',
+  '金': '金融、法律、机械、军警',
+  '水': '物流、贸易、旅游、咨询',
+}
+
+// ─── ES Module Live Binding（初始值 = _PRIVATE 兜底，reload 后动态接管） ───
+
+export let WUXING_PERSONALITY: Record<string, string[]> = _WUXING_PERSONALITY
+export let SHISHEN_PERSONALITY: Record<string, string> = _SHISHEN_PERSONALITY
+export let WUXING_HEALTH: Record<string, string> = _WUXING_HEALTH
+export let INDUSTRY_MAP: Record<string, string> = _INDUSTRY_MAP
+
+// ─── reload：从 KnowledgeRegistry 动态接管 ───
+
+export function reloadSpecialTemplates() {
+  WUXING_PERSONALITY = KnowledgeRegistry.getOrFallback<Record<string, string[]>>(
+    'classics.wuxing_personality', _WUXING_PERSONALITY
+  )
+  SHISHEN_PERSONALITY = KnowledgeRegistry.getOrFallback<Record<string, string>>(
+    'classics.shishen_personality', _SHISHEN_PERSONALITY
+  )
+  WUXING_HEALTH = KnowledgeRegistry.getOrFallback<Record<string, string>>(
+    'classics.wuxing_health', _WUXING_HEALTH
+  )
+  INDUSTRY_MAP = KnowledgeRegistry.getOrFallback<Record<string, string>>(
+    'classics.industry_map', _INDUSTRY_MAP
+  )
+}
+
+// ═══════════════════════════════════════
+// 批量分析函数（使用 export let 变量，确保热更新生效）
+// ═══════════════════════════════════════
 
 /** 分析性格 */
 function analyzePersonality(bazi: BaZiResult, tenGods: ShiShenItem[]): string[] {
@@ -110,14 +159,7 @@ function analyzeCareer(bazi: BaZiResult, tenGods: ShiShenItem[]): string[] {
   }
 
   // 日主五行与事业方向
-  const industryMap: Record<string, string> = {
-    '木': '教育、医疗、文化、环保',
-    '火': '传媒、能源、餐饮、科技',
-    '土': '房地产、建筑、农业、金融',
-    '金': '金融、法律、机械、军警',
-    '水': '物流、贸易、旅游、咨询',
-  }
-  tips.push(`五行属${dayMasterWx}，适合行业：${industryMap[dayMasterWx] ?? '多元发展'}`)
+  tips.push(`五行属${dayMasterWx}，适合行业：${INDUSTRY_MAP[dayMasterWx] ?? '多元发展'}`)
 
   return tips
 }
@@ -253,14 +295,6 @@ function analyzeHealth(bazi: BaZiResult): string[] {
   }
 
   // 五行缺失影响
-  const WUXING_HEALTH: Record<string, string> = {
-    '木': '肝胆、筋骨',
-    '火': '心血管、眼目',
-    '土': '脾胃、消化系统',
-    '金': '肺、呼吸道、皮肤',
-    '水': '肾脏、泌尿系统',
-  }
-
   for (const [wx, count] of Object.entries(fiveCount)) {
     if (count === 0) {
       tips.push(`命局缺${wx}，注意${WUXING_HEALTH[wx] ?? ''}保养`)

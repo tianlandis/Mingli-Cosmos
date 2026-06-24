@@ -12,6 +12,7 @@ import { serve } from '@hono/node-server'
 import { createApp } from './core/app'
 import { initDb, closeDb } from './db'
 import { logger, closeLogger } from './lib/logger'
+import { bootKnowledgeRegistry } from './services/KnowledgeProvider'
 
 // ═══════════════════════════════════════
 // 环境判定
@@ -26,6 +27,9 @@ const logEnabled = process.env.LOG_ENABLED !== 'false'
 
 if (process.env.DB_ENABLED !== 'false') {
   initDb()
+  // Phase 4b：加载知识资产到引擎侧 Registry
+  const { loaded, errors } = bootKnowledgeRegistry()
+  console.log(`[Knowledge] Registry booted: ${loaded} assets loaded${errors > 0 ? `, ${errors} parse errors` : ''}`)
 }
 
 // ═══════════════════════════════════════
