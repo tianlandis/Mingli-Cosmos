@@ -300,7 +300,7 @@ export default function SkillsPanel({
                     className={isActive ? 'text-[#B8964A]' : 'text-[#4A4540]'}
                   />
                   <span
-                    className={`text-[10px] font-medium uppercase tracking-wider ${
+                    className={`text-xs font-medium uppercase tracking-wider ${
                       isActive ? 'text-[#A09888]' : 'text-[#4A4540]'
                     }`}
                   >
@@ -317,7 +317,7 @@ export default function SkillsPanel({
                   {tool.name}
                 </h4>
                 <p
-                  className={`text-[11px] leading-relaxed ${
+                  className={`text-sm leading-relaxed ${
                     isActive ? 'text-[#A09888]' : 'text-[#4A4540]'
                   }`}
                 >
@@ -327,7 +327,7 @@ export default function SkillsPanel({
                 {/* 依赖提示 */}
                 {tool.requires && (
                   <span
-                    className={`inline-block mt-2 text-[10px] px-1.5 py-0.5 rounded ${
+                    className={`inline-block mt-2 text-xs px-1.5 py-0.5 rounded ${
                       isActive
                         ? 'bg-[#B8964A]/10 text-[#B8964A]'
                         : 'bg-[#2A2622] text-[#4A4540]'
@@ -341,7 +341,7 @@ export default function SkillsPanel({
               {/* Switch 开关 */}
               <div className="mt-3 flex items-center justify-between pt-3 border-t border-[#2A2622]">
                 <span
-                  className={`text-[10px] font-medium ${
+                  className={`text-xs font-medium ${
                     isActive ? 'text-[#5B8C5A]' : 'text-[#4A4540]'
                   }`}
                 >

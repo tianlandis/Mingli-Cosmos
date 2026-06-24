@@ -76,6 +76,23 @@ interface LLMPageProps {
 }
 
 // ═══════════════════════════════════════
+// 工具函数
+// ═══════════════════════════════════════
+
+/** 归一化 tools/supportedTools 字段：JSON 字符串 → 纯数组 */
+function normalizeToolsField(raw: unknown): string[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw.filter((v): v is string => typeof v === 'string')
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
+    } catch { /* 非 JSON 字符串 */ }
+  }
+  return []
+}
+
+// ═══════════════════════════════════════
 // Provider 类型徽标
 // ═══════════════════════════════════════
 
@@ -93,7 +110,7 @@ function ProviderBadge({ type }: { type: string }) {
   const info = map[type] ?? { label: type, color: '#6B6459' }
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
       style={{ color: info.color, background: `${info.color}15` }}
     >
       {info.label}
@@ -137,15 +154,15 @@ function SliderRow({
           <Icon size={12} className="text-[#6B6459]" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Label className="text-[10px] text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
+              <Label className="text-xs text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
                 {label}
-                {labelCN && <span className="text-[9px] normal-case text-[#4A4540]">({labelCN})</span>}
+                {labelCN && <span className="text-sm normal-case text-[#4A4540]">({labelCN})</span>}
                 {tooltip && <HelpCircle size={9} className="text-[#4A4540]" />}
               </Label>
             </TooltipTrigger>
             {tooltip && (
               <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
-                <p className="text-[10px]">{tooltip}</p>
+                <p className="text-xs">{tooltip}</p>
               </TooltipContent>
             )}
           </Tooltip>
@@ -154,11 +171,11 @@ function SliderRow({
           <span className="text-xs font-bold font-mono tabular-nums text-[#EDE8DF]">
             {step < 1 ? value.toFixed(2) : value}
           </span>
-          {unit && <span className="text-[9px] text-[#4A4540]">{unit}</span>}
+          {unit && <span className="text-sm text-[#4A4540]">{unit}</span>}
         </div>
       </div>
       <Slider value={value} min={min} max={max} step={step} onValueChange={onChange} />
-      {hint && <p className="text-[9px] text-[#4A4540]">{hint}</p>}
+      {hint && <p className="text-sm text-[#4A4540]">{hint}</p>}
     </div>
   )
 }
@@ -296,7 +313,7 @@ function TuningPanel({
           <SlidersHorizontal size={16} className="text-[#B8964A]" />
           <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">AI 调优驾驶舱</h3>
           {autoApplied && (
-            <Badge className="text-[7px] bg-[#4D6BFE]/10 text-[#4D6BFE] border-[#4D6BFE]/20 px-1.5 h-4">
+            <Badge className="text-sm bg-[#4D6BFE]/10 text-[#4D6BFE] border-[#4D6BFE]/20 px-1.5 h-4">
               <Sparkles size={7} /> 自动同步
             </Badge>
           )}
@@ -325,15 +342,15 @@ function TuningPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Lightbulb size={11} className="text-[#B8964A]" />
-              <span className="text-[9px] text-[#A09888] uppercase tracking-wider">Provider 推荐预设</span>
-              <Badge className="text-[7px] bg-white/[0.04] text-[#6B6459] border-white/[0.06] px-1 h-3">{preset.personality}</Badge>
+              <span className="text-sm text-[#A09888] uppercase tracking-wider">Provider 推荐预设</span>
+              <Badge className="text-sm bg-white/[0.04] text-[#6B6459] border-white/[0.06] px-1 h-3">{preset.personality}</Badge>
             </div>
-            <span className="text-[8px] text-[#4A4540]">切换供应商时自动同步</span>
+            <span className="text-sm text-[#4A4540]">切换供应商时自动同步</span>
           </div>
-          <p className="text-[10px] text-[#6B6459]">{preset.desc}</p>
+          <p className="text-xs text-[#6B6459]">{preset.desc}</p>
           <div className="bg-[#1A1F2E] border border-white/[0.04] rounded-md p-2 flex items-start gap-1.5">
             <BookOpen size={10} className="text-[#4A4540] mt-0.5 shrink-0" />
-            <p className="text-[8px] text-[#4A4540] leading-relaxed font-mono break-all">{preset.systemPromptHint}</p>
+            <p className="text-sm text-[#4A4540] leading-relaxed font-mono break-all">{preset.systemPromptHint}</p>
           </div>
         </div>
       )}
@@ -363,13 +380,13 @@ function TuningPanel({
             <Hash size={12} className="text-[#6B6459]" />
             <Tooltip>
               <TooltipTrigger asChild>
-                <Label className="text-[10px] text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
-                  Max Tokens <span className="text-[9px] normal-case text-[#4A4540]">(最大回复长度)</span>
+                <Label className="text-xs text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
+                  Max Tokens <span className="text-sm normal-case text-[#4A4540]">(最大回复长度)</span>
                   <HelpCircle size={9} className="text-[#4A4540]" />
                 </Label>
               </TooltipTrigger>
               <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
-                <p className="text-[10px]">AI 单次输出最多能生成的 token 数量。约 1 token ≈ 0.7 个汉字。值越大回复越完整但成本越高</p>
+                <p className="text-xs">AI 单次输出最多能生成的 token 数量。约 1 token ≈ 0.7 个汉字。值越大回复越完整但成本越高</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -377,7 +394,7 @@ function TuningPanel({
         </div>
         <Slider value={maxTokens} min={256} max={32768} step={256}
           onValueChange={v => { setMaxTokens(v); setDirty(true) }} />
-        <p className="text-[9px] text-[#4A4540]">单次输出最大 token 数，影响回复长度与成本</p>
+        <p className="text-sm text-[#4A4540]">单次输出最大 token 数，影响回复长度与成本</p>
       </div>
 
       {/* Stream Toggle */}
@@ -387,16 +404,16 @@ function TuningPanel({
           <div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Label className="text-[10px] text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
+                <Label className="text-xs text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
                   流式输出 (Stream)
                   <HelpCircle size={9} className="text-[#4A4540]" />
                 </Label>
               </TooltipTrigger>
               <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
-                <p className="text-[10px]">开启后，AI 回复通过 SSE（Server-Sent Events）逐 token 推送，用户可实时看到生成过程，体验更流畅</p>
+                <p className="text-xs">开启后，AI 回复通过 SSE（Server-Sent Events）逐 token 推送，用户可实时看到生成过程，体验更流畅</p>
               </TooltipContent>
             </Tooltip>
-            <p className="text-[9px] text-[#4A4540]">启用 SSE 逐 token 推送</p>
+            <p className="text-sm text-[#4A4540]">启用 SSE 逐 token 推送</p>
           </div>
         </div>
         <Switch
@@ -407,7 +424,7 @@ function TuningPanel({
 
       {/* 快速预设 */}
       <div className="pt-2 border-t border-white/[0.04]">
-        <Label className="text-[10px] text-[#4A4540] uppercase tracking-wider mb-2 block">快速预设</Label>
+        <Label className="text-xs text-[#4A4540] uppercase tracking-wider mb-2 block">快速预设</Label>
         <div className="flex flex-wrap gap-1.5">
           {[
             { label: '创意写作', t: 1.2, p: 0.95, f: 0.3 },
@@ -420,7 +437,7 @@ function TuningPanel({
               onClick={() => {
                 setTemp(preset.t); setTopP(preset.p); setFreqPenalty(preset.f); setDirty(true)
               }}
-              className="px-2 py-1 rounded text-[9px] bg-white/[0.04] border border-white/[0.06] text-[#A09888] hover:text-[#EDE8DF] hover:border-white/[0.12] transition-colors"
+              className="px-2 py-1 rounded text-sm bg-white/[0.04] border border-white/[0.06] text-[#A09888] hover:text-[#EDE8DF] hover:border-white/[0.12] transition-colors"
             >
               {preset.label}
             </button>
@@ -458,11 +475,17 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
       const res = await fetch('/api/v1/admin/llm', { headers: apiHeaders() })
       const data = await res.json()
       if (data?.success) {
-        setProviders(data.data)
-        if (selectedId && !data.data.find((p: Provider) => p.id === selectedId)) {
-          setSelectedId(data.data[0]?.id ?? null)
-        } else if (!selectedId && data.data.length > 0) {
-          setSelectedId(data.data[0].id)
+        // ── 归一化：确保 tools / supportedTools 为纯数组（防御 DB JSON 字符串未解析）──
+        const normalized = (data.data as any[]).map((p: any) => ({
+          ...p,
+          tools: normalizeToolsField(p.tools),
+          supportedTools: normalizeToolsField(p.supportedTools),
+        }))
+        setProviders(normalized)
+        if (selectedId && !normalized.find((p: Provider) => p.id === selectedId)) {
+          setSelectedId(normalized[0]?.id ?? null)
+        } else if (!selectedId && normalized.length > 0) {
+          setSelectedId(normalized[0].id)
         }
       }
     } catch {
@@ -671,8 +694,8 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
           {/* ═══ 左侧：Provider 列表 ═══ */}
           <div className="w-64 shrink-0 flex flex-col gap-2">
             <div className="flex items-center gap-2 px-1">
-              <span className="text-[10px] uppercase tracking-wider text-[#4A4540] font-medium">Provider</span>
-              <span className="text-[10px] text-[#A09888]">{providers.length} 个</span>
+              <span className="text-xs uppercase tracking-wider text-[#4A4540] font-medium">Provider</span>
+              <span className="text-xs text-[#A09888]">{providers.length} 个</span>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
@@ -691,11 +714,12 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         : 'border-white/[0.04] bg-[#1A1F2E] hover:border-white/[0.10] hover:bg-[#1E2435]'
                     }`}
                   >
-                    {/* 当前默认标记 */}
+                    {/* 当前默认标记 — 内联定位，避免 overflow-y-auto 裁剪 */}
                     {p.isDefault === 1 && (
-                      <div className="absolute -top-1.5 right-2 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-[#EDE8DF] bg-[#B83A2E] shadow-[0_0_6px_rgba(184,58,46,0.4)] flex items-center gap-1">
-                        <Star size={7} />
+                      <div className="-mx-0.5 mb-2 px-2 py-1 rounded text-sm font-bold text-[#EDE8DF] bg-[#B83A2E]/90 flex items-center gap-1 shadow-[0_0_8px_rgba(184,58,46,0.35)]">
+                        <Star size={9} className="fill-[#EDE8DF]" />
                         当前默认
+                        <span className="ml-auto text-sm opacity-70 font-normal">AI 引擎自动路由</span>
                       </div>
                     )}
                     <div className="flex items-start justify-between mb-1.5">
@@ -714,7 +738,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       </div>
                       {/* 在线/离线状态指示 */}
                       <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium shrink-0 ${
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-sm font-medium shrink-0 ${
                           isOnline
                             ? 'text-[#5B8C5A] bg-[#5B8C5A]/10 border border-[#5B8C5A]/20'
                             : 'text-[#4A4540] bg-white/[0.03] border border-white/[0.04]'
@@ -725,11 +749,11 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       </span>
                     </div>
                     {p.model && (
-                      <p className="text-[10px] text-[#6B6459] font-mono truncate mb-1.5">{p.model}</p>
+                      <p className="text-xs text-[#6B6459] font-mono truncate mb-1.5">{p.model}</p>
                     )}
                     {/* ── 测速雷达 ── */}
                     {ping && (
-                      <div className={`flex items-center gap-1 mb-1.5 text-[9px] ${
+                      <div className={`flex items-center gap-1 mb-1.5 text-sm ${
                         ping.status === 'ok' ? 'text-[#5B8C5A]' : 'text-[#C04030]'
                       }`}>
                         <Signal size={9} className={ping.status === 'ok' ? 'text-[#5B8C5A]' : 'text-[#C04030]'} />
@@ -738,7 +762,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 text-[9px] text-[#4A4540]">
+                    <div className="flex items-center gap-1.5 text-sm text-[#4A4540]">
                       <Wrench size={9} />
                       <span>{p.supportedTools?.length ?? 0} 工具</span>
                       <span className="ml-auto text-[#A09888] font-mono">T={p.temperature?.toFixed(1)}</span>
@@ -748,7 +772,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                     <div className="flex items-center gap-0.5 mt-2 pt-2 border-t border-white/[0.04]">
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditTarget(p); setFormOpen(true) }}
-                        className="flex items-center gap-1 px-1.5 py-1 rounded text-[9px] text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors"
+                        className="flex items-center gap-1 px-1.5 py-1 rounded text-sm text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors"
                         title="编辑此供应商"
                       >
                         <Pencil size={9} />
@@ -764,7 +788,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                           })
                           fetchProviders()
                         }}
-                        className={`flex items-center gap-1 px-1.5 py-1 rounded text-[9px] transition-colors ${
+                        className={`flex items-center gap-1 px-1.5 py-1 rounded text-sm transition-colors ${
                           isOnline
                             ? 'text-[#A09888] hover:text-[#C08040] hover:bg-[#C08040]/10'
                             : 'text-[#4A4540] hover:text-[#5B8C5A] hover:bg-[#5B8C5A]/10'
@@ -777,7 +801,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       <button
                         onClick={(e) => { e.stopPropagation(); handlePing(p.id) }}
                         disabled={isPinging}
-                        className="flex items-center gap-1 px-1.5 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#B8964A] hover:bg-[#B8964A]/10 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 px-1.5 py-1 rounded text-sm text-[#4A4540] hover:text-[#B8964A] hover:bg-[#B8964A]/10 transition-colors disabled:opacity-50"
                         title="连通性测试 (5s 超时)"
                       >
                         {isPinging ? <Loader2 size={9} className="animate-spin" /> : <Signal size={9} />}
@@ -786,7 +810,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       {p.isDefault !== 1 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleSetDefault(p.id) }}
-                          className="flex items-center gap-1 px-1.5 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#B83A2E] hover:bg-[#B83A2E]/10 transition-colors"
+                          className="flex items-center gap-1 px-1.5 py-1 rounded text-sm text-[#4A4540] hover:text-[#B83A2E] hover:bg-[#B83A2E]/10 transition-colors"
                           title="设为此 Provider 为全局默认"
                         >
                           <Star size={9} />
@@ -794,7 +818,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }}
-                        className="flex items-center gap-1 ml-auto px-1.5 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors"
+                        className="flex items-center gap-1 ml-auto px-1.5 py-1 rounded text-sm text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors"
                         title="删除此供应商"
                       >
                         <Trash2 size={9} />
@@ -821,23 +845,23 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         <h3 className="text-sm font-semibold text-[#EDE8DF]">{selected.label}</h3>
                         <ProviderBadge type={selected.provider} />
                         {selected.isActive === 1 ? (
-                          <Badge className="bg-[#5B8C5A]/15 text-[#5B8C5A] border-[#5B8C5A]/25 text-[9px]">
+                          <Badge className="bg-[#5B8C5A]/15 text-[#5B8C5A] border-[#5B8C5A]/25 text-sm">
                             <span className="size-1.5 rounded-full bg-[#5B8C5A] shadow-[0_0_4px_rgba(91,140,90,0.5)] mr-1 inline-block" />
                             在线
                           </Badge>
                         ) : (
-                          <Badge className="bg-white/[0.03] text-[#4A4540] border-white/[0.05] text-[9px]">
+                          <Badge className="bg-white/[0.03] text-[#4A4540] border-white/[0.05] text-sm">
                             <span className="size-1.5 rounded-full bg-[#4A4540] mr-1 inline-block" />
                             离线
                           </Badge>
                         )}
                         {selected.testStatus === 'ok' && (
-                          <Badge className="bg-[#5B8C5A]/10 text-[#4A8A4A] border-[#5B8C5A]/15 text-[9px]">
+                          <Badge className="bg-[#5B8C5A]/10 text-[#4A8A4A] border-[#5B8C5A]/15 text-sm">
                             <CheckCircle2 size={8} /> 连接正常
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-[#6B6459]">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-[#6B6459]">
                         <span className="font-mono">{selected.model || '未指定'}</span>
                         <ChevronRight size={10} />
                         <span className="font-mono text-[#4A4540]">{selected.baseUrl || '默认端点'}</span>
@@ -854,36 +878,37 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                   apiHeaders={apiHeaders}
                 />
 
-                {/* Tool Calling 工具面板 — Skills */}
-                <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl overflow-hidden">
-                  <div className="px-5 py-3 border-b border-white/[0.04]">
-                    <div className="flex items-center gap-2">
-                      <Wrench size={14} className="text-[#B8964A]" />
-                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">工具能力配置 (Skills)</h3>
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <SkillsPanel
-                      providerId={selectedId}
-                      activeTools={selected?.supportedTools ?? []}
-                      apiHeaders={apiHeaders}
-                      onSaved={fetchProviders}
-                    />
-                  </div>
-                </div>
-
-                {/* Agent Tool Calling 面板 — 存储层 */}
+                {/* 高级智能体引擎 (Agent Tool Calling) — 视觉 C 位，即时保存 */}
                 <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl overflow-hidden">
                   <div className="px-5 py-3 border-b border-white/[0.04]">
                     <div className="flex items-center gap-2">
                       <Wrench size={14} className="text-[#8250DF]" />
-                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">Agent Tool Calling</h3>
+                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">高级智能体引擎 (Agent Tool Calling)</h3>
                     </div>
                   </div>
                   <div className="p-5">
                     <ToolCallingPanel
                       providerId={selectedId}
                       activeTools={selected?.tools ?? []}
+                      apiHeaders={apiHeaders}
+                      onSaved={fetchProviders}
+                    />
+                  </div>
+                </div>
+
+                {/* 系统内置基础插件 (Native Skills) — 架构预留，休眠态 */}
+                <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl overflow-hidden opacity-80">
+                  <div className="px-5 py-3 border-b border-white/[0.04]">
+                    <div className="flex items-center gap-2">
+                      <Wrench size={14} className="text-[#6B6459]" />
+                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">系统内置基础插件 (Native Skills)</h3>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-sm font-medium text-[#4A4540] bg-white/[0.04] border border-white/[0.05]">[架构预留]</span>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <SkillsPanel
+                      providerId={selectedId}
+                      activeTools={selected?.supportedTools ?? []}
                       apiHeaders={apiHeaders}
                       onSaved={fetchProviders}
                     />

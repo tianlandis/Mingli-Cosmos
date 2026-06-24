@@ -304,17 +304,17 @@ function DebugPanel({
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06] bg-[#1A1F2E] shrink-0">
         <Play size={13} className="text-[#5B8C5A]" />
         <span className="text-xs font-semibold text-[#EDE8DF] tracking-[0.04em]">实时沙盒</span>
-        <Badge className="bg-[#5B8C5A]/15 text-[#5B8C5A] border-[#5B8C5A]/25 text-[7px] ml-auto">Debug</Badge>
+        <Badge className="bg-[#5B8C5A]/15 text-[#5B8C5A] border-[#5B8C5A]/25 text-sm ml-auto">Debug</Badge>
       </div>
 
       {/* Prompt 预览 */}
       <div className="px-4 py-2.5 border-b border-white/[0.04] shrink-0">
-        <Label className="text-[8px] text-[#4A4540] uppercase tracking-wider mb-1 block">当前 Prompt</Label>
-        <div className="text-[9px] text-[#6B6459] font-mono leading-relaxed line-clamp-3 max-h-14 overflow-hidden bg-[#0A1118] rounded p-2 border border-white/[0.04]">
+        <Label className="text-sm text-[#4A4540] uppercase tracking-wider mb-1 block">当前 Prompt</Label>
+        <div className="text-sm text-[#6B6459] font-mono leading-relaxed line-clamp-3 max-h-14 overflow-hidden bg-[#0A1118] rounded p-2 border border-white/[0.04]">
           {promptContent || '未选择模板'}
         </div>
         {/* 当前参数指示 */}
-        <div className="flex items-center gap-2 mt-1.5 text-[8px] text-[#4A4540] font-mono">
+        <div className="flex items-center gap-2 mt-1.5 text-sm text-[#4A4540] font-mono">
           <span>T={temperature.toFixed(2)}</span>
           <span>P={topP.toFixed(2)}</span>
           <span>Max={maxTokens}</span>
@@ -326,7 +326,7 @@ function DebugPanel({
         {debugHistory.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Bot size={18} className="text-[#3E3A33]" />
-            <p className="text-[10px] text-[#3E3A33] text-center">
+            <p className="text-xs text-[#3E3A33] text-center">
               {promptContent ? '输入测试消息开始调试' : '请先选择模板'}
             </p>
           </div>
@@ -334,14 +334,14 @@ function DebugPanel({
         {debugHistory.map((msg, i) => (
           <div
             key={i}
-            className={`rounded-lg p-2.5 text-[10px] leading-relaxed ${
+            className={`rounded-lg p-2.5 text-xs leading-relaxed ${
               msg.role === 'user'
                 ? 'bg-[#B8964A]/8 border border-[#B8964A]/15 ml-4'
                 : 'bg-[#0A1118] border border-white/[0.04] mr-4'
             }`}
           >
             <div className="flex items-center gap-1.5 mb-1">
-              <span className={`text-[8px] font-medium ${msg.role === 'user' ? 'text-[#B8964A]' : 'text-[#5B8C5A]'}`}>
+              <span className={`text-sm font-medium ${msg.role === 'user' ? 'text-[#B8964A]' : 'text-[#5B8C5A]'}`}>
                 {msg.role === 'user' ? 'YOU' : 'LLM'}
               </span>
             </div>
@@ -352,17 +352,17 @@ function DebugPanel({
           <div className="rounded-lg p-2.5 bg-[#C04030]/8 border border-[#C04030]/15">
             <div className="flex items-center gap-1.5 mb-1">
               <XCircle size={10} className="text-[#D06050]" />
-              <span className="text-[8px] font-medium text-[#D06050]">ERROR</span>
+              <span className="text-sm font-medium text-[#D06050]">ERROR</span>
             </div>
-            <p className="text-[10px] text-[#D06050]">{error}</p>
+            <p className="text-xs text-[#D06050]">{error}</p>
           </div>
         )}
         {response && debugHistory.length === 0 && (
           <div className="rounded-lg p-2.5 bg-[#0A1118] border border-white/[0.04]">
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[8px] font-medium text-[#5B8C5A]">LLM</span>
+              <span className="text-sm font-medium text-[#5B8C5A]">LLM</span>
             </div>
-            <p className="text-[10px] text-[#D8D2C8] font-mono whitespace-pre-wrap">{response.slice(0, 800)}</p>
+            <p className="text-xs text-[#D8D2C8] font-mono whitespace-pre-wrap">{response.slice(0, 800)}</p>
           </div>
         )}
       </div>
@@ -428,28 +428,28 @@ function ParamSlider({
           <Icon size={10} className="text-[#6B6459]" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Label className="text-[9px] text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
+              <Label className="text-sm text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
                 {label}
-                {labelCN && <span className="text-[8px] normal-case text-[#4A4540]">({labelCN})</span>}
+                {labelCN && <span className="text-sm normal-case text-[#4A4540]">({labelCN})</span>}
                 {tooltip && <HelpCircle size={8} className="text-[#4A4540]" />}
               </Label>
             </TooltipTrigger>
             {tooltip && (
               <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-52">
-                <p className="text-[10px]">{tooltip}</p>
+                <p className="text-xs">{tooltip}</p>
               </TooltipContent>
             )}
           </Tooltip>
         </div>
         <div className="flex items-baseline gap-0.5">
-          <span className="text-[10px] font-bold font-mono tabular-nums text-[#EDE8DF]">
+          <span className="text-xs font-bold font-mono tabular-nums text-[#EDE8DF]">
             {step < 1 ? value.toFixed(2) : value}
           </span>
-          {unit && <span className="text-[8px] text-[#4A4540]">{unit}</span>}
+          {unit && <span className="text-sm text-[#4A4540]">{unit}</span>}
         </div>
       </div>
       <Slider value={value} min={min} max={max} step={step} onValueChange={onChange} />
-      {hint && <p className="text-[8px] text-[#4A4540]">{hint}</p>}
+      {hint && <p className="text-sm text-[#4A4540]">{hint}</p>}
     </div>
   )
 }
@@ -635,7 +635,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
             <FileText size={16} className="text-[#B8964A]" />
             Prompt 驾驶舱
           </h2>
-          <p className="text-[10px] text-[#6B6459] mt-0.5">
+          <p className="text-xs text-[#6B6459] mt-0.5">
             {prompts.length} 个模板 · 边写边调边测 · Ctrl+S 保存
           </p>
         </div>
@@ -696,7 +696,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
 
       {/* 状态消息 */}
       {status && (
-        <div className={`shrink-0 mx-2 px-3 py-1.5 rounded-md text-[10px] flex items-center gap-1.5 ${
+        <div className={`shrink-0 mx-2 px-3 py-1.5 rounded-md text-xs flex items-center gap-1.5 ${
           status.type === 'ok' ? 'bg-[#5B8C5A]/10 border border-[#5B8C5A]/20 text-[#5B8C5A]'
           : 'bg-[#C04030]/10 border border-[#C04030]/20 text-[#D06050]'
         }`}>
@@ -721,7 +721,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">新建 Prompt 模板</h3>
-                  <p className="text-[10px] text-[#6B6459] mt-0.5 leading-relaxed">
+                  <p className="text-xs text-[#6B6459] mt-0.5 leading-relaxed">
                     创建一个新的系统指令模板。系统身份前缀（角色设定与护栏规则）会自动附加在您编写的内容之前。
                   </p>
                 </div>
@@ -738,8 +738,8 @@ export default function PromptEditor(_props: PromptEditorProps) {
                   <Input value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="如：bazi_core_prompt"
                     className="bg-[#0A1118] border-white/[0.08] text-[#EDE8DF] placeholder:text-[#3E3A33] text-xs font-mono focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20" />
-                  <p className="text-[9px] text-[#4A4540]">
-                    在代码中调用的唯一键名，必须为英文字母、数字或下划线，例如：<code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-[8px] font-mono">bazi_core_prompt</code>
+                  <p className="text-sm text-[#4A4540]">
+                    在代码中调用的唯一键名，必须为英文字母、数字或下划线，例如：<code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-sm font-mono">bazi_core_prompt</code>
                   </p>
                 </div>
 
@@ -752,7 +752,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
                   <Input value={newForm.displayName} onChange={e => setNewForm(f => ({ ...f, displayName: e.target.value }))}
                     placeholder="如：防幻觉指令"
                     className="bg-[#0A1118] border-white/[0.08] text-[#EDE8DF] placeholder:text-[#3E3A33] text-xs focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20" />
-                  <p className="text-[9px] text-[#4A4540]">
+                  <p className="text-sm text-[#4A4540]">
                     在模板列表中展示的人类可读名称，支持中文。留空则自动使用模板标识。
                   </p>
                 </div>
@@ -766,7 +766,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
                   <Input value={newForm.description} onChange={e => setNewForm(f => ({ ...f, description: e.target.value }))}
                     placeholder="简要说明此模板的用途..."
                     className="bg-[#0A1118] border-white/[0.08] text-[#EDE8DF] placeholder:text-[#3E3A33] text-xs focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20" />
-                  <p className="text-[9px] text-[#4A4540]">
+                  <p className="text-sm text-[#4A4540]">
                     可选。在左侧元数据卡片中展示，帮助团队成员理解模板用途。
                   </p>
                 </div>
@@ -782,15 +782,15 @@ export default function PromptEditor(_props: PromptEditorProps) {
                       </Label>
                     </TooltipTrigger>
                     <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-64">
-                      <p className="text-[10px]">系统身份前缀（角色·护栏·输出结构）会自动附加在此内容之前，最终拼接成完整的 System Prompt 发送给 AI</p>
+                      <p className="text-xs">系统身份前缀（角色·护栏·输出结构）会自动附加在此内容之前，最终拼接成完整的 System Prompt 发送给 AI</p>
                     </TooltipContent>
                   </Tooltip>
                   <textarea value={newForm.content} onChange={e => setNewForm(f => ({ ...f, content: e.target.value }))}
                     placeholder="在此编写模板的可编辑部分... 支持使用 {{变量名}} 注入动态数据。"
                     rows={8}
                     className="w-full px-3 py-2.5 bg-[#0A1118] border border-white/[0.08] rounded-lg text-[#EDE8DF] placeholder:text-[#3E3A33] text-xs font-mono resize-none focus:outline-none focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20 leading-relaxed" />
-                  <p className="text-[9px] text-[#4A4540]">
-                    输入核心系统指令。支持使用 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-[8px] font-mono">{'{{变量名}}'}</code> 注入动态数据（如 {'{{chart.dayMaster}}'} {'{{annotation.patternName}}'} 等），输入 {'{{'} 即可触发自动补全。
+                  <p className="text-sm text-[#4A4540]">
+                    输入核心系统指令。支持使用 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-sm font-mono">{'{{变量名}}'}</code> 注入动态数据（如 {'{{chart.dayMaster}}'} {'{{annotation.patternName}}'} 等），输入 {'{{'} 即可触发自动补全。
                   </p>
                 </div>
 
@@ -799,11 +799,11 @@ export default function PromptEditor(_props: PromptEditorProps) {
                   <div className="flex items-center justify-between px-3 py-1.5 bg-[#B8964A]/8 border-b border-[#B8964A]/15">
                     <div className="flex items-center gap-1.5">
                       <Lock size={10} className="text-[#B8964A]" />
-                      <span className="text-[9px] font-medium text-[#B8964A]">系统前缀预览</span>
+                      <span className="text-sm font-medium text-[#B8964A]">系统前缀预览</span>
                     </div>
-                    <span className="text-[7px] text-[#4A4540]">保存时自动拼接</span>
+                    <span className="text-sm text-[#4A4540]">保存时自动拼接</span>
                   </div>
-                  <div className="px-3 py-2 font-mono text-[8px] text-[#6B6459] leading-relaxed max-h-24 overflow-y-auto">
+                  <div className="px-3 py-2 font-mono text-sm text-[#6B6459] leading-relaxed max-h-24 overflow-y-auto">
                     {LOCKED_SYSTEM_PREFIX + LOCKED_DELIMITER}
                     <span className="text-[#B8964A]">{'(← 您的内容将拼接在此处)'}</span>
                   </div>
@@ -833,21 +833,21 @@ export default function PromptEditor(_props: PromptEditorProps) {
                     <div className="admin-card overflow-hidden flex-shrink-0">
                       <div className="px-3 py-2 border-b border-white/[0.04] flex items-center gap-2">
                         <GitBranch size={11} className="text-[#4A4540]" />
-                        <span className="text-[9px] uppercase tracking-wider text-[#4A4540] font-medium">模板列表</span>
-                        <span className="text-[9px] text-[#6B6459] ml-auto">{prompts.length}</span>
+                        <span className="text-sm uppercase tracking-wider text-[#4A4540] font-medium">模板列表</span>
+                        <span className="text-sm text-[#6B6459] ml-auto">{prompts.length}</span>
                       </div>
                       <div className="max-h-36 overflow-y-auto">
                         {prompts.map(p => {
                           const isSelected = selected?.id === p.id
                           return (
                             <button key={p.id} onClick={() => selectPrompt(p)}
-                              className={`w-full text-left px-3 py-2 border-b border-white/[0.02] text-[10px] transition-colors ${
+                              className={`w-full text-left px-3 py-2 border-b border-white/[0.02] text-xs transition-colors ${
                                 isSelected ? 'bg-[#B8964A]/10 border-l-2 border-l-[#B8964A]' : 'hover:bg-white/[0.02] border-l-2 border-l-transparent'
                               }`}>
                               <div className="font-medium text-[#EDE8DF] truncate">{p.displayName || p.name}</div>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[9px] text-[#4A4540]">v{p.version}</span>
-                                {p.isBuiltin === 1 && <Badge className="bg-[#B8964A]/15 text-[#B8964A] border-[#B8964A]/25 text-[7px]">内置</Badge>}
+                                <span className="text-sm text-[#4A4540]">v{p.version}</span>
+                                {p.isBuiltin === 1 && <Badge className="bg-[#B8964A]/15 text-[#B8964A] border-[#B8964A]/25 text-sm">内置</Badge>}
                               </div>
                             </button>
                           )
@@ -859,16 +859,16 @@ export default function PromptEditor(_props: PromptEditorProps) {
                     <div className="admin-card p-3 space-y-2.5 shrink-0">
                       <div className="flex items-center gap-1.5">
                         <PenLine size={10} className="text-[#4A4540]" />
-                        <span className="text-[8px] uppercase tracking-wider text-[#4A4540] font-medium">元数据</span>
+                        <span className="text-sm uppercase tracking-wider text-[#4A4540] font-medium">元数据</span>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[#6B6459] text-[8px]">描述</Label>
+                        <Label className="text-[#6B6459] text-sm">描述</Label>
                         <textarea value={editDescription} onChange={e => { setEditDescription(e.target.value); setDirty(true) }}
                           placeholder="用途说明..." rows={2}
-                          className="w-full px-2 py-1.5 bg-[#0A1118] border border-white/[0.06] rounded text-[#A09888] placeholder:text-[#3E3A33] text-[8px] resize-none focus:outline-none focus:border-[#B8964A]/60" />
+                          className="w-full px-2 py-1.5 bg-[#0A1118] border border-white/[0.06] rounded text-[#A09888] placeholder:text-[#3E3A33] text-sm resize-none focus:outline-none focus:border-[#B8964A]/60" />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-[#6B6459] text-[8px]">启用</Label>
+                        <Label className="text-[#6B6459] text-sm">启用</Label>
                         <Switch checked={editIsActive} onCheckedChange={v => { setEditIsActive(v); setDirty(true) }} />
                       </div>
                     </div>
@@ -878,17 +878,17 @@ export default function PromptEditor(_props: PromptEditorProps) {
                       <div className="flex items-center justify-between mb-2 shrink-0">
                         <div className="flex items-center gap-1.5">
                           <History size={10} className="text-[#4A4540]" />
-                          <span className="text-[8px] uppercase tracking-wider text-[#4A4540] font-medium">版本历史</span>
+                          <span className="text-sm uppercase tracking-wider text-[#4A4540] font-medium">版本历史</span>
                         </div>
                         {versionsLoading && <RefreshCw size={9} className="animate-spin text-[#4A4540]" />}
                       </div>
                       <div className="flex-1 overflow-y-auto space-y-1">
                         {versions.length === 0 && !versionsLoading && (
-                          <p className="text-[8px] text-[#3E3A33] text-center py-4">暂无历史</p>
+                          <p className="text-sm text-[#3E3A33] text-center py-4">暂无历史</p>
                         )}
                         {versions.map(v => (
                           <div key={v.id}
-                            className={`p-1.5 rounded border text-[8px] ${
+                            className={`p-1.5 rounded border text-sm ${
                               v.version === selected.version ? 'border-[#5B8C5A]/40 bg-[#5B8C5A]/5' : 'border-white/[0.04] bg-[#0A1118]'
                             }`}>
                             <div className="flex items-center justify-between mb-0.5">
@@ -900,7 +900,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
                               </button>
                             </div>
                             {v.changeNote && <p className="text-[#6B6459] truncate">{v.changeNote}</p>}
-                            <p className="text-[#3E3A33] text-[7px] mt-0.5">
+                            <p className="text-[#3E3A33] text-sm mt-0.5">
                               {new Date(v.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -922,14 +922,14 @@ export default function PromptEditor(_props: PromptEditorProps) {
                     <Input value={editDisplayName} onChange={e => { setEditDisplayName(e.target.value); setDirty(true) }}
                       className="bg-transparent border-none text-sm font-semibold text-[#EDE8DF] placeholder:text-[#3E3A33] w-36 focus:outline-none p-0 h-auto" />
                     {selected.isBuiltin === 1 && (
-                      <Badge className="bg-[#B8964A]/15 text-[#B8964A] border-[#B8964A]/25 text-[7px] shrink-0">内置</Badge>
+                      <Badge className="bg-[#B8964A]/15 text-[#B8964A] border-[#B8964A]/25 text-sm shrink-0">内置</Badge>
                     )}
-                    <span className="text-[8px] text-[#4A4540] font-mono">{selected.name} · v{selected.version}</span>
+                    <span className="text-sm text-[#4A4540] font-mono">{selected.name} · v{selected.version}</span>
                     {dirty && <span className="w-1.5 h-1.5 rounded-full bg-[#C08040]" title="未保存" />}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button onClick={handleSave} disabled={!dirty}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                         dirty ? 'bg-[#5B8C5A] text-[#EDE8DF] hover:bg-[#4A7348] shadow-[0_0_10px_rgba(91,140,90,0.2)]'
                         : 'bg-white/[0.04] text-[#3E3A33] cursor-not-allowed'
                       }`}>
@@ -948,8 +948,8 @@ export default function PromptEditor(_props: PromptEditorProps) {
                 <div className="admin-card p-3 space-y-2.5 shrink-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <SlidersHorizontal size={12} className="text-[#B8964A]" />
-                    <span className="text-[10px] font-semibold text-[#EDE8DF] tracking-[0.04em]">模型参数预设</span>
-                    <span className="text-[8px] text-[#4A4540] ml-auto">影响 Debug 沙盒</span>
+                    <span className="text-xs font-semibold text-[#EDE8DF] tracking-[0.04em]">模型参数预设</span>
+                    <span className="text-sm text-[#4A4540] ml-auto">影响 Debug 沙盒</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <ParamSlider
@@ -972,25 +972,25 @@ export default function PromptEditor(_props: PromptEditorProps) {
                           <Hash size={10} className="text-[#6B6459]" />
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Label className="text-[9px] text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
-                                Max Tokens <span className="text-[8px] normal-case text-[#4A4540]">(最大长度)</span>
+                              <Label className="text-sm text-[#A09888] uppercase tracking-wider flex items-center gap-1 cursor-help">
+                                Max Tokens <span className="text-sm normal-case text-[#4A4540]">(最大长度)</span>
                                 <HelpCircle size={8} className="text-[#4A4540]" />
                               </Label>
                             </TooltipTrigger>
                             <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-52">
-                              <p className="text-[10px]">AI 单次输出最多的 token 数量。1 token ≈ 0.7 汉字。值越大回复越完整但成本越高</p>
+                              <p className="text-xs">AI 单次输出最多的 token 数量。1 token ≈ 0.7 汉字。值越大回复越完整但成本越高</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <span className="text-[10px] font-bold font-mono text-[#EDE8DF]">{maxTokens}</span>
+                        <span className="text-xs font-bold font-mono text-[#EDE8DF]">{maxTokens}</span>
                       </div>
                       <Slider value={maxTokens} min={256} max={32768} step={256} onValueChange={setMaxTokens} />
-                      <p className="text-[8px] text-[#4A4540]">输出长度上限 · 影响回复长度与 API 成本</p>
+                      <p className="text-sm text-[#4A4540]">输出长度上限 · 影响回复长度与 API 成本</p>
                     </div>
                   </div>
                   {/* 快捷预设 */}
                   <div className="flex flex-wrap gap-1 pt-1 border-t border-white/[0.04]">
-                    <span className="text-[8px] text-[#4A4540] mr-1 self-center">预设:</span>
+                    <span className="text-sm text-[#4A4540] mr-1 self-center">预设:</span>
                     {[
                       { label: '创意', t: 1.2, p: 0.95 },
                       { label: '精确', t: 0.1, p: 0.1 },
@@ -998,7 +998,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
                       { label: '代码', t: 0, p: 0.1 },
                     ].map(preset => (
                       <button key={preset.label} onClick={() => { setTemperature(preset.t); setTopP(preset.p) }}
-                        className="px-1.5 py-0.5 rounded text-[8px] bg-white/[0.04] border border-white/[0.06] text-[#A09888] hover:text-[#EDE8DF] hover:border-white/[0.12] transition-colors">
+                        className="px-1.5 py-0.5 rounded text-sm bg-white/[0.04] border border-white/[0.06] text-[#A09888] hover:text-[#EDE8DF] hover:border-white/[0.12] transition-colors">
                         {preset.label}
                       </button>
                     ))}
@@ -1010,11 +1010,11 @@ export default function PromptEditor(_props: PromptEditorProps) {
                   <div className="flex items-center justify-between px-3 py-1.5 bg-[#B8964A]/8 border-b border-[#B8964A]/15">
                     <div className="flex items-center gap-1.5">
                       <Lock size={10} className="text-[#B8964A]" />
-                      <span className="text-[10px] font-medium text-[#B8964A]">系统身份锁定区</span>
+                      <span className="text-xs font-medium text-[#B8964A]">系统身份锁定区</span>
                     </div>
-                    <span className="text-[7px] text-[#4A4540]">保存时自动拼接</span>
+                    <span className="text-sm text-[#4A4540]">保存时自动拼接</span>
                   </div>
-                  <div className="px-3 py-2 font-mono text-[9px] text-[#6B6459] leading-relaxed whitespace-pre-wrap select-none max-h-20 overflow-y-auto">
+                  <div className="px-3 py-2 font-mono text-sm text-[#6B6459] leading-relaxed whitespace-pre-wrap select-none max-h-20 overflow-y-auto">
                     {lockedPrefix}
                   </div>
                 </div>
@@ -1022,7 +1022,7 @@ export default function PromptEditor(_props: PromptEditorProps) {
                 {/* 分隔线 */}
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="flex-1 h-px bg-white/[0.06]" />
-                  <div className="flex items-center gap-1 text-[8px] text-[#4A4540]">
+                  <div className="flex items-center gap-1 text-sm text-[#4A4540]">
                     <PenLine size={8} /> 输入 {'{{'} 补全变量
                   </div>
                   <div className="flex-1 h-px bg-white/[0.06]" />
@@ -1063,8 +1063,8 @@ export default function PromptEditor(_props: PromptEditorProps) {
               </div>
               <div>
                 <h3 className="text-base font-semibold text-[#EDE8DF] tracking-[0.04em]">Prompt 驾驶舱</h3>
-                <p className="text-[11px] text-[#6B6459] mt-1 leading-relaxed">
-                  此模块用于热编辑 AI 的核心系统指令与防越权护栏。所有模板数据持久化保存在 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1.5 py-0.5 rounded text-[10px] font-mono">prompt_templates</code> 数据库表中。
+                <p className="text-sm text-[#6B6459] mt-1 leading-relaxed">
+                  此模块用于热编辑 AI 的核心系统指令与防越权护栏。所有模板数据持久化保存在 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1.5 py-0.5 rounded text-xs font-mono">prompt_templates</code> 数据库表中。
                 </p>
               </div>
             </div>
@@ -1075,37 +1075,37 @@ export default function PromptEditor(_props: PromptEditorProps) {
                 <div className="size-8 flex items-center justify-center rounded-lg bg-[#B8964A]/8 mx-auto mb-2">
                   <GitBranch size={14} className="text-[#B8964A]" />
                 </div>
-                <p className="text-[10px] font-medium text-[#EDE8DF] mb-0.5">左侧栏</p>
-                <p className="text-[9px] text-[#6B6459] leading-relaxed">选择 Prompt 模板版本，编辑元数据与回滚历史</p>
+                <p className="text-xs font-medium text-[#EDE8DF] mb-0.5">左侧栏</p>
+                <p className="text-sm text-[#6B6459] leading-relaxed">选择 Prompt 模板版本，编辑元数据与回滚历史</p>
               </div>
               <div className="bg-[#0A1118] border border-white/[0.04] rounded-lg p-3 text-center">
                 <div className="size-8 flex items-center justify-center rounded-lg bg-[#5B8C5A]/10 mx-auto mb-2">
                   <Code2 size={14} className="text-[#5B8C5A]" />
                 </div>
-                <p className="text-[10px] font-medium text-[#EDE8DF] mb-0.5">中间编辑区</p>
-                <p className="text-[9px] text-[#6B6459] leading-relaxed">CodeMirror 编辑器 + L3 护栏面板 + 模型参数 Slider 调参</p>
+                <p className="text-xs font-medium text-[#EDE8DF] mb-0.5">中间编辑区</p>
+                <p className="text-sm text-[#6B6459] leading-relaxed">CodeMirror 编辑器 + L3 护栏面板 + 模型参数 Slider 调参</p>
               </div>
               <div className="bg-[#0A1118] border border-white/[0.04] rounded-lg p-3 text-center">
                 <div className="size-8 flex items-center justify-center rounded-lg bg-[#4D6BFE]/10 mx-auto mb-2">
                   <FlaskConical size={14} className="text-[#4D6BFE]" />
                 </div>
-                <p className="text-[10px] font-medium text-[#EDE8DF] mb-0.5">右侧沙盒</p>
-                <p className="text-[9px] text-[#6B6459] leading-relaxed">输入测试用例，带着当前 Prompt + 参数实时请求 LLM 验证效果</p>
+                <p className="text-xs font-medium text-[#EDE8DF] mb-0.5">右侧沙盒</p>
+                <p className="text-sm text-[#6B6459] leading-relaxed">输入测试用例，带着当前 Prompt + 参数实时请求 LLM 验证效果</p>
               </div>
             </div>
 
             {/* 键盘快捷键 */}
             <div className="bg-[#0A1118] border border-white/[0.04] rounded-lg p-3 mb-4">
-              <p className="text-[10px] font-medium text-[#6B6459] mb-2 tracking-[0.04em]">键盘快捷键</p>
+              <p className="text-xs font-medium text-[#6B6459] mb-2 tracking-[0.04em]">键盘快捷键</p>
               <div className="flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-1.5 text-[9px] text-[#A09888]">
-                  <kbd className="px-1.5 py-0.5 rounded bg-[#1A1F2E] border border-white/[0.08] text-[10px] font-mono text-[#EDE8DF]">Ctrl+S</kbd> 保存
+                <span className="inline-flex items-center gap-1.5 text-sm text-[#A09888]">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#1A1F2E] border border-white/[0.08] text-xs font-mono text-[#EDE8DF]">Ctrl+S</kbd> 保存
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[9px] text-[#A09888]">
-                  <kbd className="px-1.5 py-0.5 rounded bg-[#1A1F2E] border border-white/[0.08] text-[10px] font-mono text-[#EDE8DF]">Ctrl+Enter</kbd> 沙盒发送
+                <span className="inline-flex items-center gap-1.5 text-sm text-[#A09888]">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#1A1F2E] border border-white/[0.08] text-xs font-mono text-[#EDE8DF]">Ctrl+Enter</kbd> 沙盒发送
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[9px] text-[#A09888]">
-                  <kbd className="px-1.5 py-0.5 rounded bg-[#1A1F2E] border border-white/[0.08] text-[10px] font-mono text-[#EDE8DF]">{'{{'}</kbd> 变量补全
+                <span className="inline-flex items-center gap-1.5 text-sm text-[#A09888]">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#1A1F2E] border border-white/[0.08] text-xs font-mono text-[#EDE8DF]">{'{{'}</kbd> 变量补全
                 </span>
               </div>
             </div>
@@ -1114,16 +1114,16 @@ export default function PromptEditor(_props: PromptEditorProps) {
             <div className="flex items-start gap-2.5 bg-[#B8964A]/5 border border-[#B8964A]/10 rounded-lg p-3">
               <Info size={13} className="text-[#B8964A] shrink-0 mt-0.5" />
               <div>
-                <p className="text-[10px] text-[#A09888] leading-relaxed">
+                <p className="text-xs text-[#A09888] leading-relaxed">
                   <span className="font-medium text-[#EDE8DF]">数据持久化说明：</span>
-                  所有 Prompt 模板、版本历史、护栏规则均存储在 SQLite 的 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-[9px] font-mono">prompt_templates</code> 与 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-[9px] font-mono">prompt_versions</code> 表中。内置模板标记为 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-[9px] font-mono">isBuiltin=1</code>，不可删除但可覆盖编辑。每次保存自动生成新版本。
+                  所有 Prompt 模板、版本历史、护栏规则均存储在 SQLite 的 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-sm font-mono">prompt_templates</code> 与 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-sm font-mono">prompt_versions</code> 表中。内置模板标记为 <code className="text-[#B8964A] bg-[#B8964A]/8 px-1 rounded text-sm font-mono">isBuiltin=1</code>，不可删除但可覆盖编辑。每次保存自动生成新版本。
                 </p>
               </div>
             </div>
           </div>
 
           {/* 底部操作引导 */}
-          <div className="mt-4 flex items-center gap-3 text-[10px] text-[#4A4540]">
+          <div className="mt-4 flex items-center gap-3 text-xs text-[#4A4540]">
             <span>{prompts.length > 0 ? `已有 ${prompts.length} 个模板` : '暂无模板'}</span>
             <span>·</span>
             <button onClick={() => setShowNew(true)} className="text-[#B8964A] hover:text-[#D8C08A] transition-colors">

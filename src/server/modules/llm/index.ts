@@ -529,7 +529,7 @@ route.put('/:id/tool-calling', async (c) => {
   return c.json({ success: true, data: result })
 })
 
-// ---- POST /llm/:id/ping — 连通性测试（5 秒超时）----
+// ---- POST /llm/:id/ping — 连通性测试（5 秒超时，多策略探测）----
 route.post('/:id/ping', async (c) => {
   const id = Number(c.req.param('id'))
   const provider = getApiKey(id)
@@ -544,59 +544,82 @@ route.post('/:id/ping', async (c) => {
     return c.json({ success: false, error: { code: 'NO_BASE_URL', message: 'Provider 未配置 Base URL' } }, 400)
   }
 
-  const cleanBase = baseUrl.replace(/\/+$/, '')
-  const pingUrl = `${cleanBase}/models`
-
   const start = Date.now()
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 5000)
+  const timer = setTimeout(() => controller.abort(), 5000)  // 5秒超时
 
-  try {
-    const res = await fetch(pingUrl, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-    })
-    clearTimeout(timer)
-
-    const latency = Date.now() - start
-
-    // 任何 2xx 或 401（有认证但端点可访问）都算连通
-    if (res.ok || res.status === 401 || res.status === 403) {
-      // 更新 testStatus + testLatency
-      updateApiKey(id, {
-        testStatus: 'ok',
-        testLatency: latency,
-        testedAt: new Date().toISOString(),
-      } as any)
-      return c.json({ success: true, data: { latency, status: 'ok' } })
+  /**
+   * 单次探测尝试：发起 fetch 并返回 { ok, status, latency }
+   */
+  const tryPing = async (url: string): Promise<{ ok: boolean; status: number; latency: number }> => {
+    const t0 = Date.now()
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+        },
+        signal: controller.signal,
+      })
+      return { ok: res.ok, status: res.status, latency: Date.now() - t0 }
+    } catch {
+      return { ok: false, status: 0, latency: Date.now() - t0 }
     }
-
-    updateApiKey(id, {
-      testStatus: 'failed',
-      testLatency: latency,
-      testedAt: new Date().toISOString(),
-    } as any)
-    return c.json({ success: false, error: { code: 'PING_FAILED', message: `HTTP ${res.status}` }, data: { latency } }, 502)
-  } catch (err: any) {
-    clearTimeout(timer)
-    const latency = Date.now() - start
-    const errorMsg = err.name === 'AbortError' ? '连接超时 (5s)' : (err.message || '未知网络错误')
-
-    updateApiKey(id, {
-      testStatus: 'failed',
-      testLatency: latency,
-      testedAt: new Date().toISOString(),
-    } as any)
-
-    return c.json({
-      success: false,
-      error: { code: 'PING_FAILED', message: errorMsg },
-      data: { latency },
-    }, 502)
   }
+
+  const cleanBase = baseUrl.replace(/\/+$/, '')
+
+  // ── 策略 A：标准 OpenAI 兼容 /models ──
+  let result = await tryPing(`${cleanBase}/models`)
+
+  // ── 策略 B：剥离 /v1 前缀后的裸 /models（部分反向代理不遵循 /v1/models）──
+  if (!result.ok) {
+    const bareUrl = cleanBase.replace(/\/v1\/?$/, '') + '/models'
+    if (bareUrl !== `${cleanBase}/models`) {
+      // 不检查 controller.signal.aborted，直接发起第二个请求
+      if (!controller.signal.aborted) {
+        result = await tryPing(bareUrl)
+      }
+    }
+  }
+
+  clearTimeout(timer)
+  const latency = result.latency
+
+  // ── 判定：仅 2xx 视为测速成功（严格按用户要求，不含 401/403）──
+  if (result.ok) {
+    updateApiKey(id, {
+      testStatus: 'ok',
+      testLatency: latency,
+      testedAt: new Date().toISOString(),
+    } as any)
+    return c.json({ success: true, data: { latency, status: 'ok' } })
+  }
+
+  // ── 失败明细 ──
+  let errorMsg: string
+  if (result.status === 0) {
+    errorMsg = controller.signal.aborted ? '连接超时 (5s)' : '网络不可达'
+  } else if (result.status === 401 || result.status === 403) {
+    errorMsg = `认证失败 (HTTP ${result.status})，API Key 无效但端点可达`
+  } else if (result.status === 404) {
+    errorMsg = `端点不存在 (HTTP 404)，请检查 Base URL 格式`
+  } else {
+    errorMsg = `HTTP ${result.status}`
+  }
+
+  updateApiKey(id, {
+    testStatus: 'failed',
+    testLatency: latency,
+    testedAt: new Date().toISOString(),
+  } as any)
+
+  return c.json({
+    success: false,
+    error: { code: 'PING_FAILED', message: errorMsg },
+    data: { latency },
+  }, 502)
 })
 
 // ---- GET /llm/export — 导出全量 Provider 配置为 JSON ----

@@ -1,13 +1,15 @@
 // ============================================================
-// Phase 4B — 双轨配置路由
+// Phase 4B — 三轨配置路由（api_keys 优先 → app_configs 回退 → .env 兜底）
 // 文件：src/server/config/index.ts
-// 职责：DB 优先 → .env 回退 + 内存缓存 TTL 60s
+// 职责：api_keys(isDefault=1) 优先 → app_configs K/V 回退 → .env 最终兜底
+//       + 内存缓存 TTL 60s
 // ============================================================
 
 import { getConfigValue, listConfigs } from '../db'
+import { getDefaultApiKey, getDefaultApiKeyFallback } from '../db/repositories/api-keys'
 
 interface AppConfig {
-  /** LLM Provider ('openai' | 'deepseek' | 'claude' | 'local') */
+  /** LLM Provider ('openai' | 'deepseek' | 'claude' | 'local' | 'siliconflow') */
   provider: string
   /** API Key */
   apiKey: string
@@ -25,8 +27,8 @@ interface AppConfig {
   maxRetries: number
   /** LLM 超时(ms) */
   llmTimeoutMs: number
-  /** 原始来源：'db' | 'env' */
-  source: 'db' | 'env'
+  /** 原始来源：'api_keys' | 'db' | 'env' */
+  source: 'api_keys' | 'db' | 'env'
 }
 
 // ═══════════════════════════════════════
@@ -38,10 +40,42 @@ let cacheTime = 0
 const CACHE_TTL_MS = 60_000 // 60 秒
 
 /**
- * 双轨加载：DB 优先 → .env 回退
+ * 【新】从 api_keys 表加载默认供应商配置（isDefault=1）
+ * 返回 null 表示没有可用的默认供应商
  */
-function loadFromSource(): { config: AppConfig; source: 'db' | 'env' } {
-  // 尝试从数据库加载
+function loadFromApiKeys(): { config: AppConfig; source: 'api_keys' } | null {
+  // 第一优先级：isDefault=1 AND isActive=1
+  let row = getDefaultApiKey()
+
+  // 第二优先级：isDefault=1（即使被下线，至少 admin 明确设过）
+  if (!row) {
+    row = getDefaultApiKeyFallback()
+  }
+
+  if (!row) return null
+
+  return {
+    config: {
+      provider: row.provider,
+      apiKey: row.apiKey,
+      baseUrl: row.baseUrl || undefined,
+      model: row.model || undefined,
+      temperature: row.temperature ?? 0.7,
+      maxTokens: row.maxTokens ?? 2048,
+      maxChatMessages: Number(process.env.MAX_CHAT_MESSAGES || 10),
+      maxRetries: Number(process.env.MAX_RETRIES || 1),
+      llmTimeoutMs: Number(process.env.LLM_TIMEOUT_MS || 30000),
+      source: 'api_keys',
+    },
+    source: 'api_keys' as const,
+  }
+}
+
+/**
+ * 双轨回退：app_configs K/V 表 → .env
+ */
+function loadFromLegacySource(): { config: AppConfig; source: 'db' | 'env' } {
+  // 尝试从数据库加载（旧 app_configs 表）
   const dbProvider = getConfigValue('default_llm_provider')
   if (dbProvider) {
     return {
@@ -61,7 +95,7 @@ function loadFromSource(): { config: AppConfig; source: 'db' | 'env' } {
     }
   }
 
-  // 回退到 .env
+  // 最终回退到 .env
   const envProvider = process.env.LLM_PROVIDER || 'openai'
   return {
     config: {
@@ -81,7 +115,19 @@ function loadFromSource(): { config: AppConfig; source: 'db' | 'env' } {
 }
 
 /**
- * 获取当前生效配置（双轨自动选择 + 60s 缓存）
+ * 三轨加载：api_keys 优先 → app_configs 回退 → .env 最终兜底
+ */
+function loadFromSource(): { config: AppConfig; source: 'api_keys' | 'db' | 'env' } {
+  // 【第一优先级】 api_keys 表 isDefault=1
+  const apiKeyResult = loadFromApiKeys()
+  if (apiKeyResult) return apiKeyResult
+
+  // 【第二优先级】 app_configs K/V 表 → .env
+  return loadFromLegacySource()
+}
+
+/**
+ * 获取当前生效配置（三轨自动选择 + 60s 缓存）
  */
 export function getAppConfig(): AppConfig {
   const now = Date.now()
@@ -93,10 +139,12 @@ export function getAppConfig(): AppConfig {
   cachedConfig = config
   cacheTime = now
 
-  if (source === 'db') {
-    console.log('[Config] loaded from database (cached 60s)')
+  if (source === 'api_keys') {
+    console.log('[Config] loaded from api_keys table (isDefault=1, cached 60s)')
+  } else if (source === 'db') {
+    console.log('[Config] loaded from app_configs K/V table (cached 60s)')
   } else {
-    console.log('[Config] loaded from .env (database not available)')
+    console.log('[Config] loaded from .env (no DB config available)')
   }
 
   return cachedConfig
@@ -119,8 +167,9 @@ export function getAllDbConfigs() {
 }
 
 /**
- * 判断当前是否使用数据库配置
+ * 判断当前是否使用数据库配置（含 api_keys 与 app_configs）
  */
 export function isUsingDbConfig(): boolean {
-  return getAppConfig().source === 'db'
+  const src = getAppConfig().source
+  return src === 'api_keys' || src === 'db'
 }

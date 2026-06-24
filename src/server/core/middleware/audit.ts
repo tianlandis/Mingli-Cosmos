@@ -9,7 +9,7 @@ import { getDb, schema } from '../../db'
 const { auditLogs } = schema
 
 interface AuditEntry {
-  action: 'create' | 'update' | 'delete' | 'login' | 'logout'
+  action: 'create' | 'update' | 'delete' | 'login' | 'logout' | 'export' | 'migrate' | 'update_tools'
   resource: string
   resourceId?: number
   detail?: string

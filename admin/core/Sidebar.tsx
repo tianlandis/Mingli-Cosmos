@@ -35,17 +35,17 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
             className={cn(
               'size-8 flex items-center justify-center',
               'border-2 border-[#C04030] rounded-sm',
-              'font-serif font-bold text-[#C04030] text-xs',
+              'font-serif font-bold text-[#C04030] text-sm',
               '-rotate-3 shadow-[0_0_12px_rgba(192,64,48,0.15)]',
             )}
           >
             墨
           </div>
           <div>
-            <h1 className="text-base font-semibold text-[#EDE8DF] tracking-[0.06em]">
+            <h1 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.06em]">
               墨白
             </h1>
-            <p className="text-[10px] text-[#7B7366] mt-0.5 tracking-[0.04em]">
+            <p className="text-[12px] text-[#7B7366] mt-0.5 tracking-[0.04em]">
               管理后台 · v4.0
             </p>
           </div>
@@ -57,7 +57,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
         {menuGroups.map((group) => (
           <div key={group.label} className="flex flex-col">
             {/* 分组标头 */}
-            <p className="px-3 mb-1.5 text-[10px] font-medium text-[#6B6459] uppercase tracking-[0.1em]">
+            <p className="px-3 mb-1.5 text-xs font-medium text-[#6B6459] uppercase tracking-[0.1em]">
               {group.label}
             </p>
 
@@ -76,7 +76,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
                     disabled={isDisabled}
                     className={cn(
                       'flex items-center gap-2.5 px-3 py-2 rounded-lg w-full',
-                      'text-sm transition-all duration-150',
+                      'text-base transition-all duration-150',
                       'text-left outline-none',
                       // 激活态 - 朱砂色背景
                       isActive && [
@@ -103,7 +103,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
                     {item.badge && (
                       <span
                         className={cn(
-                          'px-1.5 py-0.5 rounded text-[9px] font-medium',
+                          'px-1.5 py-0.5 rounded text-sm font-medium',
                           'bg-[#C04030]/15 text-[#C06050] border border-[#C04030]/20',
                         )}
                       >
@@ -153,7 +153,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }: SidebarPro
         <button
           onClick={onLogout}
           className={cn(
-            'w-full text-left text-xs text-[#6B6459]',
+            'w-full text-left text-sm text-[#6B6459]',
             'hover:text-[#D06050] transition-colors duration-150',
             'flex items-center gap-2',
           )}

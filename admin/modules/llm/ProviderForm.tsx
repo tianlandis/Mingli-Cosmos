@@ -244,9 +244,9 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
               ))}
             </Select>
             <div className="flex items-center gap-2">
-              <p className="text-[9px] text-[#4A4540]">选择 AI 服务商品牌，Base URL、推荐模型、Temperature 和 MaxTokens 将自动填入（与微调台预设一致）</p>
+              <p className="text-sm text-[#4A4540]">选择 AI 服务商品牌，Base URL、推荐模型、Temperature 和 MaxTokens 将自动填入（与微调台预设一致）</p>
               {autoSynced && (
-                <span className="inline-flex items-center gap-1 text-[8px] text-[#4D6BFE] bg-[#4D6BFE]/8 px-1.5 py-0.5 rounded-full border border-[#4D6BFE]/20 animate-pulse">
+                <span className="inline-flex items-center gap-1 text-sm text-[#4D6BFE] bg-[#4D6BFE]/8 px-1.5 py-0.5 rounded-full border border-[#4D6BFE]/20 animate-pulse">
                   <Sparkles size={8} />
                   已自动填入
                 </span>
@@ -266,7 +266,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
               placeholder="如：SiliconFlow-DeepSeekV3"
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540]"
             />
-            <p className="text-[9px] text-[#4A4540]">在后台列表中展示的名称，方便区分不同供应商</p>
+            <p className="text-sm text-[#4A4540]">在后台列表中展示的名称，方便区分不同供应商</p>
           </div>
 
           {/* API Key */}
@@ -282,7 +282,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
               placeholder={isEdit ? '留空则保留原 Key' : 'sk-...'}
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540]"
             />
-            <p className="text-[9px] text-[#4A4540]">
+            <p className="text-sm text-[#4A4540]">
               {isEdit ? '留空则保留当前密钥不修改；填入新值将覆盖原密钥' : '从 AI 服务商控制台获取的鉴权密钥，用于验证 API 调用身份'}
             </p>
           </div>
@@ -298,7 +298,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                 </Label>
               </TooltipTrigger>
               <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
-                <p className="text-[10px]">AI 服务商的 API 端点地址（Endpoint）；支持 OpenAI 兼容接口以及本地 Ollama/vLLM 部署地址</p>
+                <p className="text-xs">AI 服务商的 API 端点地址（Endpoint）；支持 OpenAI 兼容接口以及本地 Ollama/vLLM 部署地址</p>
               </TooltipContent>
             </Tooltip>
             <Input
@@ -307,7 +307,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
               placeholder="http://localhost:11434/v1"
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono text-xs"
             />
-            <p className="text-[9px] text-[#4A4540]">AI 服务商的 API 端点地址。切换供应商时自动填入推荐值，也可手动覆盖</p>
+            <p className="text-sm text-[#4A4540]">AI 服务商的 API 端点地址。切换供应商时自动填入推荐值，也可手动覆盖</p>
           </div>
 
           {/* 模型名 — 双态切换：文本输入 / 下拉选择 */}
@@ -321,7 +321,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                 <button
                   type="button"
                   onClick={() => setModelSelectMode('text')}
-                  className="text-[9px] text-[#4D6BFE] hover:text-[#6B8AFF] transition-colors"
+                  className="text-sm text-[#4D6BFE] hover:text-[#6B8AFF] transition-colors"
                 >
                   切回手动输入
                 </button>
@@ -356,7 +356,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                     : '获取模型列表'}
               </button>
               {modelSelectMode === 'select' && fetchedModels.length > 0 && (
-                <span className="text-[9px] text-[#5B8C5A] bg-[#5B8C5A]/8 px-1.5 py-0.5 rounded border border-[#5B8C5A]/15">
+                <span className="text-sm text-[#5B8C5A] bg-[#5B8C5A]/8 px-1.5 py-0.5 rounded border border-[#5B8C5A]/15">
                   下拉选择
                 </span>
               )}
@@ -384,13 +384,13 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
 
             {/* 获取失败提示 */}
             {fetchError && (
-              <div className="flex items-start gap-1.5 mt-1 px-2 py-1.5 rounded bg-[#C04030]/8 border border-[#C04030]/20 text-[#D06050] text-[9px]">
+              <div className="flex items-start gap-1.5 mt-1 px-2 py-1.5 rounded bg-[#C04030]/8 border border-[#C04030]/20 text-[#D06050] text-sm">
                 <AlertTriangle size={10} className="shrink-0 mt-0.5" />
                 <span>{fetchError}</span>
               </div>
             )}
 
-            <p className="text-[9px] text-[#4A4540]">
+            <p className="text-sm text-[#4A4540]">
               点击「获取模型列表」将通过后端代理请求厂商 /v1/models 接口，无需担心跨域；获取成功后自动切换为下拉选择
             </p>
           </div>
@@ -407,7 +407,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                   </Label>
                 </TooltipTrigger>
                 <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
-                  <p className="text-[10px]">值越大（如 0.8），AI 回答越发散有创意；值越小（如 0.2），回答越严谨保守。范围 0~2</p>
+                  <p className="text-xs">值越大（如 0.8），AI 回答越发散有创意；值越小（如 0.2），回答越严谨保守。范围 0~2</p>
                 </TooltipContent>
               </Tooltip>
               <Input
@@ -419,7 +419,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                 onChange={e => setForm(p => ({ ...p, temperature: parseFloat(e.target.value) || 0.7 }))}
                 className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF]"
               />
-              <p className="text-[9px] text-[#4A4540]">切换供应商时自动填入推荐值。0~0.3 严谨保守，0.7~1.0 均衡，1.0~2.0 创意发散</p>
+              <p className="text-sm text-[#4A4540]">切换供应商时自动填入推荐值。0~0.3 严谨保守，0.7~1.0 均衡，1.0~2.0 创意发散</p>
             </div>
             <div className="space-y-1.5">
               <Tooltip>
@@ -431,7 +431,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                   </Label>
                 </TooltipTrigger>
                 <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-56">
-                  <p className="text-[10px]">AI 单次输出最多能生成的 token 数量（约 1 token ≈ 0.7 个汉字）。值越大回复越完整但成本越高</p>
+                  <p className="text-xs">AI 单次输出最多能生成的 token 数量（约 1 token ≈ 0.7 个汉字）。值越大回复越完整但成本越高</p>
                 </TooltipContent>
               </Tooltip>
               <Input
@@ -442,7 +442,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
                 onChange={e => setForm(p => ({ ...p, maxTokens: parseInt(e.target.value) || 2048 }))}
                 className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF]"
               />
-              <p className="text-[9px] text-[#4A4540]">单次回复最大 token 数。256~4096 适合对话，8192+ 适合长文分析</p>
+              <p className="text-sm text-[#4A4540]">单次回复最大 token 数。256~4096 适合对话，8192+ 适合长文分析</p>
             </div>
           </div>
 

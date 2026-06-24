@@ -44,6 +44,8 @@
 | — | **Phase 4a 底层数据接口化 (KnowledgeProvider + Tools)** | 中台轨 | 6/19 |
 | — | **Phase 4a 全站 UI 工业级质感 (Card 容器 + 自解释)** | 中台轨 | 6/19 |
 | — | **Phase 4d 规则字典大闭环：35/35 项全量就位** | 中台轨 | 6/24 |
+| — | **Admin UI 全站字号放大收网（9 文件 ~230 处）** | 中台轨 | 6/24 |
+| — | **Dashboard 细节修复（toLocaleString / FeatureBadge）** | 中台轨 | 6/24 |
 | UI-1~5 | S0 核心视觉重构全完成 | 设计轨 S0 | 6/17 |
 | UI-6 | 大运竖轴 | 设计轨 S1 | 6/18 |
 | UI-7 | 专题 Tab 化 | 设计轨 S1 | 6/18 |
@@ -90,7 +92,7 @@
 | 4a-R2 | **Prompt 编辑器 UI 自解释强化** | 中台轨 | PromptEditor ✅ | 0.5d |
 | 4a-R3 | **Debug Panel 闭环测试** | 中台轨 | Debug API ✅ | 0.5d |
 | 4a-R4 | **L3 护栏热编辑 + 回退兜底验证** | 中台轨 | anti-hallucination.ts ✅ | 0.5d |
-| 4a-R5 | **全站表单自解释收尾** | 中台轨 | — | 0.5d |
+| 4a-R5 | **全站表单自解释收尾** | 中台轨 | — | ✅ 6/24 |
 | 4a-R6 | **Prompt 版本回滚演练** | 中台轨 | prompt_versions 表 ✅ | 0.5d |
 
 > **打磨标准**：每条完成后执行 tsc --noEmit → 功能验证 → 写回 DONE.md
@@ -141,7 +143,7 @@
 | Phase 0-3 已完成 | ✅ 全部 |
 | Phase 4a 主体已完成 | ✅ 5 项 |
 | Phase 4d 规则字典大闭环 | ✅ 35/35 项 |
-| Phase 4a 打磨补完 | 6 |
+| Phase 4a 打磨补完 | 5 (1 done) |
 | Phase 4b 下一阶段 | 5 |
 | Phase 5-6 封存 | 8 |
 | UI S1 品质提升 | 3 |

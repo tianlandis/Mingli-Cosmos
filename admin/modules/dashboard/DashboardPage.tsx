@@ -127,11 +127,11 @@ function StatCard({
             <Icon className="size-4 text-[#A09888]" />
           </div>
           <div>
-            <CardTitle className="text-sm font-medium text-[#D8D2C8]">
+            <CardTitle className="text-base font-medium text-[#D8D2C8]">
               {title}
             </CardTitle>
             {description && (
-              <CardDescription className="text-[10px] text-[#6B6459] mt-0.5">
+              <CardDescription className="text-sm text-[#6B6459] mt-0.5">
                 {description}
               </CardDescription>
             )}
@@ -165,18 +165,18 @@ function ServiceStatusCard({ stats }: { stats: DashboardStats }) {
             isRunning ? 'bg-[#5B8C5A]' : 'bg-[#D04040]',
           )} />
         </span>
-        <span className={cn('text-sm font-medium', isRunning ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
+        <span className={cn('text-base font-medium', isRunning ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
           {isRunning ? '运行中' : '异常'}
         </span>
       </div>
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-1.5 text-[#6B6459]"><Clock className="size-3" />运行时长</span>
           <span className="text-[#D8D2C8] font-mono tabular-nums">{stats.uptimeHuman}</span>
         </div>
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-1.5 text-[#6B6459]"><Activity className="size-3" />启动时间</span>
-          <span className="text-[#A09888] font-mono tabular-nums text-[11px]">
+          <span className="text-[#A09888] font-mono tabular-nums text-sm">
             {new Date(stats.serverStartTime).toLocaleString('zh-CN')}
           </span>
         </div>
@@ -196,10 +196,10 @@ function MemoryCard({ stats }: { stats: DashboardStats }) {
     <StatCard icon={Cpu} title="内存使用率" description={pct >= 75 ? '注意：内存使用较高' : '堆内存监控'}>
       <div className="mb-3">
         <div className="flex justify-between items-baseline mb-2">
-          <span className={cn('text-2xl font-bold font-mono tabular-nums', memoryTextColor(pct))}>
+          <span className={cn('text-3xl font-bold font-mono tabular-nums', memoryTextColor(pct))}>
             {pct.toFixed(1)}%
           </span>
-          <span className="text-[10px] text-[#6B6459]">
+          <span className="text-sm text-[#6B6459]">
             {stats.memory.heapUsedMb.toFixed(1)} / {stats.memory.heapTotalMb.toFixed(1)} MB
           </span>
         </div>
@@ -210,7 +210,7 @@ function MemoryCard({ stats }: { stats: DashboardStats }) {
           indicatorClassName={cn(memoryColor(pct), 'shadow-sm rounded-full')}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2 text-[11px]">
+      <div className="grid grid-cols-2 gap-2 text-[13px]">
         <div className="flex justify-between px-2 py-1 rounded bg-white/[0.03]">
           <span className="text-[#6B6459]">RSS</span>
           <span className="text-[#D8D2C8] font-mono tabular-nums">{stats.memory.rssMb.toFixed(1)} MB</span>
@@ -233,18 +233,18 @@ function DatabaseCard({ stats }: { stats: DashboardStats }) {
     <StatCard icon={Database} title="数据库" description={stats.dbType}>
       <div className="flex items-center gap-2 mb-3">
         <div className={cn('size-2 rounded-full', stats.dbStatus === 'connected' ? 'bg-[#5B8C5A]' : 'bg-[#D04040]')} />
-        <span className={cn('text-sm', stats.dbStatus === 'connected' ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
+        <span className={cn('text-base', stats.dbStatus === 'connected' ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
           {stats.dbStatus === 'connected' ? '已连接' : '未连接'}
         </span>
       </div>
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-1.5 text-[#6B6459]"><Activity className="size-3" />活跃会话</span>
-          <span className={cn('text-sm font-bold font-mono tabular-nums', stats.activeSessions > 0 ? 'text-[#B8964A]' : 'text-[#D8D2C8]')}>
+          <span className={cn('text-base font-bold font-mono tabular-nums', stats.activeSessions > 0 ? 'text-[#B8964A]' : 'text-[#D8D2C8]')}>
             {stats.activeSessions}
           </span>
         </div>
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-1.5 text-[#6B6459]"><HardDrive className="size-3" />库文件大小</span>
           <span className="text-[#A09888] font-mono tabular-nums">
             {stats.dbSizeMb > 0 ? `${stats.dbSizeMb.toFixed(2)} MB` : '—'}
@@ -264,21 +264,21 @@ function AuditSummaryCard({ stats }: { stats: DashboardStats }) {
     <StatCard icon={FileText} title="审计日志" description="操作记录概览">
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col items-center py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
-          <span className="text-2xl font-bold font-mono tabular-nums text-[#EDE8DF]">
+          <span className="text-3xl font-bold font-mono tabular-nums text-[#EDE8DF]">
             {stats.auditCount.toLocaleString()}
           </span>
-          <span className="text-[10px] text-[#6B6459] mt-1">总计</span>
+          <span className="text-xs text-[#6B6459] mt-1">总计</span>
         </div>
         <div className="flex flex-col items-center py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
-          <span className={cn('text-2xl font-bold font-mono tabular-nums', stats.auditToday > 0 ? 'text-[#B8964A]' : 'text-[#6B6459]')}>
+          <span className={cn('text-3xl font-bold font-mono tabular-nums', stats.auditToday > 0 ? 'text-[#B8964A]' : 'text-[#6B6459]')}>
             {stats.auditToday.toLocaleString()}
           </span>
-          <span className="text-[10px] text-[#6B6459] mt-1">今日新增</span>
+          <span className="text-xs text-[#6B6459] mt-1">今日新增</span>
         </div>
       </div>
       {stats.auditToday > 0 && (
-        <p className="text-[10px] text-[#6B6459] mt-3 text-center">
-          今日有 {stats.auditToday} 条操作记录
+        <p className="text-[12px] text-[#6B6459] mt-3 text-center">
+          今日有 {stats.auditToday.toLocaleString()} 条操作记录
         </p>
       )}
     </StatCard>
@@ -295,18 +295,17 @@ function FeatureBadge({
   emoji: string
   label: string
   value: string
-  status?: 'active' | 'inactive'
   detail: string
 }) {
   return (
     <div className="bg-[#222839] border border-white/[0.04] rounded-lg p-3.5 hover:bg-[#2A3040] hover:border-white/[0.08] transition-all duration-200">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-base">{emoji}</span>
-        <span className="text-[11px] text-[#6B6459]">{label}</span>
+        <span className="text-lg">{emoji}</span>
+        <span className="text-sm text-[#6B6459]">{label}</span>
         <div className="ml-auto size-1.5 rounded-full bg-[#5B8C5A]" />
       </div>
-      <div className="text-sm font-bold text-[#EDE8DF] mb-1.5">{value}</div>
-      <p className="text-[10px] text-[#6B6459] leading-relaxed line-clamp-2">{detail}</p>
+      <div className="text-base font-bold text-[#EDE8DF] mb-1.5">{value}</div>
+      <p className="text-sm text-[#6B6459] leading-relaxed line-clamp-2">{detail}</p>
     </div>
   )
 }
@@ -343,7 +342,7 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-2.5">
           <LayoutDashboard size={20} className="text-[#B8964A]" />
-          <h2 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+          <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -363,14 +362,14 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-2.5">
           <LayoutDashboard size={20} className="text-[#B8964A]" />
-          <h2 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+          <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
         </div>
         <Card className="bg-[#1A1F2E] border-[#D04040]/20">
           <CardContent className="py-8 text-center">
-            <p className="text-[#D04040] text-sm">无法获取统计数据：{error}</p>
+            <p className="text-[#D04040] text-base">无法获取统计数据：{error}</p>
             <button
               onClick={load}
-              className="mt-3 text-xs text-[#B8964A] hover:text-[#D8C08A] transition-colors"
+              className="mt-3 text-sm text-[#B8964A] hover:text-[#D8C08A] transition-colors"
             >
               点击重试
             </button>
@@ -388,15 +387,15 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
         <div>
           <div className="flex items-center gap-2.5">
             <LayoutDashboard size={20} className="text-[#B8964A]" />
-            <h2 className="text-lg font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+            <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
           </div>
-          <p className="text-xs text-[#6B6459] mt-1">
+          <p className="text-sm text-[#6B6459] mt-1">
             刷新间隔 15s · 最后更新 {new Date(stats!.timestamp).toLocaleTimeString('zh-CN')}
           </p>
         </div>
         <button
           onClick={load}
-          className="px-3 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-white/[0.06] text-[#A09888] hover:bg-white/[0.06] hover:text-[#D8D2C8] transition-colors"
+          className="px-3 py-1.5 rounded-lg text-sm bg-white/[0.03] border border-white/[0.06] text-[#A09888] hover:bg-white/[0.06] hover:text-[#D8D2C8] transition-colors"
         >
           刷新
         </button>
@@ -412,7 +411,7 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
 
       {/* Phase 4 功能状态面板 */}
       <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em] mb-4 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-[#EDE8DF] tracking-[0.04em] mb-4 flex items-center gap-2">
           <span className="size-1.5 rounded-full bg-[#B8964A]" />
           Phase 4 系统功能矩阵
         </h3>

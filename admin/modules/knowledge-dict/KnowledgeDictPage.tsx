@@ -486,24 +486,24 @@ export default function KnowledgeDictPage() {
   if (error && assets.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="px-4 py-3 rounded-lg bg-[#B83A2E]/6 border border-[#B83A2E]/20 text-[#B83A2E] text-xs">
+        <div className="px-4 py-3 rounded-lg bg-[#C04030]/10 border border-[#C04030]/20 text-[#D06050] text-sm">
           {error}
-          <button onClick={fetchAssets} className="ml-3 underline text-[#B8964A] hover:text-[#A08038]">重试</button>
+          <button onClick={fetchAssets} className="ml-3 underline text-[#C08040] hover:text-[#E0A050]">重试</button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-full flex flex-col gap-3 bg-[#FBF7F0] -m-6 lg:-m-8 p-6 lg:p-8">
+    <div className="h-full flex flex-col gap-3 bg-[#0B0F19] -m-6 lg:-m-8 p-6 lg:p-8">
       {/* ── 页面标题 ── */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h2 className="text-lg font-semibold text-[#1C1914] flex items-center gap-2 tracking-[0.04em]">
-            <Library size={18} className="text-[#B83A2E]" />
+          <h2 className="text-lg font-semibold text-[#EDE8DF] flex items-center gap-2 tracking-[0.04em]">
+            <Library size={18} className="text-[#B8964A]" />
             命理规则字典
           </h2>
-          <p className="text-[10px] text-[#6B6459] mt-0.5 italic">
+          <p className="text-sm text-[#9CA3AF] mt-0.5 italic">
             {assets.length} 条知识资产 · 5 个分类 · API-First 动态管理 · 大模型实时消费底层规则
           </p>
         </div>
@@ -512,9 +512,9 @@ export default function KnowledgeDictPage() {
           <button
             onClick={handleExport}
             title="导出全部 5 个分类的知识资产为 JSON 文件，可用于备份、迁移或批量编辑"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs text-[#6B6459] hover:text-[#1C1914] bg-[#FFFDF8] border border-[#D5CFC0] hover:border-[#B83A2E]/30 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-[#A09888] hover:text-[#EDE8DF] bg-[#1A1F2E] border border-white/[0.06] hover:border-white/[0.12] rounded-lg transition-colors"
           >
-            <Download size={12} />
+            <Download size={14} />
             导出 JSON
           </button>
           {/* 导入 JSON */}
@@ -527,14 +527,14 @@ export default function KnowledgeDictPage() {
               setImportResult(null)
               setImportMode('upsert')
             }}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs text-[#6B6459] hover:text-[#1C1914] bg-[#FFFDF8] border border-[#D5CFC0] hover:border-[#B83A2E]/30 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-[#A09888] hover:text-[#EDE8DF] bg-[#1A1F2E] border border-white/[0.06] hover:border-white/[0.12] rounded-lg transition-colors"
           >
-            <Upload size={12} />
+            <Upload size={14} />
             导入 JSON
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#B83A2E] hover:bg-[#9B3025] rounded-lg transition-colors shadow-[0_0_16px_rgba(184,58,46,0.15)]"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#B8964A] hover:bg-[#C8A85A] rounded-lg transition-colors shadow-[0_0_16px_rgba(184,150,74,0.15)]"
           >
             <Plus size={14} />
             新增资产
@@ -546,7 +546,7 @@ export default function KnowledgeDictPage() {
       <div className="flex-1 min-h-0 flex gap-3">
         {/* ═══ 左侧：分类导航 ═══ */}
         <div className="w-56 shrink-0 flex flex-col gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-[#6B6459] font-medium px-1">知识分类</span>
+          <span className="text-xs uppercase tracking-wider text-[#9CA3AF] font-medium px-1">知识分类</span>
           <div className="flex-1 overflow-y-auto space-y-1">
             {CATEGORIES.map(cat => {
               const count = assets.filter(a => a.category === cat.name).length
@@ -560,23 +560,23 @@ export default function KnowledgeDictPage() {
                   }}
                   className={`w-full text-left p-3 rounded-lg border transition-all duration-150 ${
                     isActive
-                      ? 'border-[#B83A2E]/40 bg-white shadow-[0_2px_8px_rgba(184,58,46,0.06)]'
-                      : 'border-[#E5DFD0] bg-white hover:border-[#D5CFC0] hover:bg-[#FDFBF6]'
+                      ? 'border-[#B8964A]/60 bg-[#222839] shadow-[0_0_12px_rgba(184,150,74,0.06)]'
+                      : 'border-white/[0.06] bg-[#1A1F2E] hover:border-white/[0.10] hover:bg-[#1E2435]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <cat.icon size={14} style={{ color: cat.color }} />
-                      <span className="text-xs font-medium text-[#1C1914]">{cat.label}</span>
+                      <cat.icon size={14} style={{ color: isActive ? cat.color : '#6B6459' }} />
+                      <span className={`text-sm font-medium ${isActive ? 'text-[#EDE8DF]' : 'text-[#A09888]'}`}>{cat.label}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Badge className="text-[9px] bg-[#F5F0E8] text-[#6B6459] border-[#E5DFD0] px-1.5 h-4">
+                      <Badge className={`text-[11px] px-1.5 h-5 font-medium ${isActive ? 'bg-[#B8964A]/15 text-[#B8964A] border-[#B8964A]/25' : 'bg-white/[0.04] text-[#6B6459] border-white/[0.06]'}`}>
                         {count}
                       </Badge>
-                      <ChevronRight size={10} className="text-[#A09888]" />
+                      <ChevronRight size={10} className={isActive ? 'text-[#B8964A]' : 'text-[#4A4540]'} />
                     </div>
                   </div>
-                  <p className="text-[9px] text-[#6B6459] mt-1 line-clamp-1">{cat.desc}</p>
+                  <p className="text-[11px] text-[#6B6459] mt-1 line-clamp-1">{cat.desc}</p>
                 </button>
               )
             })}
@@ -586,19 +586,19 @@ export default function KnowledgeDictPage() {
         {/* ═══ 右侧：数据表格 + 表单 ═══ */}
         <div className="flex-1 min-w-0 overflow-y-auto space-y-3">
           {/* 分类信息卡 */}
-          <Card className="bg-white border-[#E5DFD0] shadow-sm">
+          <Card className="bg-[#1A1F2E] border-white/[0.06] shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="size-10 flex items-center justify-center rounded-lg" style={{ background: `${catInfo.color}10`, border: `1px solid ${catInfo.color}20` }}>
+                <div className="size-10 flex items-center justify-center rounded-lg" style={{ background: `${catInfo.color}15`, border: `1px solid ${catInfo.color}30` }}>
                   <catInfo.icon size={18} style={{ color: catInfo.color }} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-[#1C1914]">{catInfo.label}</h3>
-                  <p className="text-[10px] text-[#6B6459] mt-0.5">{catInfo.desc}</p>
+                  <h3 className="text-base font-semibold text-[#EDE8DF]">{catInfo.label}</h3>
+                  <p className="text-xs text-[#9CA3AF] mt-0.5">{catInfo.desc}</p>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-[#A09888]">
+                <div className="flex items-center gap-2 text-xs text-[#9CA3AF]">
                   <span>{filtered.filter(a => a.isActive === 1).length} 启用</span>
-                  <span className="text-[#D5CFC0]">|</span>
+                  <span className="text-[#4A4540]">|</span>
                   <span>{filtered.filter(a => a.isActive === 0).length} 禁用</span>
                 </div>
               </div>
@@ -607,21 +607,21 @@ export default function KnowledgeDictPage() {
 
           {/* ── 新增/编辑表单 ── */}
           {formOpen && (
-            <Card className="bg-white border-[#E5DFD0] shadow-sm ring-1 ring-[#B83A2E]/10">
-              <CardHeader className="pb-2 border-b border-[#F5F0E8]">
+            <Card className="bg-[#1A1F2E] border-white/[0.06] shadow-sm ring-1 ring-[#B8964A]/10">
+              <CardHeader className="pb-2 border-b border-white/[0.04]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="size-7 flex items-center justify-center rounded-lg bg-[#B83A2E]/8 border border-[#B83A2E]/15">
-                      {editingId !== null ? <Pencil size={12} className="text-[#B83A2E]" /> : <Plus size={12} className="text-[#B83A2E]" />}
+                    <div className="size-7 flex items-center justify-center rounded-lg bg-[#B8964A]/10 border border-[#B8964A]/20">
+                      {editingId !== null ? <Pencil size={12} className="text-[#B8964A]" /> : <Plus size={12} className="text-[#B8964A]" />}
                     </div>
-                    <CardTitle className="text-xs text-[#1C1914] tracking-[0.04em]">
+                    <CardTitle className="text-sm text-[#EDE8DF] tracking-[0.04em]">
                       {editingId !== null ? '编辑知识资产' : '新增知识资产'}
                     </CardTitle>
                   </div>
-                  <CardDescription className="text-[9px] text-[#6B6459]">
+                  <CardDescription className="text-[11px] text-[#9CA3AF]">
                     填写知识条目的结构化数据，引擎与大模型将实时读取
                   </CardDescription>
-                  <button onClick={() => setFormOpen(false)} className="p-1 rounded text-[#A09888] hover:text-[#1C1914] hover:bg-[#F5F0E8] transition-colors">
+                  <button onClick={() => setFormOpen(false)} className="p-1 rounded text-[#A09888] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors">
                     <X size={14} />
                   </button>
                 </div>
@@ -629,7 +629,7 @@ export default function KnowledgeDictPage() {
 
               <CardContent className="space-y-4">
                 {formError && (
-                  <div className="px-3 py-2 rounded-md bg-[#B83A2E]/8 border border-[#B83A2E]/25 text-[#B83A2E] text-[10px] flex items-center gap-1.5">
+                  <div className="px-3 py-2 rounded-md bg-[#C04030]/10 border border-[#C04030]/25 text-[#D06050] text-[12px] flex items-center gap-1.5">
                     <AlertTriangle size={12} className="shrink-0" />
                     {formError}
                   </div>
@@ -637,26 +637,26 @@ export default function KnowledgeDictPage() {
 
                 {/* 分类选择 */}
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] text-[#6B6459] font-medium flex items-center gap-1.5">
-                    知识分类 <span className="text-[#B83A2E] text-[8px] font-medium">*必填</span>
+                  <Label className="text-xs text-[#9CA3AF] font-medium flex items-center gap-1.5">
+                    知识分类 <span className="text-[#C08040] text-[11px] font-medium">*必填</span>
                   </Label>
                   <Select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                     disabled={editingId !== null}
-                    className="bg-[#FBF7F0] border-[#D5CFC0] text-[#1C1914] text-xs focus:border-[#B83A2E]/60"
+                    className="bg-[#0F1520] border-white/[0.10] text-[#EDE8DF] text-sm focus:border-[#B8964A]/60"
                   >
                     {CATEGORIES.map(c => (
                       <option key={c.name} value={c.name}>{c.label}</option>
                     ))}
                   </Select>
                   {editingId !== null ? (
-                    <p className="text-[9px] text-[#6B6459] italic flex items-center gap-1">
-                      <Info size={10} className="text-[#A09888]" />
+                    <p className="text-[11px] text-[#6B6459] italic flex items-center gap-1">
+                      <Info size={10} className="text-[#4A4540]" />
                       编辑模式下不可更改分类 — 防止误操作导致数据跨分类迁移，确保数据一致性
                     </p>
                   ) : (
-                    <p className="text-[9px] text-[#6B6459] leading-relaxed">
+                    <p className="text-[11px] text-[#6B6459] leading-relaxed">
                       决定该资产属于哪个知识大类（如"神煞规则""古籍经典"）。新建后不可更改，请仔细确认。可选分类：古籍经典、神煞规则、16人格映射、八字基础、格局判定。
                     </p>
                   )}
@@ -665,39 +665,39 @@ export default function KnowledgeDictPage() {
                 {/* Key + Sort Order 并排 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] text-[#6B6459] font-medium flex items-center gap-1.5">
-                      资产键（Key） <span className="text-[#B83A2E] text-[8px] font-medium">*必填</span>
+                    <Label className="text-xs text-[#9CA3AF] font-medium flex items-center gap-1.5">
+                      资产键（Key） <span className="text-[#C08040] text-[11px] font-medium">*必填</span>
                     </Label>
                     <Input
                       value={form.key}
                       onChange={e => setForm(f => ({ ...f, key: e.target.value }))}
                       placeholder="如：tian_yi_gui_ren"
-                      className="bg-[#FBF7F0] border-[#D5CFC0] text-[#1C1914] placeholder:text-[#A09888] text-xs font-mono focus:border-[#B83A2E]/60 focus:ring-1 focus:ring-[#B83A2E]/20"
+                      className="bg-[#0F1520] border-white/[0.10] text-[#EDE8DF] placeholder:text-[#4A4540] text-sm font-mono focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20"
                     />
                     {(() => {
                       const cn = getChineseName(form.key.trim())
                       return cn ? (
-                        <p className="text-[10px] text-[#B8964A] font-medium flex items-center gap-1.5">
+                        <p className="text-[12px] text-[#C08040] font-medium flex items-center gap-1.5">
                           <CheckCircle2 size={10} />
                           中文名称：{cn}
                         </p>
                       ) : (
-                        <p className="text-[9px] text-[#6B6459] leading-relaxed">
+                        <p className="text-[11px] text-[#6B6459] leading-relaxed">
                           资产的唯一标识符，由英文小写+下划线组成。<br/>同分类下不可重复，大模型将按此键名精确检索对应规则。例如神煞分类下填入 tian_yi_gui_ren 代表天乙贵人的查法规则。
                         </p>
                       )
                     })()}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] text-[#6B6459] font-medium">排序权重</Label>
+                    <Label className="text-xs text-[#9CA3AF] font-medium">排序权重</Label>
                     <Input
                       type="number"
                       value={form.sortOrder}
                       onChange={e => setForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className="bg-[#FBF7F0] border-[#D5CFC0] text-[#1C1914] text-xs focus:border-[#B83A2E]/60"
+                      className="bg-[#0F1520] border-white/[0.10] text-[#EDE8DF] text-sm focus:border-[#B8964A]/60"
                     />
-                    <p className="text-[9px] text-[#6B6459] leading-relaxed">
+                    <p className="text-[11px] text-[#6B6459] leading-relaxed">
                       决定该资产在列表中显示的位置。填入整数，数值越大越靠前。不填默认为 0，排在最末尾。
                     </p>
                   </div>
@@ -705,46 +705,46 @@ export default function KnowledgeDictPage() {
 
                 {/* Description */}
                 <div className="space-y-1.5">
-                    <Label className="text-[10px] text-[#6B6459] font-medium flex items-center gap-1.5">
-                    中文说明 <Badge className="text-[7px] bg-[#F5F0E8] text-[#6B6459] border-[#E5DFD0] px-1 h-3">可选</Badge>
+                  <Label className="text-xs text-[#9CA3AF] font-medium flex items-center gap-1.5">
+                    中文说明 <Badge className="text-[9px] bg-white/[0.04] text-[#6B6459] border-white/[0.06] px-1 h-4">可选</Badge>
                   </Label>
                   <Input
                     value={form.description}
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                     placeholder="如：天乙贵人查法——以年干或日干查四地支"
-                    className="bg-[#FBF7F0] border-[#D5CFC0] text-[#1C1914] placeholder:text-[#A09888] text-xs focus:border-[#B83A2E]/60"
+                    className="bg-[#0F1520] border-white/[0.10] text-[#EDE8DF] placeholder:text-[#4A4540] text-sm focus:border-[#B8964A]/60"
                   />
-                  <p className="text-[9px] text-[#6B6459] leading-relaxed">
+                  <p className="text-[11px] text-[#6B6459] leading-relaxed">
                     用 1-2 句简短的中文描述这个资产是做什么的。大模型在检索到此资产时会一并读取这段说明作为辅助上下文，帮助它更准确地理解该规则的用途。建议花 10 秒填一下，让知识库更易维护。
                   </p>
                 </div>
 
                 {/* Value (JSON) */}
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] text-[#6B6459] font-medium flex items-center gap-1.5">
-                    资产值（Value） <span className="text-[#B83A2E] text-[8px] font-medium">*必填</span>
-                    <Badge className="text-[7px] bg-[#B83A2E]/10 text-[#B83A2E] border-[#B83A2E]/20 px-1 h-3">JSON</Badge>
+                  <Label className="text-xs text-[#9CA3AF] font-medium flex items-center gap-1.5">
+                    资产值（Value） <span className="text-[#C08040] text-[11px] font-medium">*必填</span>
+                    <Badge className="text-[9px] bg-[#C08040]/10 text-[#C08040] border-[#C08040]/20 px-1 h-4">JSON</Badge>
                   </Label>
                   <textarea
                     value={form.value}
                     onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
                     placeholder={`{"dayGan": "甲", "checkBranchs": ["丑","未"], "level": "吉", "star": 5, "desc": "天乙贵人..."}`}
                     rows={5}
-                    className="w-full px-3 py-2.5 bg-[#1A1816] border border-[#3A3630] rounded-lg text-[#E8E3D8] placeholder:text-[#5A5448] text-[11px] font-mono resize-none focus:outline-none focus:border-[#B83A2E]/60 focus:ring-1 focus:ring-[#B83A2E]/30 leading-relaxed"
+                    className="w-full px-3 py-2.5 bg-black/30 border border-white/[0.10] rounded-lg text-[#D8D2C8] placeholder:text-[#4A4540] text-sm font-mono resize-none focus:outline-none focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/30 leading-relaxed"
                   />
-                  <p className="text-[9px] text-[#6B6459] leading-relaxed">
+                  <p className="text-[11px] text-[#6B6459] leading-relaxed">
                     必须是合法的 JSON 格式（注意双引号、逗号、花括号一个都不能错）。引擎与大模型将解析此 JSON 获取具体规则。可自由定义字段，常见示例：dayGan（日干查法）、checkBranchs（查哪些地支）、level（吉凶等级，填"吉""凶""中"之一）、star（星级评分填 1-5）、desc（规则详细说明）。
                   </p>
                 </div>
               </CardContent>
 
               {/* 操作按钮 */}
-              <CardFooter className="flex justify-end gap-3 pt-0 border-t border-[#F5F0E8]">
-                <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-xs text-[#6B6459] hover:text-[#1C1914] hover:bg-[#F5F0E8] rounded-lg transition-colors">
+              <CardFooter className="flex justify-end gap-3 pt-0 border-t border-white/[0.04]">
+                <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm text-[#A09888] hover:text-[#EDE8DF] hover:bg-white/[0.04] rounded-lg transition-colors">
                   取消
                 </button>
                 <button onClick={handleSave} disabled={saving}
-                  className="px-5 py-2 text-xs font-medium text-white bg-[#B83A2E] hover:bg-[#9B3025] rounded-lg transition-colors disabled:opacity-50 shadow-[0_0_12px_rgba(184,58,46,0.12)]">
+                  className="px-5 py-2 text-sm font-medium text-white bg-[#B8964A] hover:bg-[#C8A85A] rounded-lg transition-colors disabled:opacity-50 shadow-[0_0_12px_rgba(184,150,74,0.12)]">
                   {saving ? '保存中...' : editingId !== null ? '更新资产' : '创建资产'}
                 </button>
               </CardFooter>
@@ -753,40 +753,40 @@ export default function KnowledgeDictPage() {
 
           {/* ── 加载中 ── */}
           {loading ? (
-            <Card className="bg-white border-[#E5DFD0] shadow-sm">
+            <Card className="bg-[#1A1F2E] border-white/[0.06] shadow-sm">
               <CardContent className="flex items-center justify-center py-12 gap-2">
-                <RefreshCw size={16} className="animate-spin text-[#B83A2E]" />
-                <span className="text-[10px] text-[#6B6459] italic">正在加载知识资产...</span>
+                <RefreshCw size={16} className="animate-spin text-[#B8964A]" />
+                <span className="text-sm text-[#9CA3AF] italic">正在加载知识资产...</span>
               </CardContent>
             </Card>
           ) : filtered.length === 0 ? (
-            <Card className="bg-white border-[#E5DFD0] shadow-sm">
+            <Card className="bg-[#1A1F2E] border-white/[0.06] shadow-sm">
               <CardContent className="p-8 flex flex-col items-center gap-3">
-                <div className="size-12 flex items-center justify-center rounded-full bg-[#F5F0E8] border border-[#E5DFD0]">
-                  <Library size={20} className="text-[#A09888]" />
+                <div className="size-12 flex items-center justify-center rounded-full bg-white/[0.04] border border-white/[0.06]">
+                  <Library size={20} className="text-[#4A4540]" />
                 </div>
-                <p className="text-[#6B6459] text-xs">此分类暂无知识资产</p>
-                <p className="text-[#6B6459] text-[10px] italic">点击右上角「新增资产」为 {catInfo.label} 添加第一条规则</p>
+                <p className="text-[#9CA3AF] text-sm">此分类暂无知识资产</p>
+                <p className="text-[#6B6459] text-[12px] italic">点击右上角「新增资产」为 {catInfo.label} 添加第一条规则</p>
                 {!formOpen && (
-                  <button onClick={openCreate} className="mt-1 px-4 py-2 text-xs font-medium text-white bg-[#B83A2E] hover:bg-[#9B3025] rounded-lg transition-colors shadow-[0_0_12px_rgba(184,58,46,0.12)]">
+                  <button onClick={openCreate} className="mt-1 px-4 py-2 text-sm font-medium text-white bg-[#B8964A] hover:bg-[#C8A85A] rounded-lg transition-colors shadow-[0_0_12px_rgba(184,150,74,0.12)]">
                     新增第一条资产
                   </button>
                 )}
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-white border-[#E5DFD0] shadow-sm overflow-hidden">
+            <Card className="bg-[#1A1F2E] border-white/[0.06] shadow-sm overflow-hidden">
               <CardContent className="p-0">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#F5F0E8] bg-[#FDFBF6]">
-                    <th className="text-left px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium w-8">#</th>
-                    <th className="text-left px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium">资产名</th>
-                    <th className="text-left px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium">说明</th>
-                    <th className="text-left px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium w-24">Value (预览)</th>
-                    <th className="text-center px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium w-14">版本</th>
-                    <th className="text-center px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium w-16">状态</th>
-                    <th className="text-right px-4 py-2.5 text-[9px] text-[#6B6459] uppercase tracking-wider font-medium w-20">操作</th>
+                  <tr className="border-b border-white/[0.04] bg-white/[0.02]">
+                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-8">#</th>
+                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium">资产名</th>
+                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium">说明</th>
+                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-28">Value (预览)</th>
+                    <th className="text-center px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-14">版本</th>
+                    <th className="text-center px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-16">状态</th>
+                    <th className="text-right px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-20">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -800,27 +800,27 @@ export default function KnowledgeDictPage() {
                     }
 
                     return (
-                      <tr key={a.id} className={`border-b border-[#F5F0E8] hover:bg-[#FDFBF6] transition-colors ${a.isActive === 0 ? 'opacity-40' : ''}`}>
-                        <td className="px-4 py-3 text-[10px] text-[#A09888] font-mono">{i + 1}</td>
+                      <tr key={a.id} className={`border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors ${a.isActive === 0 ? 'opacity-40' : ''}`}>
+                        <td className="px-4 py-3 text-xs text-[#4A4540] font-mono">{i + 1}</td>
                         <td className="px-4 py-2.5">
                           {(() => {
                             const cn = getChineseName(a.key)
                             return cn ? (
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-[11px] text-[#1C1914] font-medium leading-tight">{cn}</span>
-                                <code className="text-[9px] text-[#6B6459] font-mono leading-tight">{a.key}</code>
+                                <span className="text-sm text-[#EDE8DF] font-medium leading-tight">{cn}</span>
+                                <code className="text-[11px] text-[#6B6459] font-mono leading-tight">{a.key}</code>
                               </div>
                             ) : (
-                              <code className="text-[10px] text-[#B8964A] bg-[#B8964A]/8 px-1.5 py-0.5 rounded font-mono">{a.key}</code>
+                              <code className="text-[12px] text-[#C08040] bg-[#C08040]/8 px-1.5 py-0.5 rounded font-mono">{a.key}</code>
                             )
                           })()}
                         </td>
-                        <td className="px-4 py-3 text-[10px] text-[#6B6459] max-w-48 truncate">{a.description || '-'}</td>
+                        <td className="px-4 py-3 text-xs text-[#9CA3AF] max-w-48 truncate">{a.description || '-'}</td>
                         <td className="px-4 py-3">
-                          <code className="text-[9px] text-[#6B6459] font-mono truncate block max-w-24" title={a.value}>{preview || '…'}</code>
+                          <code className="text-xs text-[#D8D2C8] bg-black/25 px-2 py-1 rounded font-mono truncate block max-w-28 leading-relaxed" title={a.value}>{preview || '…'}</code>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className="text-[9px] text-[#A09888] font-mono">v{a.version}</span>
+                          <span className="text-[11px] text-[#4A4540] font-mono">v{a.version}</span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex justify-center">
@@ -833,11 +833,11 @@ export default function KnowledgeDictPage() {
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => openEdit(a)}
-                              className="p-1.5 rounded text-[#A09888] hover:text-[#B8964A] hover:bg-[#F5F0E8] transition-colors">
+                              className="p-1.5 rounded text-[#4A4540] hover:text-[#C08040] hover:bg-white/[0.06] transition-colors">
                               <Pencil size={12} />
                             </button>
                             <button onClick={() => handleDelete(a.id)}
-                              className="p-1.5 rounded text-[#A09888] hover:text-[#B83A2E] hover:bg-[#B83A2E]/8 transition-colors">
+                              className="p-1.5 rounded text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors">
                               <Trash2 size={12} />
                             </button>
                           </div>
@@ -860,25 +860,25 @@ export default function KnowledgeDictPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* 遮罩 */}
           <div
-            className="absolute inset-0 bg-[#1C1914]/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setImportOpen(false)}
           />
 
-          {/* 弹窗 Card 容器 — 宣纸底 */}
-          <Card className="relative w-full max-w-2xl mx-4 bg-white border-[#E5DFD0] shadow-2xl shadow-[#1C1914]/10">
-            <CardHeader className="flex-row items-start justify-between space-y-0 pb-2 border-b border-[#F5F0E8]">
+          {/* 弹窗 Card 容器 — 暗黑底 */}
+          <Card className="relative w-full max-w-2xl mx-4 bg-[#1A1F2E] border-white/[0.06] shadow-2xl shadow-black/40">
+            <CardHeader className="flex-row items-start justify-between space-y-0 pb-2 border-b border-white/[0.04]">
               <div>
-                <CardTitle className="text-base font-semibold text-[#1C1914] flex items-center gap-2">
-                  <FileJson size={18} className="text-[#B83A2E]" />
+                <CardTitle className="text-base font-semibold text-[#EDE8DF] flex items-center gap-2">
+                  <FileJson size={18} className="text-[#B8964A]" />
                   导入知识资产
                 </CardTitle>
-                <CardDescription className="text-xs text-[#6B6459] mt-0.5">
+                <CardDescription className="text-sm text-[#9CA3AF] mt-0.5">
                   从 JSON 文件批量导入命理规则字典 — 支持 UTF-8 编码的标准 JSON 格式
                 </CardDescription>
               </div>
               <button
                 onClick={() => setImportOpen(false)}
-                className="p-1.5 rounded-md text-[#A09888] hover:text-[#1C1914] hover:bg-[#F5F0E8] transition-colors"
+                className="p-1.5 rounded-md text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors"
               >
                 <X size={18} />
               </button>
@@ -887,7 +887,7 @@ export default function KnowledgeDictPage() {
             <CardContent className="space-y-4">
               {/* 导入模式 */}
               <div className="space-y-1.5">
-                <Label className="text-[10px] text-[#6B6459] font-medium">导入模式 — 处理重复资产的策略</Label>
+                <Label className="text-xs text-[#9CA3AF] font-medium">导入模式 — 处理重复资产的策略</Label>
                 <div className="flex gap-2">
                   {([
                     { value: 'upsert' as const, label: '智能合并', desc: '同 Key 存在则更新内容，不存在则新增' },
@@ -899,12 +899,12 @@ export default function KnowledgeDictPage() {
                       onClick={() => { setImportMode(m.value); setImportResult(null) }}
                       className={`flex-1 p-2.5 rounded-lg border text-left transition-all ${
                         importMode === m.value
-                          ? 'border-[#B83A2E]/50 bg-[#B83A2E]/4'
-                          : 'border-[#E5DFD0] bg-[#FBF7F0] hover:border-[#D5CFC0]'
+                          ? 'border-[#B8964A]/50 bg-[#B8964A]/6'
+                          : 'border-white/[0.06] bg-[#0F1520] hover:border-white/[0.10]'
                       }`}
                     >
-                      <div className="text-[10px] font-medium text-[#1C1914]">{m.label}</div>
-                      <div className="text-[8px] text-[#6B6459] mt-0.5 leading-relaxed">{m.desc}</div>
+                      <div className="text-[12px] font-medium text-[#EDE8DF]">{m.label}</div>
+                      <div className="text-[10px] text-[#6B6459] mt-0.5 leading-relaxed">{m.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -912,57 +912,57 @@ export default function KnowledgeDictPage() {
 
               {/* 文件选择 */}
               <div className="space-y-1.5">
-                <Label className="text-[10px] text-[#6B6459] font-medium">选择 JSON 文件</Label>
+                <Label className="text-xs text-[#9CA3AF] font-medium">选择 JSON 文件</Label>
                 <div className="relative">
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept=".json"
                     onChange={handleFileSelect}
-                    className="w-full text-xs text-[#6B6459] file:mr-4 file:py-2.5 file:px-5 file:rounded-lg file:text-xs file:font-medium file:bg-[#B83A2E] file:text-white file:border-0 hover:file:bg-[#9B3025] transition-colors file:cursor-pointer"
+                    className="w-full text-sm text-[#9CA3AF] file:mr-4 file:py-2.5 file:px-5 file:rounded-lg file:text-sm file:font-medium file:bg-[#B8964A] file:text-white file:border-0 hover:file:bg-[#C8A85A] transition-colors file:cursor-pointer"
                   />
                 </div>
-                <p className="text-[9px] text-[#6B6459] leading-relaxed">
+                <p className="text-[11px] text-[#6B6459] leading-relaxed">
                   选择本地 .json 文件，系统将自动校验格式。文件必须是合法的 JSON（UTF-8 编码），需包含 "assets" 数组字段。单次最多导入 500 条资产，超出请分批操作。
                 </p>
               </div>
 
               {/* 预览 — 代码编辑器风格 */}
               {importPreview && (
-                <div className="bg-[#1A1816] border border-[#3A3630] rounded-lg overflow-hidden">
+                <div className="bg-black/40 border border-white/[0.10] rounded-lg overflow-hidden">
                   {/* 标题栏 — 模拟 IDE tab */}
-                  <div className="flex items-center justify-between px-4 py-2 bg-[#211F1C] border-b border-[#3A3630]">
+                  <div className="flex items-center justify-between px-4 py-2 bg-black/30 border-b border-white/[0.06]">
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1.5">
                         <span className="size-2 rounded-full bg-[#FF5F57]" />
                         <span className="size-2 rounded-full bg-[#FFBD2E]" />
                         <span className="size-2 rounded-full bg-[#27C93F]" />
                       </div>
-                      <span className="text-[9px] text-[#6B6459] font-mono tracking-tight">
+                      <span className="text-[11px] text-[#6B6459] font-mono tracking-tight">
                         {importFile?.name || 'knowledge-dict.json'}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#5B8C5A]">
                       <CheckCircle2 size={11} />
-                      <span className="text-[9px] font-medium">JSON 校验通过</span>
+                      <span className="text-[11px] font-medium">JSON 校验通过</span>
                     </div>
                   </div>
                   {/* JSON 代码预览 */}
-                  <div className="p-4 max-h-48 overflow-y-auto font-mono text-[11px] leading-relaxed">
+                  <div className="p-4 max-h-48 overflow-y-auto font-mono text-sm leading-relaxed">
                     <div className="text-[#6B6459] mb-2">
-                      <span className="text-[#B8964A]">"assets"</span>
-                      <span className="text-[#A09888]">: [</span>
+                      <span className="text-[#C08040]">"assets"</span>
+                      <span className="text-[#9CA3AF]">: [</span>
                       <span className="text-[#5B8C5A]"> // {importPreview.total} 条资产</span>
                     </div>
-                    <div className="text-[#A09888] ml-4">
+                    <div className="text-[#9CA3AF] ml-4">
                       {importPreview.categories.map(c => `${CAT_LABELS[c] || c}`).join(', ')}
                     </div>
-                    <div className="text-[#A09888] mt-1">]</div>
-                    <div className="mt-3 pt-2 border-t border-[#3A3630]">
-                      <div className="flex gap-4 text-[10px]">
-                        <span className="text-[#6B6459]">总数：<span className="text-[#E8E3D8] font-semibold">{importPreview.total}</span> 条</span>
-                        <span className="text-[#6B6459]">分类：<span className="text-[#E8E3D8]">{importPreview.categories.length} 个</span></span>
-                        <span className="text-[#6B6459]">模式：<span className="text-[#B83A2E] font-medium">{importMode === 'upsert' ? '智能合并' : importMode === 'overwrite' ? '完全覆盖' : '仅新增'}</span></span>
+                    <div className="text-[#9CA3AF] mt-1">]</div>
+                    <div className="mt-3 pt-2 border-t border-white/[0.08]">
+                      <div className="flex gap-4 text-xs">
+                        <span className="text-[#6B6459]">总数：<span className="text-[#EDE8DF] font-semibold">{importPreview.total}</span> 条</span>
+                        <span className="text-[#6B6459]">分类：<span className="text-[#EDE8DF]">{importPreview.categories.length} 个</span></span>
+                        <span className="text-[#6B6459]">模式：<span className="text-[#C08040] font-medium">{importMode === 'upsert' ? '智能合并' : importMode === 'overwrite' ? '完全覆盖' : '仅新增'}</span></span>
                       </div>
                     </div>
                   </div>
@@ -971,7 +971,7 @@ export default function KnowledgeDictPage() {
 
               {/* 错误 */}
               {importError && (
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#B83A2E]/6 border border-[#B83A2E]/20 rounded-lg text-xs text-[#B83A2E]">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#C04030]/10 border border-[#C04030]/20 rounded-lg text-sm text-[#D06050]">
                   <AlertTriangle size={14} className="shrink-0" />
                   <span>{importError}</span>
                 </div>
@@ -979,24 +979,24 @@ export default function KnowledgeDictPage() {
 
               {/* 导入结果 */}
               {importResult && (
-                <div className="bg-[#F5F0E8] border border-[#E5DFD0] rounded-lg p-3.5 space-y-2">
+                <div className="bg-[#5B8C5A]/10 border border-[#5B8C5A]/20 rounded-lg p-3.5 space-y-2">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 size={12} className="text-[#5B8C5A]" />
-                    <span className="text-[10px] font-medium text-[#5B8C5A]">导入完成</span>
+                    <span className="text-[12px] font-medium text-[#5B8C5A]">导入完成</span>
                   </div>
-                  <div className="flex gap-4 text-[10px]">
-                    <span className="text-[#1C1914]">新增 <span className="font-mono font-semibold text-[#5B8C5A]">{importResult.created}</span> 条</span>
-                    <span className="text-[#1C1914]">更新 <span className="font-mono font-semibold text-[#B83A2E]">{importResult.updated}</span> 条</span>
-                    <span className="text-[#1C1914]">跳过 <span className="font-mono font-semibold text-[#6B6459]">{importResult.skipped}</span> 条</span>
+                  <div className="flex gap-4 text-xs">
+                    <span className="text-[#EDE8DF]">新增 <span className="font-mono font-semibold text-[#5B8C5A]">{importResult.created}</span> 条</span>
+                    <span className="text-[#EDE8DF]">更新 <span className="font-mono font-semibold text-[#C08040]">{importResult.updated}</span> 条</span>
+                    <span className="text-[#EDE8DF]">跳过 <span className="font-mono font-semibold text-[#6B6459]">{importResult.skipped}</span> 条</span>
                   </div>
                 </div>
               )}
             </CardContent>
 
-            <CardFooter className="flex justify-end gap-3 border-t border-[#F5F0E8]">
+            <CardFooter className="flex justify-end gap-3 border-t border-white/[0.04]">
               <button
                 onClick={() => setImportOpen(false)}
-                className="px-4 py-2 text-xs text-[#6B6459] hover:text-[#1C1914] hover:bg-[#F5F0E8] rounded-lg transition-colors"
+                className="px-4 py-2 text-sm text-[#A09888] hover:text-[#EDE8DF] hover:bg-white/[0.04] rounded-lg transition-colors"
               >
                 {importResult ? '关闭' : '取消'}
               </button>
@@ -1004,10 +1004,10 @@ export default function KnowledgeDictPage() {
                 <button
                   onClick={handleImport}
                   disabled={!importFile || importing}
-                  className={`px-5 py-2 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-5 py-2 text-sm font-medium rounded-lg transition-colors ${
                     importFile
-                      ? 'bg-[#B83A2E] hover:bg-[#9B3025] text-white shadow-[0_0_12px_rgba(184,58,46,0.12)]'
-                      : 'bg-[#E5DFD0] text-[#A09888] cursor-not-allowed'
+                      ? 'bg-[#B8964A] hover:bg-[#C8A85A] text-white shadow-[0_0_12px_rgba(184,150,74,0.12)]'
+                      : 'bg-white/[0.04] text-[#4A4540] cursor-not-allowed'
                   }`}
                 >
                   {importing ? (

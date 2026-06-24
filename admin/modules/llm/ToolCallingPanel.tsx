@@ -2,18 +2,20 @@
 // Phase 4d — ToolCallingPanel：Agent Tool Calling 工具配置
 // 文件：admin/modules/llm/ToolCallingPanel.tsx
 // 职责：3 项 Tool Calling 能力 Checkbox 开关
-// 数据流：PUT /api/v1/admin/llm/:id/tool-calling → tools 字段
+// 数据流：onChange → 即时 PUT /api/v1/admin/llm/:id/tool-calling → tools 字段
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Wrench,
-  Save,
   RefreshCw,
   Calculator,
   BookOpen,
   Send,
   Bot,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 
@@ -77,6 +79,29 @@ interface ToolCallingPanelProps {
 }
 
 // ═══════════════════════════════════════
+// 工具函数：归一化 tools 字段（防御 JSON 字符串 / 数组混传）
+// ═══════════════════════════════════════
+
+function normalizeToolsArray(raw: unknown): string[] {
+  if (!raw) return []
+  // 情况 1：已是纯数组
+  if (Array.isArray(raw)) {
+    return raw.filter((v): v is string => typeof v === 'string')
+  }
+  // 情况 2：JSON 字符串（DB 直读未解析）
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        return parsed.filter((v): v is string => typeof v === 'string')
+      }
+    } catch { /* 不是合法 JSON，返回空 */ }
+  }
+  // 情况 3：其他类型 → 空数组
+  return []
+}
+
+// ═══════════════════════════════════════
 // 组件
 // ═══════════════════════════════════════
 
@@ -87,42 +112,38 @@ export default function ToolCallingPanel({
   onSaved,
 }: ToolCallingPanelProps) {
   const [localActive, setLocalActive] = useState<Set<string>>(new Set(initialActiveTools))
-  const [dirty, setDirty] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [successMsg, setSuccessMsg] = useState('')
+  const [globalError, setGlobalError] = useState('')
+  const [savingTools, setSavingTools] = useState<Set<string>>(new Set())       // 正在保存的工具
+  const [savedBlinks, setSavedBlinks] = useState<Set<string>>(new Set())       // 保存成功闪烁
+  const blinkTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   useEffect(() => {
-    setLocalActive(new Set(initialActiveTools))
-    setDirty(false)
-    setError('')
-    setSuccessMsg('')
+    // ── 关键修复：归一化 tools 字段，兼容 JSON 字符串 / 数组混合传参 ──
+    const normalized = normalizeToolsArray(initialActiveTools)
+    setLocalActive(new Set(normalized))
+    setGlobalError('')
+    setSavingTools(new Set())
+    setSavedBlinks(new Set())
+    // 清理旧的 blink timers
+    blinkTimers.current.forEach(t => clearTimeout(t))
+    blinkTimers.current.clear()
   }, [initialActiveTools, providerId])
 
-  const toggleTool = useCallback((toolId: string) => {
-    setLocalActive(prev => {
-      const next = new Set(prev)
-      if (next.has(toolId)) {
-        next.delete(toolId)
-      } else {
-        next.add(toolId)
-      }
-      return next
-    })
-    setDirty(true)
-    setSuccessMsg('')
-    setError('')
-  }, [])
+  // ── 切换 + 即时保存 ──
+  const toggleTool = useCallback(async (toolId: string) => {
+    // 1. 乐观更新本地状态
+    const newActive = new Set(localActive.has(toolId)
+      ? [...localActive].filter(id => id !== toolId)
+      : [...localActive, toolId])
+    setLocalActive(newActive)
+    setGlobalError('')
 
-  const handleSave = useCallback(async () => {
-    if (providerId === null || !dirty) return
+    // 2. 标记正在保存
+    setSavingTools(prev => new Set([...prev, toolId]))
 
-    setSaving(true)
-    setError('')
-    setSuccessMsg('')
-
+    // 3. 即时 PUT API
     try {
-      const toolsArr = Array.from(localActive)
+      const toolsArr = Array.from(newActive)
       const res = await fetch(`/api/v1/admin/llm/${providerId}/tool-calling`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...apiHeaders() },
@@ -132,19 +153,41 @@ export default function ToolCallingPanel({
       const result = await res.json()
 
       if (!result.success) {
-        setError(result?.error?.message ?? '保存失败')
+        // 回滚本地状态
+        setLocalActive(new Set(localActive))
+        setGlobalError(result?.error?.message ?? `保存 "${toolId}" 失败`)
         return
       }
 
-      setDirty(false)
-      setSuccessMsg(`已保存 ${toolsArr.length} 个 Tool Calling 配置`)
+      // 4. 保存成功 → 闪烁对勾
+      setSavedBlinks(prev => {
+        const next = new Set([...prev, toolId])
+        // 1.5s 后移除闪烁
+        const existing = blinkTimers.current.get(toolId)
+        if (existing) clearTimeout(existing)
+        blinkTimers.current.set(toolId, setTimeout(() => {
+          setSavedBlinks(prev2 => {
+            const n = new Set(prev2)
+            n.delete(toolId)
+            return n
+          })
+        }, 1500))
+        return next
+      })
+
       onSaved?.()
     } catch {
-      setError('网络异常，请检查连接后重试')
+      // 网络异常 → 回滚
+      setLocalActive(new Set(localActive))
+      setGlobalError('网络异常，请检查连接后重试')
     } finally {
-      setSaving(false)
+      setSavingTools(prev => {
+        const next = new Set(prev)
+        next.delete(toolId)
+        return next
+      })
     }
-  }, [providerId, dirty, localActive, apiHeaders, onSaved])
+  }, [localActive, providerId, apiHeaders, onSaved])
 
   if (providerId === null) {
     return (
@@ -164,48 +207,22 @@ export default function ToolCallingPanel({
         <div className="flex items-center gap-2">
           <Bot size={14} className="text-[#B8964A]" />
           <h3 className="text-sm font-semibold text-[#EDE8DF]">Agent Tool Calling</h3>
-          <span className="text-[9px] text-[#6B6459] bg-[#1A1816] px-1.5 py-0.5 rounded border border-[#2A2622]">
-            存储层就绪 · Agent 逻辑未来实现
+          <span className="text-sm text-[#5B8C5A] bg-[#5B8C5A]/10 px-1.5 py-0.5 rounded border border-[#5B8C5A]/15">
+            即时生效 · 已激活 {localActive.size}/{TC_TOOLS.length}
           </span>
         </div>
-
-        <button
-          onClick={handleSave}
-          disabled={!dirty || saving}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-            dirty
-              ? 'bg-[#5B8C5A] text-[#EDE8DF] hover:bg-[#4A7348] shadow-[0_0_12px_rgba(91,140,90,0.25)]'
-              : 'bg-[#211F1C] text-[#4A4540] cursor-not-allowed'
-          }`}
-        >
-          {saving ? (
-            <>
-              <RefreshCw size={12} className="animate-spin" />
-              保存中...
-            </>
-          ) : (
-            <>
-              <Save size={12} />
-              {dirty ? '保存配置' : '已是最新'}
-            </>
-          )}
-        </button>
       </div>
 
       {/* 说明 */}
-      <p className="text-[10px] text-[#4A4540] leading-relaxed">
-        勾选需要 Agent 启用的 Tool Calling 能力。当前仅作配置存储，Agent 调用逻辑将在后续版本实现。
+      <p className="text-xs text-[#4A4540] leading-relaxed">
+        拨动开关即时调用 PUT API 写入数据库。AI 引擎将在下次请求时自动读取最新配置。
       </p>
 
-      {/* 消息 */}
-      {error && (
-        <div className="px-3 py-2 rounded-md bg-[#C04030]/10 border border-[#C04030]/20 text-[#D06050] text-xs">
-          {error}
-        </div>
-      )}
-      {successMsg && (
-        <div className="px-3 py-2 rounded-md bg-[#5B8C5A]/10 border border-[#5B8C5A]/20 text-[#5B8C5A] text-xs">
-          {successMsg}
+      {/* 全局错误 */}
+      {globalError && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#C04030]/10 border border-[#C04030]/20 text-[#D06050] text-xs">
+          <AlertTriangle size={12} />
+          {globalError}
         </div>
       )}
 
@@ -213,6 +230,8 @@ export default function ToolCallingPanel({
       <div className="space-y-2">
         {TC_TOOLS.map((tool) => {
           const isActive = localActive.has(tool.id)
+          const isSaving = savingTools.has(tool.id)
+          const isSaved = savedBlinks.has(tool.id)
           const IconComp = ICON_MAP[tool.icon] ?? Wrench
           const catColor = CATEGORY_COLORS[tool.category] ?? '#6B6459'
 
@@ -222,7 +241,7 @@ export default function ToolCallingPanel({
               className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
                 isActive
                   ? 'bg-white/[0.04] border-white/[0.10]'
-                  : 'bg-[#1A1816] border-[#2A2622] opacity-50'
+                  : 'bg-[#1A1816] border-[#2A2622] opacity-100 cursor-pointer'
               }`}
             >
               {/* 图标 */}
@@ -243,7 +262,7 @@ export default function ToolCallingPanel({
                     {tool.name}
                   </h4>
                   <span
-                    className="text-[8px] px-1 py-0.5 rounded"
+                    className="text-sm px-1 py-0.5 rounded"
                     style={{
                       background: `${catColor}18`,
                       color: catColor,
@@ -253,17 +272,27 @@ export default function ToolCallingPanel({
                     {tool.category}
                   </span>
                 </div>
-                <p className={`text-[11px] leading-relaxed mt-0.5 ${isActive ? 'text-[#A09888]' : 'text-[#4A4540]'}`}>
+                <p className={`text-sm leading-relaxed mt-0.5 ${isActive ? 'text-[#A09888]' : 'text-[#4A4540]'}`}>
                   {tool.description}
                 </p>
               </div>
 
-              {/* Switch */}
-              <Switch
-                checked={isActive}
-                onCheckedChange={() => toggleTool(tool.id)}
-                className={isActive ? '!bg-[#5B8C5A]' : '!bg-[#2A2622]'}
-              />
+              {/* 状态指示器 + Switch */}
+              <div className="flex items-center gap-2 shrink-0">
+                {isSaving ? (
+                  <Loader2 size={12} className="animate-spin text-[#B8964A]" />
+                ) : isSaved ? (
+                  <CheckCircle2 size={12} className="text-[#5B8C5A] animate-in fade-in" />
+                ) : (
+                  <span className="w-3" />
+                )}
+                <Switch
+                  checked={isActive}
+                  disabled={isSaving}
+                  onCheckedChange={() => toggleTool(tool.id)}
+                  className={isActive ? '!bg-[#5B8C5A]' : '!bg-[#2A2622]'}
+                />
+              </div>
             </div>
           )
         })}

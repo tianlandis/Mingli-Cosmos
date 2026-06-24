@@ -34,11 +34,11 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0A1118]">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-14 flex items-center justify-center border-3 border-[#C04030] rounded-sm font-serif font-bold text-[#C04030] text-lg -rotate-3 shadow-[0_0_20px_rgba(192,64,48,0.15)]">
+          <div className="size-14 flex items-center justify-center border-3 border-[#C04030] rounded-sm font-serif font-bold text-[#C04030] text-xl -rotate-3 shadow-[0_0_20px_rgba(192,64,48,0.15)]">
             墨
           </div>
           <RefreshCw size={20} className="animate-spin text-[#B8964A]" />
-          <p className="text-xs text-[#6B6459] tracking-[0.05em]">验证登录状态...</p>
+          <p className="text-sm text-[#6B6459] tracking-[0.05em]">验证登录状态...</p>
         </div>
       </div>
     )
@@ -61,8 +61,8 @@ export default function App() {
           <div className="size-16 flex items-center justify-center rounded-full bg-[#1A1F2E] border border-white/[0.06] mb-4">
             <Construction size={24} className="text-[#4A4540]" />
           </div>
-          <p className="text-[#6B6459] text-sm">功能开发中，敬请期待</p>
-          <p className="text-[#4A4540] text-xs mt-1">模块建设中，完成后将自动启用</p>
+          <p className="text-[#6B6459] text-base">功能开发中，敬请期待</p>
+          <p className="text-[#4A4540] text-sm mt-1">模块建设中，完成后将自动启用</p>
         </div>
       )}
 

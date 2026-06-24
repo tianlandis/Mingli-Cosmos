@@ -51,11 +51,16 @@ export function createModel(config: LLMConfig): LanguageModelV1 {
 
 /** 从环境变量构建 LLMConfig（DB 优先 → .env 回退） */
 export function loadConfig(): LLMConfig {
-  // 优先使用数据库配置（管理后台可热更新，60s 缓存）
+  // 优先使用数据库配置（api_keys > app_configs，60s 缓存，管理后台可热更新）
   if (isUsingDbConfig()) {
     const db = getAppConfig()
-    // 从 DB 配置推断 provider（若未明确指定则自动推断）
-    const provider: ModelProvider = (process.env.LLM_PROVIDER as ModelProvider) ?? (() => {
+    // api_keys 表中已包含完整 provider 字符串，直接使用
+    const provider: ModelProvider = (() => {
+      const p = db.provider as string
+      if (['deepseek', 'siliconflow', 'claude', 'openai', 'local'].includes(p)) {
+        return p as ModelProvider
+      }
+      // 未能识别 → 从 baseUrl 推断
       const url = db.baseUrl ?? ''
       if (url.includes('siliconflow')) return 'siliconflow'
       if (url.includes('deepseek'))   return 'deepseek'
@@ -63,8 +68,10 @@ export function loadConfig(): LLMConfig {
       if (url.includes('localhost'))  return 'local'
       return 'openai'
     })()
+
     return {
       provider,
+      // api_keys 表提供的 apiKey 是第一优先级，.env 作为兜底
       apiKey: db.apiKey || process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || 'ollama',
       baseUrl: db.baseUrl,
       model: db.model,

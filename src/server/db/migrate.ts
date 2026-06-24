@@ -10,10 +10,16 @@ import type Database from 'better-sqlite3'
  * 安全 ALTER：忽略"列已存在"错误
  */
 function safeAlter(sqlite: Database.Database, table: string, colDef: string) {
-  try { sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${colDef}`) }
+  const colName = colDef.split(' ')[0]
+  try {
+    sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${colDef}`)
+    console.log(`[Migrate] ✅ ${table}.${colName}`)
+  }
   catch (e: any) {
-    if (!e.message?.includes('duplicate column') && !e.message?.includes('already exists')) {
-      console.warn(`[Migrate] ALTER ${table} ADD ${colDef.split(' ')[0]} 失败:`, e.message)
+    if (e.message?.includes('duplicate column') || e.message?.includes('already exists')) {
+      console.log(`[Migrate] ⏭️ ${table}.${colName} (已存在)`)
+    } else {
+      console.error(`[Migrate] ❌ ${table}.${colName} 失败:`, e.message)
     }
   }
 }

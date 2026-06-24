@@ -5,7 +5,7 @@
 
 import { getDb } from '../index'
 import { apiKeys } from '../schema'
-import { eq, desc } from 'drizzle-orm'
+import { eq, and, desc } from 'drizzle-orm'
 
 type ApiKeyRow = typeof apiKeys.$inferSelect
 type ApiKeyInsert = typeof apiKeys.$inferInsert
@@ -20,6 +20,31 @@ export function getActiveApiKeys(): ApiKeyRow[] {
 
 export function getApiKey(id: number): ApiKeyRow | undefined {
   return getDb().select().from(apiKeys).where(eq(apiKeys.id, id)).get()
+}
+
+/**
+ * 获取全局默认 API Key（isDefault=1 且 isActive=1）
+ * 用于 AI 引擎动态路由：每次实际调用 LLM 前，读取后台配置的最新默认供应商
+ * @returns 默认供应商行，若无则返回 undefined
+ */
+export function getDefaultApiKey(): ApiKeyRow | undefined {
+  return getDb()
+    .select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.isDefault, 1), eq(apiKeys.isActive, 1)))
+    .get()
+}
+
+/**
+ * 获取全局默认 API Key（放宽为 isDefault=1，不要求 isActive=1）
+ * 兜底查询 —— 避免管理员误下线导致引擎无可用配置
+ */
+export function getDefaultApiKeyFallback(): ApiKeyRow | undefined {
+  return getDb()
+    .select()
+    .from(apiKeys)
+    .where(eq(apiKeys.isDefault, 1))
+    .get()
 }
 
 export function createApiKey(data: ApiKeyInsert): ApiKeyRow {

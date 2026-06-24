@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-06-24 — Admin UI 字号放大收网 + Dashboard 细节修复
+
+### Admin 管理后台全站字号放大（9 文件 ~230 处）
+
+**背景**：管理后台多处使用 `text-[7px]`~`text-[13px]` 任意字号，可读性差。统一按规则放大。
+
+| 文件 | 变更数 | 说明 |
+|------|:--:|------|
+| `App.tsx` | ~3 处 | 主布局字号 |
+| `Login.tsx` | ~2 处 | 登录页字号 |
+| `AuditLog.tsx` | ~4 处 | 审计日志字号 |
+| `ConfigPanel.tsx` | ~6 处 | 配置面板字号 |
+| `Sidebar.tsx` | ~2 处 | 侧边栏菜单字号 |
+| `DashboardPage.tsx` | ~9 处 | 仪表盘字号 |
+| `LLMPage.tsx` | ~42 处 | LLM 配置页字号 |
+| `ProviderForm.tsx` | ~25 处 | 供应商表单字号 |
+| `SkillsPanel.tsx` | ~9 处 | 技能面板字号 |
+| `ToolCallingPanel.tsx` | ~5 处 | 工具调用面板字号 |
+| `GuardPanel.tsx` | ~20 处 | 护栏面板字号 |
+| `PromptEditor.tsx` | ~50 处 | 提示词编辑器字号 |
+| `KnowledgeDictPage.tsx` | 已于 21:55 完成 | 知识字典页字号 |
+
+**变更规则**：`text-[7px]→[9px]` / `text-[8px]→[9px]` / `text-[9px]→[11px]` / `text-[10px]→xs` / `text-[11px]→sm` / `text-[12px]→sm` / `text-[13px]→sm`
+
+### Dashboard 细节修复
+- `AuditSummaryCard`：`auditToday` 数字增加 `.toLocaleString()` 格式化（与其他指标一致）
+- `FeatureBadge` 组件：移除未使用的 `status?: 'active' | 'inactive'` 属性
+
+### 编译验证
+`tsc --noEmit` 零错误 ✅ | `vite build` 通过 ✅
+
+---
+
 ## 2026-06-24 — Phase 4d：规则字典大闭环 🎉
 
 ### 背景

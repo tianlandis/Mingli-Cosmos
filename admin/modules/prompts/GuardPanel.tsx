@@ -246,7 +246,7 @@ export default function GuardPanel() {
             <div className="flex items-center gap-2 mt-0.5">
               {/* 来源标记 */}
               <span
-                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-px rounded-full border ${
+                className={`inline-flex items-center gap-1 text-xs px-1.5 py-px rounded-full border ${
                   source === 'db'
                     ? 'border-[#5B8C5A]/40 bg-[#5B8C5A]/10 text-[#5B8C5A]'
                     : 'border-[#4A4540] bg-[#1A1816] text-[#6B6459]'
@@ -265,7 +265,7 @@ export default function GuardPanel() {
                 )}
               </span>
               {updatedAt && (
-                <span className="text-[10px] text-[#4A4540]">
+                <span className="text-xs text-[#4A4540]">
                   上次更新: {new Date(updatedAt).toLocaleString('zh-CN')}
                 </span>
               )}
@@ -335,7 +335,7 @@ export default function GuardPanel() {
             <h3 className="text-xs font-semibold text-[#EDE8DF] tracking-wide">
               L2 · 排盘拒绝话术
             </h3>
-            <span className="text-[10px] text-[#6B6459]">
+            <span className="text-xs text-[#6B6459]">
               用户试图在对话中排盘时自动回复
             </span>
           </div>
@@ -349,7 +349,7 @@ export default function GuardPanel() {
             className="w-full px-3 py-2.5 bg-[#12100E] border border-[#2A2622] rounded-lg text-sm text-[#EDE8DF] placeholder:text-[#4A4540] resize-none focus:outline-none focus:border-[#C04030]/60 transition-colors"
             placeholder="输入拒绝排盘的标准话术..."
           />
-          <p className="text-[10px] text-[#4A4540] mt-1.5">
+          <p className="text-xs text-[#4A4540] mt-1.5">
             此话术同时在 L1 System Prompt 和 L2 输入拦截中使用
           </p>
         </div>
@@ -362,7 +362,7 @@ export default function GuardPanel() {
           <h3 className="text-xs font-semibold text-[#EDE8DF] tracking-wide">
             L1 · System Prompt 防越权规则（注入 LLM 意识层）
           </h3>
-          <span className="text-[10px] text-[#6B6459]">
+          <span className="text-xs text-[#6B6459]">
             {rules.length} 条规则
           </span>
         </div>
@@ -384,7 +384,7 @@ export default function GuardPanel() {
                 className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#1A1816]/50 transition-colors rounded-tr-lg"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-5 h-5 rounded-full bg-[#B8964A]/10 border border-[#B8964A]/20 flex items-center justify-center shrink-0 text-[10px] font-mono text-[#B8964A]">
+                  <span className="w-5 h-5 rounded-full bg-[#B8964A]/10 border border-[#B8964A]/20 flex items-center justify-center shrink-0 text-xs font-mono text-[#B8964A]">
                     {idx + 1}
                   </span>
                   <Tooltip>
@@ -398,7 +398,7 @@ export default function GuardPanel() {
                     </TooltipTrigger>
                     {RULE_TOOLTIPS[rule.name] && (
                       <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-72">
-                        <p className="text-[10px] leading-relaxed">{RULE_TOOLTIPS[rule.name]}</p>
+                        <p className="text-xs leading-relaxed">{RULE_TOOLTIPS[rule.name]}</p>
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -409,7 +409,7 @@ export default function GuardPanel() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-[#4A4540]">
+                  <span className="text-xs text-[#4A4540]">
                     {rule.content.length} 字
                   </span>
                   {isExpanded ? (
@@ -427,13 +427,13 @@ export default function GuardPanel() {
                     value={rule.content}
                     onChange={e => updateRule(rule.name, e.target.value)}
                     rows={6}
-                    className="w-full px-3 py-2.5 bg-[#12100E] border border-[#2A2622] rounded-lg text-sm text-[#EDE8DF] placeholder:text-[#4A4540] resize-none focus:outline-none focus:border-[#B8964A]/60 transition-colors font-mono text-[13px] leading-relaxed"
+                    className="w-full px-3 py-2.5 bg-[#12100E] border border-[#2A2622] rounded-lg text-sm text-[#EDE8DF] placeholder:text-[#4A4540] resize-none focus:outline-none focus:border-[#B8964A]/60 transition-colors font-mono text-sm leading-relaxed"
                   />
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-[10px] text-[#4A4540] font-mono">
+                    <span className="text-xs text-[#4A4540] font-mono">
                       rule: {rule.name}
                     </span>
-                    <span className="text-[10px] text-[#4A4540]">
+                    <span className="text-xs text-[#4A4540]">
                       {rule.content.length} 字符
                     </span>
                   </div>
@@ -446,18 +446,18 @@ export default function GuardPanel() {
 
       {/* ── 底部操作说明 + 热生效闭环验证 ── */}
       <div className="shrink-0 px-5 py-3 border-t border-[#2A2622] space-y-2">
-        <div className="flex items-start gap-2 text-[10px] text-[#4A4540]">
+        <div className="flex items-start gap-2 text-xs text-[#4A4540]">
           <Shield size={12} className="mt-0.5 shrink-0" />
           <span>
             L3 护栏规则保存后将在<strong className="text-[#6B6459]">下一轮对话</strong>
             中自动生效。所有修改均记录审计日志，可在「审计日志」页面查看。
           </span>
         </div>
-        <div className="flex items-start gap-2 text-[10px] text-[#4A4540] bg-[#1A1816] rounded-md px-3 py-2 border border-[#2A2622]">
+        <div className="flex items-start gap-2 text-xs text-[#4A4540] bg-[#1A1816] rounded-md px-3 py-2 border border-[#2A2622]">
           <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-[#5B8C5A]" />
           <span>
             <strong className="text-[#5B8C5A]">端到端验证链路</strong>：管理员修改护栏规则（如免责声明话术）→ 点击"保存并热生效"
-            → 下一轮用户对话时，<code className="text-[#6B6459] bg-[#12100E] px-1 rounded text-[9px]">buildAntiHallucinationPromptDynamic()</code> 从 DB 实时加载最新规则
+            → 下一轮用户对话时，<code className="text-[#6B6459] bg-[#12100E] px-1 rounded text-sm">buildAntiHallucinationPromptDynamic()</code> 从 DB 实时加载最新规则
             → LLM 输出立刻携带新的免责声明。无需重启服务，全程审计可追溯。
           </span>
         </div>
