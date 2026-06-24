@@ -1,10 +1,13 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles/admin.css'
 
 createRoot(document.getElementById('admin-root')!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter basename="/admin">
+      <App />
+    </BrowserRouter>
   </React.StrictMode>,
 )

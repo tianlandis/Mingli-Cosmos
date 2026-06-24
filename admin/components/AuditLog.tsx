@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ScrollText, RefreshCw, Clock, User, FileText, Tag } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 interface AuditRow {
   id: number
@@ -22,16 +33,16 @@ function formatTime(iso: string): string {
 
 function getActionStyle(action: string): string {
   const map: Record<string, string> = {
-    create: 'bg-[#5B8C5A]/15 text-[#7AB87A] border-[#5B8C5A]/25',
-    update: 'bg-[#4D6BFE]/15 text-[#7B90FF] border-[#4D6BFE]/25',
-    delete: 'bg-[#D04040]/15 text-[#F07070] border-[#D04040]/25',
-    login: 'bg-[#10A37F]/15 text-[#3EC9A7] border-[#10A37F]/25',
-    logout: 'bg-[#6B6459]/15 text-[#A09888] border-[#6B6459]/25',
-    revoke: 'bg-[#C08040]/15 text-[#E0A060] border-[#C08040]/25',
-    session_rejected: 'bg-[#D04040]/15 text-[#F07070] border-[#D04040]/25',
-    session_revoked: 'bg-[#C08040]/15 text-[#E0A060] border-[#C08040]/25',
+    create: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    update: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    delete: 'bg-red-500/10 text-red-400 border-red-500/20',
+    login: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+    logout: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+    revoke: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    session_rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+    session_revoked: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   }
-  return map[action] || 'bg-[#6B6459]/15 text-[#A09888] border-[#6B6459]/25'
+  return map[action] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
 }
 
 export default function AuditLog({ apiHeaders }: { apiHeaders: () => Record<string, string> }) {
@@ -62,86 +73,91 @@ export default function AuditLog({ apiHeaders }: { apiHeaders: () => Record<stri
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-[#EDE8DF] flex items-center gap-2 tracking-[0.04em]">
-            <ScrollText size={18} className="text-[#B8964A]" />
+            <div className="size-8 flex items-center justify-center rounded-lg bg-[#B8964A]/10 border border-[#B8964A]/20">
+              <ScrollText size={16} className="text-[#B8964A]" />
+            </div>
             操作日志
           </h2>
-          <p className="text-sm text-[#6B6459] mt-0.5">系统操作审计与安全追溯</p>
+          <p className="text-sm text-[#6B6459] mt-1 ml-[42px]">系统操作审计与安全追溯</p>
         </div>
-        <button
+        <Button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#B8964A] hover:text-[#D8C08A] bg-[#B8964A]/8 hover:bg-[#B8964A]/12 border border-[#B8964A]/15 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          variant="ghost"
+          className="text-[#B8964A] hover:text-[#D8C08A] hover:bg-[#B8964A]/10 border border-[#B8964A]/15"
         >
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={12} className={cn('mr-1.5', loading && 'animate-spin')} />
           {loading ? '刷新中...' : '刷新'}
-        </button>
+        </Button>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="px-3 py-2.5 rounded-lg bg-[#C04030]/10 border border-[#C04030]/20 text-[#D06050] text-sm flex items-center gap-2">
-          <span className="size-1.5 rounded-full bg-[#C04030]" />
+        <div className="px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+          <span className="size-1.5 rounded-full bg-red-400" />
           {error}
-          <button onClick={load} className="ml-auto underline hover:text-[#F07070]">重试</button>
+          <button onClick={load} className="ml-auto underline hover:text-red-300">重试</button>
         </div>
       )}
 
-      {/* Table */}
+      {/* Table — 使用 shadcn Table 组件 */}
       <Card className="bg-[#1A1F2E] border-white/[0.06] overflow-hidden">
         <CardContent className="p-0">
-        <table className="w-full text-base">
-          <thead>
-            <tr className="border-b border-white/[0.06] bg-[#1A2332]/60">
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em]">
-                <span className="flex items-center gap-1"><Clock size={10} />时间</span>
-              </th>
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em]">
-                <span className="flex items-center gap-1"><Tag size={10} />操作</span>
-              </th>
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em]">
-                <span className="flex items-center gap-1"><FileText size={10} />资源</span>
-              </th>
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em]">详情</th>
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em]">
-                <span className="flex items-center gap-1"><User size={10} />操作者</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && logs.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-5 py-12 text-center text-[#4A4540] text-sm">
-                  <RefreshCw size={14} className="animate-spin inline mr-2" />
-                  加载中...
-                </td>
-              </tr>
-            )}
-            {!loading && logs.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-5 py-12 text-center text-[#4A4540] text-sm">
-                  暂无操作记录
-                </td>
-              </tr>
-            )}
-            {logs.map(l => (
-              <tr key={l.id} className="border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
-                <td className="px-5 py-3 text-[#6B6459] font-mono text-[13px] whitespace-nowrap">
-                  {formatTime(l.createdAt)}
-                </td>
-                <td className="px-5 py-3">
-                  <span className={`inline-flex px-2 py-0.5 rounded text-[12px] font-medium border ${getActionStyle(l.action)}`}>
-                    {l.action}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-[#A09888] text-sm">{l.resource}</td>
-                <td className="px-5 py-3 text-[#6B6459] text-[13px] max-w-[260px] truncate" title={l.detail || undefined}>
-                  {l.detail || '-'}
-                </td>
-                <td className="px-5 py-3 text-[#D8D2C8] text-sm">{l.operator}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/[0.06] bg-[#1A2332]/60 hover:bg-[#1A2332]/60">
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em] whitespace-nowrap">
+                  <span className="flex items-center gap-1"><Clock size={10} />时间</span>
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em]">
+                  <span className="flex items-center gap-1"><Tag size={10} />操作</span>
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em]">
+                  <span className="flex items-center gap-1"><FileText size={10} />资源</span>
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em] hidden md:table-cell">
+                  详情
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em]">
+                  <span className="flex items-center gap-1"><User size={10} />操作者</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && logs.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12 text-[#4A4540] text-sm">
+                    <RefreshCw size={14} className="animate-spin inline mr-2" />
+                    加载中...
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && logs.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12 text-[#4A4540] text-sm">
+                    暂无操作记录
+                  </TableCell>
+                </TableRow>
+              )}
+              {logs.map(l => (
+                <TableRow key={l.id} className="border-white/[0.03] hover:bg-white/[0.02]">
+                  <TableCell className="text-xs text-[#6B6459] font-mono whitespace-nowrap">
+                    {formatTime(l.createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={cn('text-[10px] font-medium border', getActionStyle(l.action))}>
+                      {l.action}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-[#A09888]">{l.resource}</TableCell>
+                  <TableCell className="text-[13px] text-[#6B6459] max-w-[260px] truncate hidden md:table-cell" title={l.detail || undefined}>
+                    {l.detail || '-'}
+                  </TableCell>
+                  <TableCell className="text-sm text-[#D8D2C8]">{l.operator}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

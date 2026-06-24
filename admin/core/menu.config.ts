@@ -13,6 +13,7 @@ import {
   Users,
   ShoppingCart,
   Library,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -48,6 +49,11 @@ export const menuGroups: MenuGroup[] = [
         key: 'prompts',
         label: 'Prompt 模板',
         icon: FileText,
+      },
+      {
+        key: 'guardrails',
+        label: 'L3 防幻觉护栏',
+        icon: ShieldCheck,
       },
       {
         key: 'llm',

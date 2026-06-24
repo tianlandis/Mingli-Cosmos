@@ -1,7 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, RotateCcw, Plus, Trash2, Database, FileWarning, HelpCircle } from 'lucide-react'
+import { Settings, RotateCcw, Plus, Trash2, Database, FileWarning } from 'lucide-react'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 const CONFIG_DESCRIPTIONS: Record<string, string> = {
   'default_llm_provider': '当前全局激活的 AI 大模型后端标识（数据存储于 SQLite app_configs 表）。所有未指定 Provider 的 AI 调用均使用此项',
@@ -75,35 +87,38 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-[#EDE8DF] flex items-center gap-2 tracking-[0.04em]">
-            <Settings size={18} className="text-[#B8964A]" />
+            <div className="size-8 flex items-center justify-center rounded-lg bg-[#B8964A]/10 border border-[#B8964A]/20">
+              <Settings size={16} className="text-[#B8964A]" />
+            </div>
             系统配置
           </h2>
-          <p className="text-sm text-[#6B6459] mt-0.5">运行时参数与功能开关管理</p>
+          <p className="text-sm text-[#6B6459] mt-1 ml-[42px]">运行时参数与功能开关管理</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[12px] font-medium border',
+          <Badge className={cn(
+            'text-[11px] font-medium border',
             usingDb
-              ? 'bg-[#5B8C5A]/10 text-[#5B8C5A] border-[#5B8C5A]/20'
-              : 'bg-[#C08040]/10 text-[#C08040] border-[#C08040]/20',
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/20',
           )}>
-            {usingDb ? <Database className="size-3" /> : <FileWarning className="size-3" />}
+            {usingDb ? <Database className="size-3 mr-1 inline" /> : <FileWarning className="size-3 mr-1 inline" />}
             {usingDb ? 'DB 模式' : '.env 回退'}
-          </span>
-          <button
+          </Badge>
+          <Button
             onClick={handleReload}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-[#B8964A] hover:text-[#D8C08A] bg-[#B8964A]/8 hover:bg-[#B8964A]/12 border border-[#B8964A]/15 rounded-md transition-colors"
+            variant="ghost"
+            className="text-[#B8964A] hover:text-[#D8C08A] hover:bg-[#B8964A]/10 border border-[#B8964A]/15"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={12} className="mr-1.5" />
             刷新缓存
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Status toast */}
       {status && (
-        <div className="px-3 py-2 rounded-md bg-[#5B8C5A]/10 border border-[#5B8C5A]/20 text-[#5B8C5A] text-sm flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-[#5B8C5A]" />
+        <div className="px-3 py-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-emerald-400" />
           {status}
         </div>
       )}
@@ -127,87 +142,93 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
           <div className="flex gap-3">
             <div className="flex-1 space-y-1.5">
               <Label className="text-[12px] text-[#6B6459] font-medium">配置键 (Key)</Label>
-              <input
+              <Input
                 value={newKey}
                 onChange={e => setNewKey(e.target.value)}
                 placeholder="如：module_settings"
-                className="w-full px-3.5 py-2 bg-[#1A2332] border border-white/[0.08] rounded-lg text-base text-[#EDE8DF] placeholder:text-[#4A4540] font-mono focus:outline-none focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20 transition-colors"
+                className="bg-[#1A2332] border-white/[0.08] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono"
               />
-              <p className="text-[11px] text-[#6B6459] italic">系统内部标识键名，需全局唯一，推荐 snake_case 命名，如 system_name、guard_enabled</p>
+              <p className="text-[11px] text-[#6B6459] italic">系统内部标识键名，需全局唯一，推荐 snake_case 命名</p>
             </div>
             <div className="flex-1 space-y-1.5">
               <Label className="text-[12px] text-[#6B6459] font-medium">配置值 (Value)</Label>
-              <input
+              <Input
                 value={newValue}
                 onChange={e => setNewValue(e.target.value)}
                 placeholder="配置值..."
-                className="w-full px-3.5 py-2 bg-[#1A2332] border border-white/[0.08] rounded-lg text-base text-[#EDE8DF] placeholder:text-[#4A4540] font-mono focus:outline-none focus:border-[#B8964A]/60 focus:ring-1 focus:ring-[#B8964A]/20 transition-colors"
+                className="bg-[#1A2332] border-white/[0.08] text-[#EDE8DF] placeholder:text-[#4A4540] font-mono"
               />
-              <p className="text-[11px] text-[#6B6459] italic">配置的具体内容。JSON 格式需语法有效、结构完整；纯文本可直接填写数字或字符串</p>
+              <p className="text-[11px] text-[#6B6459] italic">配置的具体内容，JSON 格式需语法有效</p>
             </div>
-            <button
+            <Button
               onClick={handleAdd}
-              className="px-5 py-2 bg-[#C04030] hover:bg-[#A03024] text-[#EDE8DF] text-base font-medium rounded-lg transition-colors duration-150 shrink-0 self-end"
+              className="px-5 py-2 bg-[#C04030] hover:bg-[#A03024] text-[#EDE8DF] text-sm font-medium rounded-lg shrink-0 self-end"
             >
               保存
-            </button>
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Config table */}
+      {/* Config table — shadcn Table */}
       <Card className="bg-[#1A1F2E] border-white/[0.06] overflow-hidden">
         <CardContent className="p-0">
-        <table className="w-full text-base">
-          <thead>
-            <tr className="border-b border-white/[0.06] bg-[#1A2332]/60">
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em] w-[200px]">键</th>
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em] w-[280px]">值</th>
-              <th className="text-left px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em]">作用与存储说明</th>
-              <th className="text-right px-5 py-3 text-[12px] font-medium text-[#6B6459] uppercase tracking-[0.08em] w-20">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {configs.map(c => {
-              const desc = getConfigDescription(c.key)
-              return (
-                <tr key={c.id} className="border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3 font-mono text-sm text-[#A09888]">{c.key}</td>
-                  <td className="px-5 py-3 font-mono text-sm text-[#EDE8DF] max-w-[280px] truncate" title={c.value}>{c.value}</td>
-                  <td className="px-5 py-3">
-                    {desc ? (
-                      <p className="text-[12px] text-[#6B6459] leading-relaxed">{desc}</p>
-                    ) : (
-                      <span className="text-[12px] text-[#4A4540] italic">自定义配置，暂无说明</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(c.key)}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[12px] text-[#D06050] hover:text-[#FF7070] hover:bg-[#C04030]/10 rounded transition-colors"
-                    >
-                      <Trash2 size={11} />
-                      删除
-                    </button>
-                  </td>
-                </tr>
-              )
-            })}
-            {configs.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-5 py-12 text-center text-[#4A4540] text-sm">
-                  暂无配置项，使用上方表单添加
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/[0.06] bg-[#1A2332]/60 hover:bg-[#1A2332]/60">
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em] w-[180px]">
+                  键
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em] w-[250px]">
+                  值
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em]">
+                  作用与存储说明
+                </TableHead>
+                <TableHead className="text-[11px] text-[#6B6459] font-medium uppercase tracking-[0.08em] text-right w-20">
+                  操作
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {configs.map(c => {
+                const desc = getConfigDescription(c.key)
+                return (
+                  <TableRow key={c.id} className="border-white/[0.03] hover:bg-white/[0.02]">
+                    <TableCell className="font-mono text-sm text-[#A09888]">{c.key}</TableCell>
+                    <TableCell className="font-mono text-sm text-[#EDE8DF] max-w-[250px] truncate" title={c.value}>
+                      {c.value}
+                    </TableCell>
+                    <TableCell>
+                      {desc ? (
+                        <p className="text-[12px] text-[#6B6459] leading-relaxed">{desc}</p>
+                      ) : (
+                        <span className="text-[12px] text-[#4A4540] italic">自定义配置，暂无说明</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <button
+                        onClick={() => handleDelete(c.key)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[12px] text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                      >
+                        <Trash2 size={11} />
+                        删除
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+              {configs.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-12 text-[#4A4540] text-sm">
+                    暂无配置项，使用上方表单添加
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
   )
-}
-
-function cn(...classes: (string | boolean | undefined | null)[]): string {
-  return classes.filter(Boolean).join(' ')
 }

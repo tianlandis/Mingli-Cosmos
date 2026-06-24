@@ -1,5 +1,5 @@
 // ============================================================
-// Phase 4 — Dashboard 仪表盘页面（玄青朱砂色板）
+// Phase 4 — Dashboard 仪表盘页面（玄青朱砂色板 · shadcn/ui 重构版）
 // 文件：admin/modules/dashboard/DashboardPage.tsx
 // ============================================================
 
@@ -11,7 +11,18 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import {
   Server,
@@ -22,6 +33,16 @@ import {
   Activity,
   HardDrive,
   LayoutDashboard,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  TrendingUp,
+  Zap,
+  Shield,
+  Users,
+  Settings,
+  ScrollText,
+  Brain,
 } from 'lucide-react'
 
 // ═══════════════════════════════════════
@@ -54,24 +75,21 @@ interface DashboardStats {
   timestamp: string
 }
 
+interface RecentActivity {
+  id: number
+  action: string
+  resource: string
+  operator: string
+  createdAt: string
+  detail?: string
+}
+
 interface DashboardPageProps {
   apiHeaders: () => Record<string, string>
 }
 
 // ═══════════════════════════════════════
-// 辅助：获取统计数据
-// ═══════════════════════════════════════
-
-async function fetchStats(headers: Record<string, string>): Promise<DashboardStats> {
-  const res = await fetch('/api/v1/admin/dashboard/stats', { headers })
-  if (!res.ok) throw new Error('获取统计数据失败')
-  const json = await res.json()
-  if (!json.success) throw new Error(json.error?.message || '未知错误')
-  return json.data as DashboardStats
-}
-
-// ═══════════════════════════════════════
-// 格式化工具
+// 辅助函数
 // ═══════════════════════════════════════
 
 function formatBytes(bytes: number): string {
@@ -82,233 +100,108 @@ function formatBytes(bytes: number): string {
 }
 
 function memoryColor(pct: number): string {
-  if (pct < 50) return 'bg-[#5B8C5A]'
-  if (pct < 75) return 'bg-[#B8964A]'
-  return 'bg-[#C04030]'
+  if (pct < 50) return 'bg-emerald-500'
+  if (pct < 75) return 'bg-amber-500'
+  return 'bg-red-500'
 }
 
 function memoryTextColor(pct: number): string {
-  if (pct < 50) return 'text-[#5B8C5A]'
-  if (pct < 75) return 'text-[#B8964A]'
-  return 'text-[#C04030]'
+  if (pct < 50) return 'text-emerald-400'
+  if (pct < 75) return 'text-amber-400'
+  return 'text-red-400'
+}
+
+function formatTime(iso: string): string {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return '刚刚'
+  if (diffMin < 60) return `${diffMin} 分钟前`
+  if (diffMin < 1440) return `${Math.floor(diffMin / 60)} 小时前`
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function getActionStyle(action: string): string {
+  const map: Record<string, string> = {
+    create: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    update: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    delete: 'bg-red-500/10 text-red-400 border-red-500/20',
+    login: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+    logout: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+    revoke: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    session_rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+    session_revoked: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  }
+  return map[action] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
 }
 
 // ═══════════════════════════════════════
-// 指标卡片子组件
+// 统计卡片
 // ═══════════════════════════════════════
 
 function StatCard({
   icon: Icon,
   title,
-  description,
-  children,
-  className,
+  value,
+  subtitle,
+  trend,
+  trendValue,
+  iconColor = 'text-[#B8964A]',
+  iconBg = 'bg-[#B8964A]/8',
 }: {
   icon: React.ElementType
   title: string
-  description?: string
-  children: React.ReactNode
-  className?: string
+  value: string | number
+  subtitle?: string
+  trend?: 'up' | 'down' | 'neutral'
+  trendValue?: string
+  iconColor?: string
+  iconBg?: string
 }) {
   return (
-    <Card
-      className={cn(
-        'bg-[#1A1F2E] border-white/[0.06]',
-        'hover:border-white/[0.10] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300',
-        className,
-      )}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            'size-9 flex items-center justify-center rounded-lg',
-            'bg-white/[0.04] border border-white/[0.06]',
-          )}>
-            <Icon className="size-4 text-[#A09888]" />
-          </div>
-          <div>
-            <CardTitle className="text-base font-medium text-[#D8D2C8]">
-              {title}
-            </CardTitle>
-            {description && (
-              <CardDescription className="text-sm text-[#6B6459] mt-0.5">
-                {description}
-              </CardDescription>
-            )}
+    <Card className="bg-[#1A1F2E] border-white/[0.06] hover:border-white/[0.10] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)] transition-all duration-300">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className={cn('size-9 flex items-center justify-center rounded-lg border border-white/[0.06]', iconBg)}>
+                <Icon className={cn('size-4', iconColor)} />
+              </div>
+              <p className="text-sm text-[#6B6459] font-medium">{title}</p>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-[#EDE8DF] font-mono tabular-nums">{value}</span>
+              {trend && (
+                <span className={cn(
+                  'inline-flex items-center gap-0.5 text-xs font-medium',
+                  trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-[#6B6459]',
+                )}>
+                  {trend === 'up' ? <ArrowUpRight size={12} /> : trend === 'down' ? <ArrowDownRight size={12} /> : null}
+                  {trendValue}
+                </span>
+              )}
+            </div>
+            {subtitle && <p className="text-xs text-[#6B6459]">{subtitle}</p>}
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {children}
       </CardContent>
     </Card>
   )
 }
 
 // ═══════════════════════════════════════
-// 卡片一：服务状态
+// 快速操作
 // ═══════════════════════════════════════
 
-function ServiceStatusCard({ stats }: { stats: DashboardStats }) {
-  const isRunning = stats.dbStatus === 'connected'
-
-  return (
-    <StatCard icon={Server} title="服务状态" description={`PID ${stats.pid} · ${stats.nodeVersion}`}>
-      <div className="flex items-center gap-3 mb-3">
-        <span className="relative flex size-3">
-          <span className={cn(
-            'absolute inline-flex h-full w-full rounded-full opacity-75',
-            isRunning ? 'bg-[#5B8C5A] animate-pulse-dot' : 'bg-[#D04040]',
-          )} />
-          <span className={cn(
-            'relative inline-flex rounded-full size-3',
-            isRunning ? 'bg-[#5B8C5A]' : 'bg-[#D04040]',
-          )} />
-        </span>
-        <span className={cn('text-base font-medium', isRunning ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
-          {isRunning ? '运行中' : '异常'}
-        </span>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 text-[#6B6459]"><Clock className="size-3" />运行时长</span>
-          <span className="text-[#D8D2C8] font-mono tabular-nums">{stats.uptimeHuman}</span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 text-[#6B6459]"><Activity className="size-3" />启动时间</span>
-          <span className="text-[#A09888] font-mono tabular-nums text-sm">
-            {new Date(stats.serverStartTime).toLocaleString('zh-CN')}
-          </span>
-        </div>
-      </div>
-    </StatCard>
-  )
-}
-
-// ═══════════════════════════════════════
-// 卡片二：内存使用率
-// ═══════════════════════════════════════
-
-function MemoryCard({ stats }: { stats: DashboardStats }) {
-  const pct = stats.memoryPercent
-
-  return (
-    <StatCard icon={Cpu} title="内存使用率" description={pct >= 75 ? '注意：内存使用较高' : '堆内存监控'}>
-      <div className="mb-3">
-        <div className="flex justify-between items-baseline mb-2">
-          <span className={cn('text-3xl font-bold font-mono tabular-nums', memoryTextColor(pct))}>
-            {pct.toFixed(1)}%
-          </span>
-          <span className="text-sm text-[#6B6459]">
-            {stats.memory.heapUsedMb.toFixed(1)} / {stats.memory.heapTotalMb.toFixed(1)} MB
-          </span>
-        </div>
-        <Progress
-          value={pct}
-          max={100}
-          className="h-2 bg-white/[0.06] rounded-full"
-          indicatorClassName={cn(memoryColor(pct), 'shadow-sm rounded-full')}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-[13px]">
-        <div className="flex justify-between px-2 py-1 rounded bg-white/[0.03]">
-          <span className="text-[#6B6459]">RSS</span>
-          <span className="text-[#D8D2C8] font-mono tabular-nums">{stats.memory.rssMb.toFixed(1)} MB</span>
-        </div>
-        <div className="flex justify-between px-2 py-1 rounded bg-white/[0.03]">
-          <span className="text-[#6B6459]">External</span>
-          <span className="text-[#A09888] font-mono tabular-nums">{formatBytes(stats.memory.external)}</span>
-        </div>
-      </div>
-    </StatCard>
-  )
-}
-
-// ═══════════════════════════════════════
-// 卡片三：数据库
-// ═══════════════════════════════════════
-
-function DatabaseCard({ stats }: { stats: DashboardStats }) {
-  return (
-    <StatCard icon={Database} title="数据库" description={stats.dbType}>
-      <div className="flex items-center gap-2 mb-3">
-        <div className={cn('size-2 rounded-full', stats.dbStatus === 'connected' ? 'bg-[#5B8C5A]' : 'bg-[#D04040]')} />
-        <span className={cn('text-base', stats.dbStatus === 'connected' ? 'text-[#5B8C5A]' : 'text-[#D04040]')}>
-          {stats.dbStatus === 'connected' ? '已连接' : '未连接'}
-        </span>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 text-[#6B6459]"><Activity className="size-3" />活跃会话</span>
-          <span className={cn('text-base font-bold font-mono tabular-nums', stats.activeSessions > 0 ? 'text-[#B8964A]' : 'text-[#D8D2C8]')}>
-            {stats.activeSessions}
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 text-[#6B6459]"><HardDrive className="size-3" />库文件大小</span>
-          <span className="text-[#A09888] font-mono tabular-nums">
-            {stats.dbSizeMb > 0 ? `${stats.dbSizeMb.toFixed(2)} MB` : '—'}
-          </span>
-        </div>
-      </div>
-    </StatCard>
-  )
-}
-
-// ═══════════════════════════════════════
-// 卡片四：近期审计日志
-// ═══════════════════════════════════════
-
-function AuditSummaryCard({ stats }: { stats: DashboardStats }) {
-  return (
-    <StatCard icon={FileText} title="审计日志" description="操作记录概览">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col items-center py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
-          <span className="text-3xl font-bold font-mono tabular-nums text-[#EDE8DF]">
-            {stats.auditCount.toLocaleString()}
-          </span>
-          <span className="text-xs text-[#6B6459] mt-1">总计</span>
-        </div>
-        <div className="flex flex-col items-center py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
-          <span className={cn('text-3xl font-bold font-mono tabular-nums', stats.auditToday > 0 ? 'text-[#B8964A]' : 'text-[#6B6459]')}>
-            {stats.auditToday.toLocaleString()}
-          </span>
-          <span className="text-xs text-[#6B6459] mt-1">今日新增</span>
-        </div>
-      </div>
-      {stats.auditToday > 0 && (
-        <p className="text-[12px] text-[#6B6459] mt-3 text-center">
-          今日有 {stats.auditToday.toLocaleString()} 条操作记录
-        </p>
-      )}
-    </StatCard>
-  )
-}
-
-// ═══════════════════════════════════════
-// Feature Badge
-// ═══════════════════════════════════════
-
-function FeatureBadge({
-  emoji, label, value, detail,
-}: {
-  emoji: string
-  label: string
-  value: string
-  detail: string
-}) {
-  return (
-    <div className="bg-[#222839] border border-white/[0.04] rounded-lg p-3.5 hover:bg-[#2A3040] hover:border-white/[0.08] transition-all duration-200">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">{emoji}</span>
-        <span className="text-sm text-[#6B6459]">{label}</span>
-        <div className="ml-auto size-1.5 rounded-full bg-[#5B8C5A]" />
-      </div>
-      <div className="text-base font-bold text-[#EDE8DF] mb-1.5">{value}</div>
-      <p className="text-sm text-[#6B6459] leading-relaxed line-clamp-2">{detail}</p>
-    </div>
-  )
-}
+const QUICK_ACTIONS = [
+  { label: '系统配置', icon: Settings, href: '/admin/config', color: 'text-[#B8964A]', bg: 'bg-[#B8964A]/8' },
+  { label: '审计日志', icon: ScrollText, href: '/admin/audit', color: 'text-[#4D6BFE]', bg: 'bg-[#4D6BFE]/8' },
+  { label: 'Prompt 管理', icon: Brain, href: '/admin/prompts', color: 'text-emerald-400', bg: 'bg-emerald-500/8' },
+  { label: 'LLM 供应商', icon: Cpu, href: '/admin/llm', color: 'text-amber-400', bg: 'bg-amber-500/8' },
+]
 
 // ═══════════════════════════════════════
 // 主页面
@@ -318,15 +211,34 @@ const REFRESH_INTERVAL = 15_000
 
 export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [activities, setActivities] = useState<RecentActivity[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchStats(apiHeaders())
-      setStats(data)
+      const headers = apiHeaders()
+      // 并行拉取统计 + 最近活动
+      const [statsRes, auditRes] = await Promise.all([
+        fetch('/api/v1/admin/dashboard/stats', { headers }),
+        fetch('/api/v1/admin/audit?limit=8', { headers }),
+      ])
+
+      if (!statsRes.ok) throw new Error('获取统计数据失败')
+      const statsJson = await statsRes.json()
+      if (!statsJson.success) throw new Error(statsJson.error?.message || '未知错误')
+      setStats(statsJson.data as DashboardStats)
+
+      if (auditRes.ok) {
+        const auditJson = await auditRes.json()
+        setActivities(auditJson.data || [])
+      }
+
       setError(null)
     } catch (e: any) {
       setError(e.message)
+    } finally {
+      setLoading(false)
     }
   }, [apiHeaders])
 
@@ -337,95 +249,348 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
   }, [load])
 
   // ── 加载骨架 ──
-  if (!stats && !error) {
+  if (loading && !stats) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2.5">
-          <LayoutDashboard size={20} className="text-[#B8964A]" />
-          <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
-        </div>
+      <div className="space-y-6 animate-in fade-in-50 duration-500">
+        <PageHeader loading />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-[#1A1F2E] border border-white/[0.04] rounded-xl p-6 animate-pulse">
-              <div className="h-4 w-20 bg-white/[0.04] rounded mb-4" />
-              <div className="h-8 w-16 bg-white/[0.04] rounded" />
-            </div>
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="bg-[#1A1F2E] border-white/[0.06]">
+              <CardContent className="p-5 space-y-3">
+                <Skeleton className="h-4 w-24 bg-white/[0.06]" />
+                <Skeleton className="h-8 w-16 bg-white/[0.06]" />
+                <Skeleton className="h-3 w-32 bg-white/[0.04]" />
+              </CardContent>
+            </Card>
           ))}
         </div>
-      </div>
-    )
-  }
-
-  // ── 错误态 ──
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2.5">
-          <LayoutDashboard size={20} className="text-[#B8964A]" />
-          <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
-        </div>
-        <Card className="bg-[#1A1F2E] border-[#D04040]/20">
-          <CardContent className="py-8 text-center">
-            <p className="text-[#D04040] text-base">无法获取统计数据：{error}</p>
-            <button
-              onClick={load}
-              className="mt-3 text-sm text-[#B8964A] hover:text-[#D8C08A] transition-colors"
-            >
-              点击重试
-            </button>
+        <Card className="bg-[#1A1F2E] border-white/[0.06]">
+          <CardContent className="p-6 space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <Skeleton key={i} className="h-10 w-full bg-white/[0.04]" />
+            ))}
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  // ── 正常态 ──
+  // ── 错误态 ──
+  if (error && !stats) {
+    return (
+      <div className="space-y-6 animate-in fade-in-50 duration-500">
+        <PageHeader />
+        <Card className="bg-[#1A1F2E] border-red-500/20">
+          <CardContent className="py-10 text-center space-y-3">
+            <div className="size-14 mx-auto flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+              <Server size={24} className="text-red-400" />
+            </div>
+            <div>
+              <p className="text-red-400 text-base font-medium">无法获取统计数据</p>
+              <p className="text-[#6B6459] text-sm mt-1">{error}</p>
+            </div>
+            <Button
+              onClick={load}
+              variant="outline"
+              className="border-[#B8964A]/30 text-[#B8964A] hover:bg-[#B8964A]/10"
+            >
+              <RefreshCw size={14} className="mr-2" />
+              重试
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const s = stats!
+  const pct = s.memoryPercent
+  const isRunning = s.dbStatus === 'connected'
+
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <LayoutDashboard size={20} className="text-[#B8964A]" />
-            <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
+    <div className="space-y-6 animate-in fade-in-50 duration-500">
+      {/* ═══ 页面标题 ═══ */}
+      <PageHeader stats={s} onRefresh={load} />
+
+      {/* ═══ 4 卡片统计网格 ═══ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 服务状态 */}
+        <StatCard
+          icon={Server}
+          title="服务状态"
+          value={isRunning ? '运行中' : '异常'}
+          subtitle={`PID ${s.pid} · ${s.nodeVersion}`}
+          iconColor={isRunning ? 'text-emerald-400' : 'text-red-400'}
+          iconBg={isRunning ? 'bg-emerald-500/8' : 'bg-red-500/8'}
+          trend={isRunning ? 'up' : 'down'}
+          trendValue={s.uptimeHuman}
+        />
+
+        {/* 内存使用 */}
+        <StatCard
+          icon={Cpu}
+          title="内存使用"
+          value={`${pct.toFixed(1)}%`}
+          subtitle={`${s.memory.heapUsedMb.toFixed(1)} / ${s.memory.heapTotalMb.toFixed(1)} MB`}
+          iconColor={memoryTextColor(pct)}
+          iconBg={pct < 50 ? 'bg-emerald-500/8' : pct < 75 ? 'bg-amber-500/8' : 'bg-red-500/8'}
+          trend={pct > 75 ? 'down' : 'neutral'}
+          trendValue={pct > 75 ? '偏高' : undefined}
+        />
+
+        {/* 数据库 */}
+        <StatCard
+          icon={Database}
+          title="数据库"
+          value={s.dbType}
+          subtitle={`${s.dbSizeMb > 0 ? `${s.dbSizeMb.toFixed(2)} MB` : '—'} · ${s.activeSessions} 会话`}
+          iconColor={s.dbStatus === 'connected' ? 'text-emerald-400' : 'text-red-400'}
+          iconBg={s.dbStatus === 'connected' ? 'bg-emerald-500/8' : 'bg-red-500/8'}
+          trend={s.dbStatus === 'connected' ? 'up' : 'down'}
+          trendValue={s.dbStatus === 'connected' ? '已连接' : '未连接'}
+        />
+
+        {/* 审计日志 */}
+        <StatCard
+          icon={FileText}
+          title="审计日志"
+          value={s.auditCount.toLocaleString()}
+          subtitle={`今日新增 ${s.auditToday.toLocaleString()} 条`}
+          iconColor="text-[#4D6BFE]"
+          iconBg="bg-[#4D6BFE]/8"
+          trend={s.auditToday > 0 ? 'up' : 'neutral'}
+          trendValue={s.auditToday > 0 ? `+${s.auditToday}` : undefined}
+        />
+      </div>
+
+      {/* ═══ 下半区：内存监控 + 最近活动 ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* 内存详情 + 系统信息 */}
+        <Card className="bg-[#1A1F2E] border-white/[0.06] lg:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-[#D8D2C8] flex items-center gap-2">
+              <Activity size={16} className="text-[#B8964A]" />
+              系统资源
+            </CardTitle>
+            <CardDescription className="text-xs text-[#6B6459]">
+              实时内存 &amp; 进程信息
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 内存进度条 */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-baseline">
+                <span className={cn('text-3xl font-bold font-mono tabular-nums', memoryTextColor(pct))}>
+                  {pct.toFixed(1)}%
+                </span>
+                <span className="text-sm text-[#6B6459]">
+                  {s.memory.heapUsedMb.toFixed(1)} / {s.memory.heapTotalMb.toFixed(1)} MB
+                </span>
+              </div>
+              <Progress
+                value={pct}
+                max={100}
+                className="h-2 bg-white/[0.06] rounded-full"
+                indicatorClassName={cn(memoryColor(pct), 'shadow-sm rounded-full transition-all duration-500')}
+              />
+            </div>
+
+            {/* 内存细分 */}
+            <div className="space-y-1.5">
+              {[
+                { label: 'RSS', value: `${s.memory.rssMb.toFixed(1)} MB` },
+                { label: '堆外内存', value: formatBytes(s.memory.external) },
+                { label: '运行时长', value: s.uptimeHuman },
+                { label: 'Node 版本', value: s.nodeVersion },
+              ].map(row => (
+                <div key={row.label} className="flex justify-between py-1.5 px-2.5 rounded-md bg-white/[0.02]">
+                  <span className="text-sm text-[#6B6459]">{row.label}</span>
+                  <span className="text-sm text-[#D8D2C8] font-mono tabular-nums">{row.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 最近活动表格 */}
+        <Card className="bg-[#1A1F2E] border-white/[0.06] lg:col-span-2 overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-medium text-[#D8D2C8] flex items-center gap-2">
+                  <Clock size={16} className="text-[#B8964A]" />
+                  最近活动
+                </CardTitle>
+                <CardDescription className="text-xs text-[#6B6459]">
+                  最近 8 条操作记录
+                </CardDescription>
+              </div>
+              <a
+                href="/admin/audit"
+                className="text-xs text-[#B8964A] hover:text-[#D8C08A] transition-colors flex items-center gap-1"
+              >
+                查看全部
+                <ArrowUpRight size={12} />
+              </a>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {activities.length === 0 ? (
+              <div className="py-10 text-center">
+                <div className="size-12 mx-auto flex items-center justify-center rounded-full bg-white/[0.03] border border-white/[0.06] mb-3">
+                  <Clock size={18} className="text-[#4A4540]" />
+                </div>
+                <p className="text-sm text-[#6B6459]">暂无操作记录</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-white/[0.06]">
+                    <TableHead className="text-[11px] text-[#6B6459] font-medium">时间</TableHead>
+                    <TableHead className="text-[11px] text-[#6B6459] font-medium">操作</TableHead>
+                    <TableHead className="text-[11px] text-[#6B6459] font-medium">资源</TableHead>
+                    <TableHead className="text-[11px] text-[#6B6459] font-medium hidden md:table-cell">操作者</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activities.map(a => (
+                    <TableRow key={a.id} className="border-white/[0.03] hover:bg-white/[0.02]">
+                      <TableCell className="text-xs text-[#6B6459] font-mono whitespace-nowrap">
+                        {formatTime(a.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn('text-[10px] font-medium border', getActionStyle(a.action))}>
+                          {a.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-[#A09888] max-w-[160px] truncate">
+                        {a.resource}
+                      </TableCell>
+                      <TableCell className="text-xs text-[#D8D2C8] hidden md:table-cell">
+                        {a.operator}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ═══ 快捷操作 + 功能矩阵 ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 快捷操作 */}
+        <Card className="bg-[#1A1F2E] border-white/[0.06]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-[#D8D2C8] flex items-center gap-2">
+              <Zap size={16} className="text-[#B8964A]" />
+              快捷操作
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
+              {QUICK_ACTIONS.map(action => (
+                <a
+                  key={action.label}
+                  href={action.href}
+                  className={cn(
+                    'flex items-center gap-2.5 p-3 rounded-lg border border-white/[0.04]',
+                    'hover:border-white/[0.10] hover:bg-white/[0.03] transition-all duration-200',
+                    'group',
+                  )}
+                >
+                  <div className={cn('size-8 flex items-center justify-center rounded-lg', action.bg)}>
+                    <action.icon size={14} className={cn(action.color, 'group-hover:scale-110 transition-transform')} />
+                  </div>
+                  <span className="text-sm text-[#D8D2C8] font-medium group-hover:text-[#EDE8DF] transition-colors">
+                    {action.label}
+                  </span>
+                  <ArrowUpRight size={12} className="ml-auto text-[#4A4540] group-hover:text-[#B8964A] transition-colors" />
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 系统功能矩阵 */}
+        <Card className="bg-[#1A1F2E] border-white/[0.06]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-[#D8D2C8] flex items-center gap-2">
+              <Shield size={16} className="text-[#B8964A]" />
+              系统功能矩阵
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { emoji: '🗄️', label: '数据持久层', value: '8 张表', desc: 'SQLite + Drizzle ORM' },
+                { emoji: '🔧', label: '工具系统', value: '5 大工具', desc: '节气/日历/经典/名人/搜索' },
+                { emoji: '🛡️', label: 'L3 防幻觉', value: '热编辑', desc: 'L1/L2/L3 三层护栏' },
+                { emoji: '🤖', label: 'Multi-Agent', value: '4 Agent', desc: 'Router→墨言/墨行/墨缘/墨白' },
+              ].map(feat => (
+                <div
+                  key={feat.label}
+                  className="bg-white/[0.02] border border-white/[0.04] rounded-lg p-3 hover:bg-white/[0.04] hover:border-white/[0.08] transition-all duration-200"
+                >
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-sm">{feat.emoji}</span>
+                    <span className="text-[11px] text-[#6B6459]">{feat.label}</span>
+                  </div>
+                  <div className="text-sm font-bold text-[#EDE8DF]">{feat.value}</div>
+                  <p className="text-[11px] text-[#6B6459] mt-0.5">{feat.desc}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════
+// 页面标题子组件
+// ═══════════════════════════════════════
+
+function PageHeader({
+  stats,
+  loading,
+  onRefresh,
+}: {
+  stats?: DashboardStats
+  loading?: boolean
+  onRefresh?: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 flex items-center justify-center rounded-lg bg-[#B8964A]/10 border border-[#B8964A]/20">
+            <LayoutDashboard size={16} className="text-[#B8964A]" />
           </div>
-          <p className="text-sm text-[#6B6459] mt-1">
-            刷新间隔 15s · 最后更新 {new Date(stats!.timestamp).toLocaleTimeString('zh-CN')}
-          </p>
+          <h2 className="text-xl font-semibold text-[#EDE8DF] tracking-[0.04em]">仪表盘</h2>
         </div>
+        {stats && (
+          <p className="text-sm text-[#6B6459] mt-1 ml-[42px]">
+            刷新间隔 15s · 最后更新 {new Date(stats.timestamp).toLocaleTimeString('zh-CN')}
+          </p>
+        )}
+      </div>
+      {!loading && (
         <button
-          onClick={load}
-          className="px-3 py-1.5 rounded-lg text-sm bg-white/[0.03] border border-white/[0.06] text-[#A09888] hover:bg-white/[0.06] hover:text-[#D8D2C8] transition-colors"
+          onClick={onRefresh}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm',
+            'bg-white/[0.03] border border-white/[0.06] text-[#A09888]',
+            'hover:bg-white/[0.06] hover:text-[#D8D2C8] hover:border-white/[0.10]',
+            'transition-all duration-200',
+          )}
         >
+          <RefreshCw size={13} />
           刷新
         </button>
-      </div>
-
-      {/* 4 卡片网格 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ServiceStatusCard stats={stats!} />
-        <MemoryCard stats={stats!} />
-        <DatabaseCard stats={stats!} />
-        <AuditSummaryCard stats={stats!} />
-      </div>
-
-      {/* Phase 4 功能状态面板 */}
-      <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-base font-semibold text-[#EDE8DF] tracking-[0.04em] mb-4 flex items-center gap-2">
-          <span className="size-1.5 rounded-full bg-[#B8964A]" />
-          Phase 4 系统功能矩阵
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <FeatureBadge emoji="🗄️" label="数据持久层" value="8 张表"
-            detail="api_keys / prompt_templates / versions / app_configs / sessions / admin_sessions / audit_logs / module_settings" />
-          <FeatureBadge emoji="🔧" label="满血工具系统" value="5 大工具"
-            detail="solar_term_calc / calendar_lookup / classic_search / famous_chart_compare / web_search" />
-          <FeatureBadge emoji="🛡️" label="L3 防幻觉护栏" value="热编辑"
-            detail="L1 8条规则提示词 + L2 排盘拦截 + L3 管理后台热配置" />
-          <FeatureBadge emoji="🤖" label="Multi-Agent" value="4 Agent"
-            detail="Router(qwen2.5:7b) → 墨言(性格) / 墨行(事业) / 墨缘(婚姻) / 墨白(综合)" />
-        </div>
-      </div>
+      )}
     </div>
   )
 }

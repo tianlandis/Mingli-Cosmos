@@ -4,6 +4,7 @@
 // 职责：管理员可视化编辑 L1 系统提示词规则 + L2 拒绝话术
 //       保存后热生效，无需重启服务
 // ⚠️ Phase 8.1 修复：改用 api.ts 统一客户端，从 localStorage 自动注入 Token
+// ⚠️ v3 修复：全局调色对齐"玄青朱砂"系统配色（border-white/[0.06] / bg-[#1A2332]）
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react'
@@ -24,7 +25,8 @@ import {
   Info,
 } from 'lucide-react'
 import { api } from '../../lib/api'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 // ═══════════════════════════════════════
 // 类型定义
@@ -115,7 +117,7 @@ const BUILTIN_DEFAULTS: GuardsPayload = {
 }
 
 // ═══════════════════════════════════════
-// 每条规则的自解释 Tooltip（业务含义 + 生效位置）
+// 每条规则的自解释 Tooltip
 // ═══════════════════════════════════════
 
 const RULE_TOOLTIPS: Record<string, string> = {
@@ -145,7 +147,7 @@ export default function GuardPanel() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
 
-  // ── 加载当前护栏配置（api.ts 自动从 localStorage 注入 Bearer Token）──
+  // ── 加载当前护栏配置 ──
   const loadGuards = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -172,7 +174,7 @@ export default function GuardPanel() {
     loadGuards()
   }, [loadGuards])
 
-  // ── 保存到后端（api.ts 自动注入 Auth + Content-Type）──
+  // ── 保存到后端 ──
   const handleSave = useCallback(async () => {
     setSaving(true)
     setError(null)
@@ -224,33 +226,34 @@ export default function GuardPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw size={20} className="animate-spin text-[#6B6459]" />
-        <span className="ml-3 text-sm text-[#6B6459]">加载护栏配置中...</span>
+      <div className="flex items-center justify-center h-64 gap-3">
+        <RefreshCw size={18} className="animate-spin text-[#6B6459]" />
+        <span className="text-xs text-[#6B6459]">加载护栏配置中...</span>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* ── 顶部状态栏 ── */}
-      <div className="shrink-0 px-5 py-3 flex items-center justify-between border-b border-[#2A2622]">
+    <div className="p-6 lg:p-8 min-h-full">
+    <div className="flex flex-col w-full">
+      {/* ── 顶部标题栏 ── */}
+      <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#C04030]/10 border border-[#C04030]/25 flex items-center justify-center">
-            <Shield size={16} className="text-[#C04030]" />
+          <div className="size-10 flex items-center justify-center rounded-lg bg-[#C04030]/10 border border-[#C04030]/15">
+            <Shield size={18} className="text-[#C04030]" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-[#EDE8DF]">
+            <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-wider">
               L3 全局防幻觉与安全护栏
-            </h2>
+            </h3>
             <div className="flex items-center gap-2 mt-0.5">
-              {/* 来源标记 */}
               <span
-                className={`inline-flex items-center gap-1 text-xs px-1.5 py-px rounded-full border ${
+                className={cn(
+                  'inline-flex items-center gap-1 text-[10px] px-1.5 py-px rounded-full border',
                   source === 'db'
-                    ? 'border-[#5B8C5A]/40 bg-[#5B8C5A]/10 text-[#5B8C5A]'
-                    : 'border-[#4A4540] bg-[#1A1816] text-[#6B6459]'
-                }`}
+                    ? 'border-emerald-500/15 bg-emerald-500/5 text-emerald-400'
+                    : 'border-white/[0.06] bg-white/[0.02] text-[#6B6459]',
+                )}
               >
                 {source === 'db' ? (
                   <>
@@ -265,7 +268,7 @@ export default function GuardPanel() {
                 )}
               </span>
               {updatedAt && (
-                <span className="text-xs text-[#4A4540]">
+                <span className="text-[10px] text-[#6B6459]">
                   上次更新: {new Date(updatedAt).toLocaleString('zh-CN')}
                 </span>
               )}
@@ -274,68 +277,61 @@ export default function GuardPanel() {
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleReset}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#A09888] hover:text-[#EDE8DF] bg-[#1A1816] border border-[#2A2622] rounded-md hover:border-[#3A3630] transition-colors disabled:opacity-40"
-          >
-            <RotateCcw size={13} />
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="ghost" size="sm" onClick={handleReset} disabled={saving} className="text-xs gap-1.5">
+            <RotateCcw size={12} />
             重置默认
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={handleSave}
             disabled={saving || !dirty}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-md transition-all ${
-              dirty
-                ? 'bg-[#C04030] hover:bg-[#A03028] text-white shadow-lg shadow-[#C04030]/25'
-                : 'bg-[#2A2622] text-[#4A4540] cursor-not-allowed'
-            }`}
+            className={cn('text-xs gap-1.5', !dirty && 'text-[#6B6459]')}
+            variant={dirty ? 'destructive' : 'ghost'}
           >
             {saving ? (
               <>
-                <RefreshCw size={13} className="animate-spin" />
+                <RefreshCw size={12} className="animate-spin" />
                 保存中...
               </>
             ) : (
               <>
-                <Save size={13} />
+                <Save size={12} />
                 保存并热生效
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* ── 提示信息 ── */}
       {error && (
-        <div className="shrink-0 mx-5 mt-3 flex items-center gap-2 px-3 py-2 bg-[#D04040]/10 border border-[#D04040]/25 rounded-lg text-xs text-[#D04040]">
-          <AlertTriangle size={14} />
+        <div className="mb-4 flex items-center gap-2 px-3 py-2.5 bg-[#C04030]/5 border border-[#C04030]/10 rounded-lg text-xs text-[#C04030]">
+          <AlertTriangle size={13} />
           {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto text-[#D04040]/60 hover:text-[#D04040]"
-          >
+          <button onClick={() => setError(null)} className="ml-auto text-[#C04030]/50 hover:text-[#C04030] text-sm leading-none">
             ✕
           </button>
         </div>
       )}
       {successMsg && (
-        <div className="shrink-0 mx-5 mt-3 flex items-center gap-2 px-3 py-2 bg-[#5B8C5A]/10 border border-[#5B8C5A]/25 rounded-lg text-xs text-[#5B8C5A]">
-          <CheckCircle2 size={14} />
+        <div className="mb-4 flex items-center gap-2 px-3 py-2.5 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-xs text-emerald-400">
+          <CheckCircle2 size={13} />
           {successMsg}
         </div>
       )}
 
-      {/* ── L2 拒绝话术（顶部独立卡片）── */}
-      <div className="shrink-0 mx-5 mt-4">
-        <div className="admin-card border-l-2 border-l-[#C04030] p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageSquareOff size={15} className="text-[#C04030]" />
-            <h3 className="text-xs font-semibold text-[#EDE8DF] tracking-wide">
+      {/* ── L2 拒绝话术 ── */}
+      <div className="mb-4">
+        <div className="rounded-lg border border-l-2 border-l-[#C04030] border-white/[0.06] bg-[#1A1F2E] p-4">
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="size-6 flex items-center justify-center rounded bg-[#C04030]/10">
+              <MessageSquareOff size={12} className="text-[#C04030]" />
+            </div>
+            <span className="text-xs font-semibold text-[#EDE8DF] tracking-wide">
               L2 · 排盘拒绝话术
-            </h3>
-            <span className="text-xs text-[#6B6459]">
+            </span>
+            <span className="text-[10px] text-[#6B6459]">
               用户试图在对话中排盘时自动回复
             </span>
           </div>
@@ -346,25 +342,25 @@ export default function GuardPanel() {
               setDirty(true)
             }}
             rows={3}
-            className="w-full px-3 py-2.5 bg-[#12100E] border border-[#2A2622] rounded-lg text-sm text-[#EDE8DF] placeholder:text-[#4A4540] resize-none focus:outline-none focus:border-[#C04030]/60 transition-colors"
+            className="w-full px-3 py-2.5 bg-[#1A2332] border border-white/[0.08] rounded-md text-xs text-[#D8D2C8] placeholder:text-[#6B6459] resize-none focus:outline-none focus:border-[#C04030]/50 transition-colors font-mono leading-relaxed"
             placeholder="输入拒绝排盘的标准话术..."
           />
-          <p className="text-xs text-[#4A4540] mt-1.5">
+          <p className="text-[10px] text-[#6B6459] mt-1.5">
             此话术同时在 L1 System Prompt 和 L2 输入拦截中使用
           </p>
         </div>
       </div>
 
       {/* ── L1 规则列表 ── */}
-      <div className="flex-1 px-5 py-4 space-y-3 overflow-y-auto">
-        <div className="flex items-center gap-2 mb-4">
-          <Globe size={14} className="text-[#B8964A]" />
-          <h3 className="text-xs font-semibold text-[#EDE8DF] tracking-wide">
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="size-6 flex items-center justify-center rounded bg-[#B8964A]/10">
+            <Globe size={12} className="text-[#B8964A]" />
+          </div>
+          <span className="text-xs font-semibold text-[#EDE8DF] tracking-wide">
             L1 · System Prompt 防越权规则（注入 LLM 意识层）
-          </h3>
-          <span className="text-xs text-[#6B6459]">
-            {rules.length} 条规则
           </span>
+          <Badge variant="outline" className="text-[10px] font-mono">{rules.length}</Badge>
         </div>
 
         {rules.map((rule, idx) => {
@@ -372,70 +368,65 @@ export default function GuardPanel() {
           return (
             <div
               key={rule.name}
-              className={`admin-card border-l-2 transition-all ${
-                isExpanded
-                  ? 'border-l-[#B8964A]'
-                  : 'border-l-[#2A2622] hover:border-l-[#3A3630]'
-              }`}
+              className={cn(
+                'rounded-lg border border-white/[0.06] bg-[#1A1F2E] overflow-hidden transition-colors',
+                isExpanded ? 'border-l-2 border-l-[#B8964A]' : 'border-l-2 border-l-transparent hover:border-l-white/[0.06]',
+              )}
             >
               {/* ── 规则头部 ── */}
               <button
                 onClick={() => toggleExpand(rule.name)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#1A1816]/50 transition-colors rounded-tr-lg"
+                className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-white/[0.02] transition-colors rounded-tr-lg"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-5 h-5 rounded-full bg-[#B8964A]/10 border border-[#B8964A]/20 flex items-center justify-center shrink-0 text-xs font-mono text-[#B8964A]">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <span className="size-5 flex items-center justify-center rounded-full bg-[#B8964A]/10 border border-[#B8964A]/20 shrink-0 text-[10px] font-mono font-bold text-[#B8964A]">
                     {idx + 1}
                   </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-xs font-medium text-[#EDE8DF] truncate cursor-help flex items-center gap-1">
-                        {rule.label}
-                        {RULE_TOOLTIPS[rule.name] && (
-                          <Info size={10} className="text-[#4A4540] shrink-0" />
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    {RULE_TOOLTIPS[rule.name] && (
-                      <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-72">
-                        <p className="text-xs leading-relaxed">{RULE_TOOLTIPS[rule.name]}</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
+                  <TooltipProvider delayDuration={500}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-xs font-medium text-[#EDE8DF] truncate cursor-help flex items-center gap-1">
+                          {rule.label}
+                          {RULE_TOOLTIPS[rule.name] && (
+                            <Info size={10} className="text-[#6B6459] shrink-0" />
+                          )}
+                        </span>
+                      </TooltipTrigger>
+                      {RULE_TOOLTIPS[rule.name] && (
+                        <TooltipContent className="bg-[#1A1F2E] border-white/[0.06] text-[#D8D2C8] max-w-72">
+                          <p className="text-xs leading-relaxed">{RULE_TOOLTIPS[rule.name]}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                   {rule.content !==
                     BUILTIN_DEFAULTS.l1Rules.find(r => r.name === rule.name)
                       ?.content && (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C08040] shrink-0" />
+                    <span className="inline-block size-1.5 rounded-full bg-[#B8964A] shrink-0" title="已修改" />
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#4A4540]">
-                    {rule.content.length} 字
-                  </span>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <span className="text-[10px] text-[#6B6459] font-mono">{rule.content.length}字</span>
                   {isExpanded ? (
-                    <ChevronUp size={14} className="text-[#4A4540] shrink-0" />
+                    <ChevronUp size={13} className="text-[#6B6459]" />
                   ) : (
-                    <ChevronDown size={14} className="text-[#4A4540] shrink-0" />
+                    <ChevronDown size={13} className="text-[#6B6459]" />
                   )}
                 </div>
               </button>
 
               {/* ── 规则内容（展开时）── */}
               {isExpanded && (
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-3">
                   <textarea
                     value={rule.content}
                     onChange={e => updateRule(rule.name, e.target.value)}
                     rows={6}
-                    className="w-full px-3 py-2.5 bg-[#12100E] border border-[#2A2622] rounded-lg text-sm text-[#EDE8DF] placeholder:text-[#4A4540] resize-none focus:outline-none focus:border-[#B8964A]/60 transition-colors font-mono text-sm leading-relaxed"
+                    className="w-full px-3 py-2.5 bg-[#1A2332] border border-white/[0.08] rounded-md text-xs text-[#D8D2C8] placeholder:text-[#6B6459] resize-none focus:outline-none focus:border-[#B8964A]/50 transition-colors font-mono leading-relaxed"
                   />
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-[#4A4540] font-mono">
-                      rule: {rule.name}
-                    </span>
-                    <span className="text-xs text-[#4A4540]">
-                      {rule.content.length} 字符
-                    </span>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-[10px] text-[#6B6459] font-mono">rule: {rule.name}</span>
+                    <span className="text-[10px] text-[#6B6459]">{rule.content.length} 字符</span>
                   </div>
                 </div>
               )}
@@ -444,24 +435,73 @@ export default function GuardPanel() {
         })}
       </div>
 
-      {/* ── 底部操作说明 + 热生效闭环验证 ── */}
-      <div className="shrink-0 px-5 py-3 border-t border-[#2A2622] space-y-2">
-        <div className="flex items-start gap-2 text-xs text-[#4A4540]">
-          <Shield size={12} className="mt-0.5 shrink-0" />
+      {/* ── 底部闭环说明 ── */}
+      <div className="mt-4 pt-4 border-t border-white/[0.04] space-y-2.5">
+        <div className="flex items-start gap-2 text-[11px] text-[#6B6459]">
+          <Shield size={11} className="mt-0.5 shrink-0" />
           <span>
-            L3 护栏规则保存后将在<strong className="text-[#6B6459]">下一轮对话</strong>
+            L3 护栏规则保存后将在<strong className="text-[#A09888]">下一轮对话</strong>
             中自动生效。所有修改均记录审计日志，可在「审计日志」页面查看。
           </span>
         </div>
-        <div className="flex items-start gap-2 text-xs text-[#4A4540] bg-[#1A1816] rounded-md px-3 py-2 border border-[#2A2622]">
-          <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-[#5B8C5A]" />
+        <div className="flex items-start gap-2 text-[11px] text-[#6B6459] bg-white/[0.02] rounded-md px-3 py-2 border border-white/[0.04]">
+          <CheckCircle2 size={11} className="mt-0.5 shrink-0 text-emerald-400" />
           <span>
-            <strong className="text-[#5B8C5A]">端到端验证链路</strong>：管理员修改护栏规则（如免责声明话术）→ 点击"保存并热生效"
-            → 下一轮用户对话时，<code className="text-[#6B6459] bg-[#12100E] px-1 rounded text-sm">buildAntiHallucinationPromptDynamic()</code> 从 DB 实时加载最新规则
+            <strong className="text-emerald-400">端到端验证链路</strong>：管理员修改护栏规则（如免责声明话术）→ 点击"保存并热生效"
+            → 下一轮用户对话时，<code className="text-[#A09888] bg-[#1A2332] px-1 rounded text-[11px] font-mono">buildAntiHallucinationPromptDynamic()</code> 从 DB 实时加载最新规则
             → LLM 输出立刻携带新的免责声明。无需重启服务，全程审计可追溯。
           </span>
         </div>
       </div>
     </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════
+   内联 Button / Badge 组件引用
+   ═══════════════════════════════════════ */
+function Button({
+  children, variant, size, onClick, disabled, className, title,
+}: {
+  children: React.ReactNode
+  variant?: 'ghost' | 'destructive' | 'default' | 'outline'
+  size?: 'sm' | 'icon-xs' | 'icon-sm'
+  onClick?: () => void
+  disabled?: boolean
+  className?: string
+  title?: string
+}) {
+  const sizeClass = size === 'sm' ? 'h-8 px-3 text-xs' : 'h-9 px-4 text-sm'
+  let variantClass = 'bg-[#1A2332] border-white/[0.06] text-[#D8D2C8] hover:bg-[#242E3D]'
+  if (variant === 'ghost') variantClass = 'text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.03] border-transparent'
+  if (variant === 'destructive') variantClass = 'bg-[#C04030] hover:bg-[#A03028] text-white shadow-lg shadow-[#C04030]/20'
+  if (variant === 'outline') variantClass = 'bg-transparent border-white/[0.06] text-[#D8D2C8] hover:bg-white/[0.03]'
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={cn(
+        'inline-flex items-center justify-center rounded-lg border font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
+        sizeClass,
+        variantClass,
+        className,
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+function Badge({ children, variant, className }: { children: React.ReactNode; variant?: 'outline' | 'secondary'; className?: string }) {
+  const variantClass = variant === 'outline'
+    ? 'border border-white/[0.06] text-[#6B6459]'
+    : 'bg-white/[0.04] text-[#A09888]'
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px]', variantClass, className)}>
+      {children}
+    </span>
   )
 }

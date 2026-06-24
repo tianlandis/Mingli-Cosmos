@@ -12,10 +12,16 @@ export default defineConfig({
     tailwindcss(),
     react(),
     {
-      name: 'admin-html-redirect',
+      name: 'admin-spa-fallback',
       configureServer(server) {
         server.middlewares.use((req, _res, next) => {
-          if (req.url === '/admin' || req.url === '/admin/') {
+          const url = req.url ?? ''
+          // SPA fallback: 所有 /admin/* 非静态资源路径 → admin/index.html
+          if (
+            url.startsWith('/admin') &&
+            !url.includes('.') &&           // 排除静态资源 (.js/.css/.svg...)
+            !url.startsWith('/admin/api')    // 排除 API 代理
+          ) {
             req.url = '/admin/index.html'
           }
           next()

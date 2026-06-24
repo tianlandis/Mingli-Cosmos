@@ -31,6 +31,14 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Select } from '@/components/ui/select'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
 import { api } from '../../lib/api'
 
 // ═══════════════════════════════════════
@@ -777,19 +785,19 @@ export default function KnowledgeDictPage() {
           ) : (
             <Card className="bg-[#1A1F2E] border-white/[0.06] shadow-sm overflow-hidden">
               <CardContent className="p-0">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/[0.04] bg-white/[0.02]">
-                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-8">#</th>
-                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium">资产名</th>
-                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium">说明</th>
-                    <th className="text-left px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-28">Value (预览)</th>
-                    <th className="text-center px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-14">版本</th>
-                    <th className="text-center px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-16">状态</th>
-                    <th className="text-right px-4 py-2.5 text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-20">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.02]">
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-8">#</TableHead>
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium">资产名</TableHead>
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium">说明</TableHead>
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium w-28">Value (预览)</TableHead>
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium text-center w-14">版本</TableHead>
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium text-center w-16">状态</TableHead>
+                    <TableHead className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-medium text-right w-20">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filtered.map((a, i) => {
                     let preview = ''
                     try {
@@ -800,9 +808,9 @@ export default function KnowledgeDictPage() {
                     }
 
                     return (
-                      <tr key={a.id} className={`border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors ${a.isActive === 0 ? 'opacity-40' : ''}`}>
-                        <td className="px-4 py-3 text-xs text-[#4A4540] font-mono">{i + 1}</td>
-                        <td className="px-4 py-2.5">
+                      <TableRow key={a.id} className={`border-white/[0.04] hover:bg-white/[0.03] ${a.isActive === 0 ? 'opacity-40' : ''}`}>
+                        <TableCell className="text-xs text-[#4A4540] font-mono">{i + 1}</TableCell>
+                        <TableCell>
                           {(() => {
                             const cn = getChineseName(a.key)
                             return cn ? (
@@ -814,23 +822,23 @@ export default function KnowledgeDictPage() {
                               <code className="text-[12px] text-[#C08040] bg-[#C08040]/8 px-1.5 py-0.5 rounded font-mono">{a.key}</code>
                             )
                           })()}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-[#9CA3AF] max-w-48 truncate">{a.description || '-'}</td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="text-xs text-[#9CA3AF] max-w-48 truncate">{a.description || '-'}</TableCell>
+                        <TableCell>
                           <code className="text-xs text-[#D8D2C8] bg-black/25 px-2 py-1 rounded font-mono truncate block max-w-28 leading-relaxed" title={a.value}>{preview || '…'}</code>
-                        </td>
-                        <td className="px-4 py-3 text-center">
+                        </TableCell>
+                        <TableCell className="text-center">
                           <span className="text-[11px] text-[#4A4540] font-mono">v{a.version}</span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
+                        </TableCell>
+                        <TableCell className="text-center">
                           <div className="flex justify-center">
                             <Switch
                               checked={a.isActive === 1}
                               onCheckedChange={() => toggleActive(a)}
                             />
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-right">
+                        </TableCell>
+                        <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => openEdit(a)}
                               className="p-1.5 rounded text-[#4A4540] hover:text-[#C08040] hover:bg-white/[0.06] transition-colors">
@@ -841,12 +849,12 @@ export default function KnowledgeDictPage() {
                               <Trash2 size={12} />
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
               </CardContent>
             </Card>
           )}
