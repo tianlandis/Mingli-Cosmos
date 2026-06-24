@@ -2,6 +2,7 @@
 // Phase 4 — Modules: LLM & Skills 管理路由
 // 文件：src/server/modules/llm/index.ts
 // 路由：/api/v1/admin/llm/*
+// 更新：2026-06-24 — Ping/Export/SetDefault/Tools 字段
 // ============================================================
 
 import { Hono } from 'hono'
@@ -26,6 +27,7 @@ const providerBodySchema = z.object({
   maxTokens: z.number().int().positive().optional().default(2048),
   isActive: z.number().min(0).max(1).optional().default(1),  // 0=禁用, 1=启用
   supportedTools: z.array(z.string()).optional().default([]),
+  tools: z.array(z.string()).optional().default([]),
 })
 
 // ── 工具更新专用 Schema（含注册表交叉校验）──
@@ -41,6 +43,22 @@ const toolsUpdateSchema = z.object({
   {
     message: '包含未注册的工具 Key，请检查 tools-registry',
     path: ['supportedTools'],
+  },
+)
+
+// ── Tool Calling 配置更新 Schema ──
+const VALID_TC_TOOLS = new Set(['bazi_calculator', 'knowledge_dict_lookup', 'feishu_bot_notifier'])
+
+const toolCallingUpdateSchema = z.object({
+  tools: z.array(z.string()),
+}).refine(
+  (data) => {
+    const invalid = data.tools.filter(t => !VALID_TC_TOOLS.has(t))
+    return invalid.length === 0
+  },
+  {
+    message: '包含未注册的 Tool Calling Key，仅支持: bazi_calculator, knowledge_dict_lookup, feishu_bot_notifier',
+    path: ['tools'],
   },
 )
 
@@ -200,6 +218,8 @@ route.get('/', (c) => {
     ...p,
     // 安全解析 supported_tools
     supportedTools: parseSupportedTools((p as any).supported_tools),
+    // 安全解析 tools (Tool Calling)
+    tools: parseSupportedTools((p as any).tools),
   }))
   return c.json({ success: true, data: providers })
 })
@@ -227,19 +247,25 @@ route.post('/', async (c) => {
   const result = createApiKey({
     ...parsed.data,
     supportedTools: serializeSupportedTools(parsed.data.supportedTools ?? []),
+    tools: JSON.stringify(parsed.data.tools ?? []),
   } as any)
 
   logAudit(c, { action: 'create', resource: 'llm_provider', resourceId: result.id })
   return c.json({ success: true, data: result })
 })
 
-// ---- PUT /llm/:id — 更新 Provider（含 supported_tools） ----
+// ---- PUT /llm/:id — 更新 Provider（含 supported_tools + tools + set-default）----
 route.put('/:id', async (c) => {
   const id = Number(c.req.param('id'))
 
-  let body: unknown
-  try { body = await c.req.json() } catch {
+  let body: Record<string, unknown>
+  try { body = await c.req.json() as Record<string, unknown> } catch {
     return c.json({ success: false, error: { code: 'BAD_REQUEST' } }, 400)
+  }
+
+  // ── 修复：编辑模式下前端传 apiKey: ""，需移除该字段以免命中 min(1) 校验 ──
+  if (body.apiKey === '' || body.apiKey === null || body.apiKey === undefined) {
+    delete body.apiKey
   }
 
   const parsed = providerBodySchema.partial().safeParse(body)
@@ -253,6 +279,20 @@ route.put('/:id', async (c) => {
   const data = { ...parsed.data }
   if (data.supportedTools !== undefined) {
     (data as any).supportedTools = serializeSupportedTools(data.supportedTools)
+  }
+  if (data.tools !== undefined) {
+    (data as any).tools = JSON.stringify(data.tools)
+  }
+
+  // ── 设为默认：确保全局只有一个 Default ──
+  if (body.isDefault === 1 || body.isDefault === true) {
+    const all = listApiKeys()
+    for (const p of all) {
+      if (p.id !== id && (p as any).isDefault === 1) {
+        updateApiKey(p.id, { isDefault: 0 } as any)
+      }
+    }
+    (data as any).isDefault = 1
   }
 
   const result = updateApiKey(id, data as any)
@@ -442,5 +482,150 @@ route.post('/migrate', async (c) => {
     message: `已从 ${config.source === 'env' ? '.env 环境变量' : '数据库配置'} 导入为 "${label}"`,
   })
 })
+
+// ---- PUT /llm/:id/tool-calling — 更新 Tool Calling 配置（Agent 工具）----
+route.put('/:id/tool-calling', async (c) => {
+  const id = Number(c.req.param('id'))
+
+  const existing = getApiKey(id)
+  if (!existing) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Provider 不存在' } }, 404)
+  }
+
+  let body: unknown
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
+  }
+
+  const parsed = toolCallingUpdateSchema.safeParse(body)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    return c.json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: issue?.message ?? '数据校验失败',
+        details: {
+          path: issue?.path?.join('.'),
+          invalidKeys: body && typeof body === 'object' && 'tools' in body
+            ? (body as any).tools?.filter((t: string) => !VALID_TC_TOOLS.has(t))
+            : [],
+        },
+      },
+    }, 400)
+  }
+
+  const result = updateApiKey(id, {
+    tools: JSON.stringify(parsed.data.tools),
+  } as any)
+
+  logAudit(c, {
+    action: 'update_tool_calling',
+    resource: 'llm_provider',
+    resourceId: id,
+    detail: JSON.stringify({ tools: parsed.data.tools }),
+  })
+
+  return c.json({ success: true, data: result })
+})
+
+// ---- POST /llm/:id/ping — 连通性测试（5 秒超时）----
+route.post('/:id/ping', async (c) => {
+  const id = Number(c.req.param('id'))
+  const provider = getApiKey(id)
+  if (!provider) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Provider 不存在' } }, 404)
+  }
+
+  const baseUrl = (provider as any).baseUrl || ''
+  const apiKey = (provider as any).apiKey || ''
+
+  if (!baseUrl) {
+    return c.json({ success: false, error: { code: 'NO_BASE_URL', message: 'Provider 未配置 Base URL' } }, 400)
+  }
+
+  const cleanBase = baseUrl.replace(/\/+$/, '')
+  const pingUrl = `${cleanBase}/models`
+
+  const start = Date.now()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const res = await fetch(pingUrl, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    })
+    clearTimeout(timer)
+
+    const latency = Date.now() - start
+
+    // 任何 2xx 或 401（有认证但端点可访问）都算连通
+    if (res.ok || res.status === 401 || res.status === 403) {
+      // 更新 testStatus + testLatency
+      updateApiKey(id, {
+        testStatus: 'ok',
+        testLatency: latency,
+        testedAt: new Date().toISOString(),
+      } as any)
+      return c.json({ success: true, data: { latency, status: 'ok' } })
+    }
+
+    updateApiKey(id, {
+      testStatus: 'failed',
+      testLatency: latency,
+      testedAt: new Date().toISOString(),
+    } as any)
+    return c.json({ success: false, error: { code: 'PING_FAILED', message: `HTTP ${res.status}` }, data: { latency } }, 502)
+  } catch (err: any) {
+    clearTimeout(timer)
+    const latency = Date.now() - start
+    const errorMsg = err.name === 'AbortError' ? '连接超时 (5s)' : (err.message || '未知网络错误')
+
+    updateApiKey(id, {
+      testStatus: 'failed',
+      testLatency: latency,
+      testedAt: new Date().toISOString(),
+    } as any)
+
+    return c.json({
+      success: false,
+      error: { code: 'PING_FAILED', message: errorMsg },
+      data: { latency },
+    }, 502)
+  }
+})
+
+// ---- GET /llm/export — 导出全量 Provider 配置为 JSON ----
+route.get('/export', (c) => {
+  const providers = listApiKeys().map(p => ({
+    ...p,
+    // 安全脱敏：mask API Key 中间 8 位
+    apiKey: maskApiKey(p.apiKey),
+    supportedTools: parseSupportedTools((p as any).supported_tools),
+    tools: parseSupportedTools((p as any).tools),
+  }))
+
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    providerCount: providers.length,
+    providers,
+  }
+
+  logAudit(c, { action: 'export', resource: 'llm_provider', detail: JSON.stringify({ count: providers.length }) })
+
+  return c.json({ success: true, data: exportData })
+})
+
+/**
+ * API Key 脱敏：保留前 4 位 + 后 4 位，中间替换为 ****
+ */
+function maskApiKey(key: string): string {
+  if (!key || key.length <= 8) return '****'
+  return key.slice(0, 4) + '*'.repeat(Math.min(8, key.length - 8)) + key.slice(-4)
+}
 
 export default route

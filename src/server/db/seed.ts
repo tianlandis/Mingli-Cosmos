@@ -44,6 +44,7 @@ export function seedLocalProvider() {
     isActive: 1,
     sortOrder: 0,
     supportedTools: '["solar_term_calc","calendar_lookup","classic_search"]',
+    tools: '[]',
     testStatus: 'untested',
     testLatency: null,
     testedAt: null,

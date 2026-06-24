@@ -87,6 +87,11 @@ export function runMigrations(sqlite: Database.Database) {
 
   // api_keys 扩展
   safeAlter(sqlite, 'api_keys', "supported_tools TEXT DEFAULT '[]'")
+  safeAlter(sqlite, 'api_keys', "tools TEXT DEFAULT '[]'")
+  safeAlter(sqlite, 'api_keys', 'is_default INTEGER DEFAULT 0')
+  safeAlter(sqlite, 'api_keys', 'top_p REAL')
+  safeAlter(sqlite, 'api_keys', 'frequency_penalty REAL')
+  safeAlter(sqlite, 'api_keys', 'stream_enabled INTEGER DEFAULT 1')
   safeAlter(sqlite, 'api_keys', 'tested_at TEXT')
   safeAlter(sqlite, 'api_keys', "test_status TEXT DEFAULT 'untested'")
   safeAlter(sqlite, 'api_keys', 'test_latency INTEGER')

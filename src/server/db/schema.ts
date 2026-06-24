@@ -22,9 +22,14 @@ export const apiKeys = sqliteTable('api_keys', {
   temperature: real('temperature').default(0.7),
   maxTokens: integer('max_tokens').default(2048),
   isActive: integer('is_active').default(1),      // 0=禁用, 1=启用
+  isDefault: integer('is_default').default(0),     // 0=非默认, 1=全局默认供应商（唯一）
   sortOrder: integer('sort_order').default(0),
   // [Phase 4 NEW] Skills/Tools 扩展字段
   supportedTools: text('supported_tools').default('[]'),  // JSON: ["solar_term_calc","calendar_lookup"]
+  tools: text('tools').default('[]'),                     // JSON: ["bazi_calculator","knowledge_dict_lookup","feishu_bot_notifier"] (Agent Tool Calling)
+  topP: real('top_p'),                                    // Top P 核采样 (0~1)
+  frequencyPenalty: real('frequency_penalty'),            // 频率惩罚 (-2~2)
+  streamEnabled: integer('stream_enabled').default(1),    // 0=禁用, 1=启用 SSE 流式
   testedAt: text('tested_at'),                             // 最后测试时间 ISO
   testStatus: text('test_status').default('untested'),     // 'untested' | 'ok' | 'failed'
   testLatency: integer('test_latency'),                    // 测试延迟(ms)

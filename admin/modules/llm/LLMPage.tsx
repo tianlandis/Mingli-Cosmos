@@ -31,6 +31,10 @@ import {
   BookOpen,
   Upload,
   Loader2,
+  Download,
+  Star,
+  Signal,
+  ArrowUpRight,
 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
@@ -40,6 +44,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import ProviderForm, { type ProviderFormData } from './ProviderForm'
 import SkillsPanel from './SkillsPanel'
+import ToolCallingPanel from './ToolCallingPanel'
 
 // ═══════════════════════════════════════
 // 类型
@@ -57,7 +62,9 @@ interface Provider {
   frequencyPenalty?: number | null
   streamEnabled?: number
   isActive: number
+  isDefault?: number
   supportedTools: string[]
+  tools?: string[]
   testStatus: string
   testLatency?: number | null
   createdAt: string
@@ -440,6 +447,8 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
   const [saving, setSaving] = useState(false)
   const [migrating, setMigrating] = useState(false)
   const [migrateMsg, setMigrateMsg] = useState('')
+  const [pings, setPings] = useState<Record<number, { status: string; latency: number | null }>>({})
+  const [pinging, setPinging] = useState<Record<number, boolean>>({})
 
   // ═══════════════════════════════
   // 拉取 Provider 列表
@@ -497,6 +506,60 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
     await fetchProviders()
   }, [apiHeaders, fetchProviders, selectedId])
 
+  // ── 设为默认 ──
+  const handleSetDefault = useCallback(async (id: number) => {
+    await fetch(`/api/v1/admin/llm/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...apiHeaders() },
+      body: JSON.stringify({ isDefault: 1 }),
+    })
+    await fetchProviders()
+  }, [apiHeaders, fetchProviders])
+
+  // ── 导出配置 ──
+  const handleExport = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/admin/llm/export', { headers: apiHeaders() })
+      const data = await res.json()
+      if (data?.success) {
+        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `llm-providers-export-${new Date().toISOString().slice(0, 10)}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+    } catch {
+      alert('导出失败')
+    }
+  }, [apiHeaders])
+
+  // ── 测速 ──
+  const handlePing = useCallback(async (id: number) => {
+    setPinging(prev => ({ ...prev, [id]: true }))
+    try {
+      const res = await fetch(`/api/v1/admin/llm/${id}/ping`, {
+        method: 'POST',
+        headers: apiHeaders(),
+      })
+      const data = await res.json()
+      setPings(prev => ({
+        ...prev,
+        [id]: {
+          status: data?.success ? 'ok' : 'failed',
+          latency: data?.data?.latency ?? null,
+        },
+      }))
+    } catch {
+      setPings(prev => ({ ...prev, [id]: { status: 'failed', latency: null } }))
+    } finally {
+      setPinging(prev => ({ ...prev, [id]: false }))
+      // 测速后刷新列表以获取最新 testStatus
+      setTimeout(() => fetchProviders(), 500)
+    }
+  }, [apiHeaders, fetchProviders])
+
   const selected = providers.find(p => p.id === selectedId) ?? null
 
   // ── 加载态 ──
@@ -534,6 +597,14 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
         </div>
         <div className="flex items-center gap-2">
           {/* ── 存量迁移按钮 ── */}
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#A09888] hover:text-[#EDE8DF] bg-[#1A1F2E] hover:bg-[#222839] border border-white/[0.06] hover:border-white/[0.10] rounded-md transition-all"
+            title="导出所有 Provider 配置为 JSON 文件（API Key 已脱敏）"
+          >
+            <Download size={12} />
+            导出配置
+          </button>
           <button
             onClick={async () => {
               setMigrating(true)
@@ -608,6 +679,8 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
               {providers.map((p) => {
                 const isSelected = p.id === selectedId
                 const isOnline = p.isActive === 1
+                const ping = pings[p.id]
+                const isPinging = pinging[p.id]
                 return (
                   <button
                     key={p.id}
@@ -618,6 +691,13 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         : 'border-white/[0.04] bg-[#1A1F2E] hover:border-white/[0.10] hover:bg-[#1E2435]'
                     }`}
                   >
+                    {/* 当前默认标记 */}
+                    {p.isDefault === 1 && (
+                      <div className="absolute -top-1.5 right-2 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-[#EDE8DF] bg-[#B83A2E] shadow-[0_0_6px_rgba(184,58,46,0.4)] flex items-center gap-1">
+                        <Star size={7} />
+                        当前默认
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-1.5">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
@@ -647,6 +727,17 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                     {p.model && (
                       <p className="text-[10px] text-[#6B6459] font-mono truncate mb-1.5">{p.model}</p>
                     )}
+                    {/* ── 测速雷达 ── */}
+                    {ping && (
+                      <div className={`flex items-center gap-1 mb-1.5 text-[9px] ${
+                        ping.status === 'ok' ? 'text-[#5B8C5A]' : 'text-[#C04030]'
+                      }`}>
+                        <Signal size={9} className={ping.status === 'ok' ? 'text-[#5B8C5A]' : 'text-[#C04030]'} />
+                        <span className="font-mono tabular-nums">
+                          {ping.status === 'ok' ? `${ping.latency}ms` : ping.latency ? `超时 ${ping.latency}ms` : '不通'}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 text-[9px] text-[#4A4540]">
                       <Wrench size={9} />
                       <span>{p.supportedTools?.length ?? 0} 工具</span>
@@ -654,19 +745,17 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                     </div>
 
                     {/* 操作按钮栏 — 始终可见 */}
-                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/[0.04]">
+                    <div className="flex items-center gap-0.5 mt-2 pt-2 border-t border-white/[0.04]">
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditTarget(p); setFormOpen(true) }}
-                        className="flex items-center gap-1 px-2 py-1 rounded text-[9px] text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors"
+                        className="flex items-center gap-1 px-1.5 py-1 rounded text-[9px] text-[#6B6459] hover:text-[#EDE8DF] hover:bg-white/[0.06] transition-colors"
                         title="编辑此供应商"
                       >
                         <Pencil size={9} />
-                        编辑
                       </button>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation()
-                          // 切换在线/离线
                           const newActive = isOnline ? 0 : 1
                           await fetch(`/api/v1/admin/llm/${p.id}`, {
                             method: 'PUT',
@@ -675,7 +764,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                           })
                           fetchProviders()
                         }}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-[9px] transition-colors ${
+                        className={`flex items-center gap-1 px-1.5 py-1 rounded text-[9px] transition-colors ${
                           isOnline
                             ? 'text-[#A09888] hover:text-[#C08040] hover:bg-[#C08040]/10'
                             : 'text-[#4A4540] hover:text-[#5B8C5A] hover:bg-[#5B8C5A]/10'
@@ -683,15 +772,32 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         title={isOnline ? '点击下线' : '点击上线'}
                       >
                         <Circle size={9} className={isOnline ? 'fill-[#5B8C5A] text-[#5B8C5A]' : ''} />
-                        {isOnline ? '下线' : '上线'}
                       </button>
+                      {/* ── 测速按钮 ── */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePing(p.id) }}
+                        disabled={isPinging}
+                        className="flex items-center gap-1 px-1.5 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#B8964A] hover:bg-[#B8964A]/10 transition-colors disabled:opacity-50"
+                        title="连通性测试 (5s 超时)"
+                      >
+                        {isPinging ? <Loader2 size={9} className="animate-spin" /> : <Signal size={9} />}
+                      </button>
+                      {/* ── 设为默认 ── */}
+                      {p.isDefault !== 1 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSetDefault(p.id) }}
+                          className="flex items-center gap-1 px-1.5 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#B83A2E] hover:bg-[#B83A2E]/10 transition-colors"
+                          title="设为此 Provider 为全局默认"
+                        >
+                          <Star size={9} />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }}
-                        className="flex items-center gap-1 ml-auto px-2 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors"
+                        className="flex items-center gap-1 ml-auto px-1.5 py-1 rounded text-[9px] text-[#4A4540] hover:text-[#D06050] hover:bg-[#C04030]/10 transition-colors"
                         title="删除此供应商"
                       >
                         <Trash2 size={9} />
-                        删除
                       </button>
                     </div>
                   </button>
@@ -748,18 +854,36 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                   apiHeaders={apiHeaders}
                 />
 
-                {/* Tool Calling 工具面板 */}
+                {/* Tool Calling 工具面板 — Skills */}
                 <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl overflow-hidden">
                   <div className="px-5 py-3 border-b border-white/[0.04]">
                     <div className="flex items-center gap-2">
                       <Wrench size={14} className="text-[#B8964A]" />
-                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">Tool Calling 工具集</h3>
+                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">工具能力配置 (Skills)</h3>
                     </div>
                   </div>
                   <div className="p-5">
                     <SkillsPanel
                       providerId={selectedId}
                       activeTools={selected?.supportedTools ?? []}
+                      apiHeaders={apiHeaders}
+                      onSaved={fetchProviders}
+                    />
+                  </div>
+                </div>
+
+                {/* Agent Tool Calling 面板 — 存储层 */}
+                <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-white/[0.04]">
+                    <div className="flex items-center gap-2">
+                      <Wrench size={14} className="text-[#8250DF]" />
+                      <h3 className="text-sm font-semibold text-[#EDE8DF] tracking-[0.04em]">Agent Tool Calling</h3>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <ToolCallingPanel
+                      providerId={selectedId}
+                      activeTools={selected?.tools ?? []}
                       apiHeaders={apiHeaders}
                       onSaved={fetchProviders}
                     />
@@ -784,6 +908,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditTarget(null) }}
         onSave={editTarget ? handleUpdate : handleCreate}
+        apiHeaders={apiHeaders}
         initialData={
           editTarget
             ? {

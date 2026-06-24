@@ -30,6 +30,7 @@ interface ProviderFormProps {
   onClose: () => void
   onSave: (data: ProviderFormData) => Promise<void>
   initialData?: ProviderFormData & { id?: number }
+  apiHeaders: () => Record<string, string>
 }
 
 // ═══════════════════════════════════════
@@ -62,7 +63,7 @@ const PROVIDER_OPTIONS = [
 // 组件
 // ═══════════════════════════════════════
 
-export default function ProviderForm({ open, onClose, onSave, initialData }: ProviderFormProps) {
+export default function ProviderForm({ open, onClose, onSave, initialData, apiHeaders }: ProviderFormProps) {
   const [form, setForm] = useState<ProviderFormData>({
     provider: initialData?.provider ?? 'siliconflow',
     label: initialData?.label ?? '',
@@ -152,7 +153,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData }: Pro
 
       const res = await fetch('/api/v1/admin/llm/fetch-models', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
