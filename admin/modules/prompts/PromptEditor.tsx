@@ -826,10 +826,9 @@ export default function PromptEditor() {
         </div>
 
         {/* ═══ 中栏 col-span-5 (~42%) ═══ */}
-        <div className="col-span-5 h-full">
-          <ScrollArea className="h-full">
-            <div className="p-6 space-y-6 min-h-full">
-              {showNew ? (
+        <div className="col-span-5 h-full flex flex-col overflow-hidden">
+          {showNew ? (
+            <div className="overflow-y-auto p-6">
                 <Card className="bg-[#1A1F2E] border-white/[0.06]">
                   <CardHeader>
                     <div className="flex items-start gap-3">
@@ -846,8 +845,10 @@ export default function PromptEditor() {
                   </CardHeader>
                   <CardContent>{renderNewForm()}</CardContent>
                 </Card>
-              ) : selected ? (
-                <>
+            </div>
+          ) : selected ? (
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="shrink-0 px-6 pt-6 space-y-6 overflow-y-auto">
                   {/* ── 基础配置区 ── */}
                   <div className="bg-[#1A1F2E] border border-white/[0.06] rounded-lg p-4 space-y-3">
                     {/* 第一行：名称 + 版本 + 内置标记 + 启用开关 + 删除 */}
@@ -1002,24 +1003,24 @@ export default function PromptEditor() {
                       {lockedPrefix}
                     </div>
                   </div>
+              </div>
 
-                  {/* ── 变量分隔线 ── */}
-                  <div className="flex items-center gap-3">
-                    <Separator className="flex-1 bg-white/[0.04]" />
-                    <div className="flex items-center gap-1.5 text-[11px] text-[#6B6459] shrink-0">
-                      <PenLine size={9} />
-                      输入 {'{{'} 补全变量
-                    </div>
-                    <Separator className="flex-1 bg-white/[0.04]" />
-                  </div>
+              {/* ── 变量分隔线 ── */}
+              <div className="shrink-0 px-6 flex items-center gap-3 py-2">
+                <Separator className="flex-1 bg-white/[0.04]" />
+                <div className="flex items-center gap-1.5 text-[11px] text-[#6B6459] shrink-0">
+                  <PenLine size={9} />
+                  输入 {'{{'} 补全变量
+                </div>
+                <Separator className="flex-1 bg-white/[0.04]" />
+              </div>
 
-                  {/* ═══ CodeMirror 编辑器 ═══ */}
-                  <div
-                    ref={editorRef}
-                    className="min-h-[400px] rounded-lg border border-white/[0.06] overflow-hidden"
-                  />
-                </>
-              ) : (
+              <div
+                ref={editorRef}
+                className="flex-1 min-h-[350px] mx-6 mb-6 rounded-lg border border-white/[0.06] overflow-hidden"
+              />
+            </div>
+          ) : (
                 /* ── 未选中模板 ── */
                 <div className="flex-1 flex items-center justify-center min-h-[300px]">
                   <div className="text-center space-y-3">
@@ -1031,8 +1032,6 @@ export default function PromptEditor() {
                   </div>
                 </div>
               )}
-            </div>
-          </ScrollArea>
         </div>
 
         {/* ═══ 右栏 col-span-4 (~33%)：实时沙盒 ═══ */}
@@ -1275,7 +1274,7 @@ function LeftPanel({
   onRollback: (v: VersionRow) => void
 }) {
   return (
-    <div className="flex flex-col h-full bg-[#1A2332]">
+    <div className="flex flex-col h-full overflow-hidden bg-[#1A2332]">
       {/* 搜索 + 新建 */}
       <div className="shrink-0 px-4 pt-4 pb-2">
         <div className="flex items-center justify-between mb-2">
@@ -1304,7 +1303,7 @@ function LeftPanel({
       </div>
 
       {/* 模板列表 */}
-      <div className="flex-1 min-h-0 border-b border-white/[0.06]">
+      <div className="flex-[6] min-h-0 flex flex-col">
         <ScrollArea className="h-full">
           <div className="px-2 py-1">
             {prompts.length === 0 && (
@@ -1362,7 +1361,7 @@ function LeftPanel({
       </div>
 
       {/* 版本历史 */}
-      <div className="shrink-0 max-h-[40%] flex flex-col">
+      <div className="flex-[4] min-h-0 flex flex-col border-t border-white/[0.06]">
         <div className="shrink-0 px-4 pt-3 pb-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History size={11} className="text-[#B8964A]" />
