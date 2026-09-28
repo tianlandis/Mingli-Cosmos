@@ -2,7 +2,9 @@
 // Phase 4 — 数据库 Schema 定义 (Drizzle ORM + SQLite)
 // 文件：src/server/db/schema.ts
 // 表：api_keys / prompt_templates / prompt_versions / app_configs /
-//      sessions / admin_sessions / audit_logs
+//      sessions / admin_sessions / knowledge_assets / audit_logs
+//      [Phase 4b] users / user_sessions / plans / orders /
+//                subscriptions / analytics_events
 // ============================================================
 
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
@@ -146,5 +148,123 @@ export const auditLogs = sqliteTable('audit_logs', {
   detail: text('detail'),                         // 变更详情 JSON
   operator: text('operator').default('admin'),    // 操作者
   ip: text('ip'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 4b M-6] users — C 端注册用户
+// ═══════════════════════════════════════
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  username: text('username').notNull().unique(),   // 登录账号（3~32 字符）
+  phone: text('phone'),                            // 手机号（可选，登录用）
+  email: text('email'),                            // 邮箱（可选，登录用）
+  passwordHash: text('password_hash').notNull(),   // bcrypt hash
+  nickname: text('nickname'),                      // 昵称
+  avatarUrl: text('avatar_url'),
+  status: text('status').default('active').notNull(),   // 'active' | 'disabled'
+  role: text('role').default('user').notNull(),           // 'user' | 'admin'
+  vipLevel: text('vip_level').default('free').notNull(),  // 'free' | 'basic' | 'pro'
+  vipExpiresAt: text('vip_expires_at'),            // ISO 时间
+  quotaTotal: integer('quota_total').default(5).notNull(),  // 可用额度总量（AI 深度解读次数）
+  quotaUsed: integer('quota_used').default(0).notNull(),      // 已用额度
+  lastLoginAt: text('last_login_at'),
+  lastLoginIp: text('last_login_ip'),
+  registerIp: text('register_ip'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 4b M-6] user_sessions — C 端登录会话
+// ═══════════════════════════════════════
+
+export const userSessions = sqliteTable('user_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tokenJti: text('token_jti').notNull().unique(),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  isActive: integer('is_active').default(1),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  logoutAt: text('logout_at'),
+})
+
+// ═══════════════════════════════════════
+// [Phase 4b M-7] plans — 订阅套餐
+// ═══════════════════════════════════════
+
+export const plans = sqliteTable('plans', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  code: text('code').notNull().unique(),           // 'monthly' | 'yearly' | ...
+  name: text('name').notNull(),                    // 显示名
+  priceCents: integer('price_cents').notNull(),           // 价格（分），避免浮点
+  durationDays: integer('duration_days').notNull(),        // 订阅时长（天）
+  quotaGrant: integer('quota_grant').default(0).notNull(), // 订阅期内赠送额度
+  vipLevel: text('vip_level').default('basic').notNull(),  // 订阅后达到的等级
+  features: text('features').default('[]'),        // JSON 字符串数组
+  isActive: integer('is_active').default(1),
+  sortOrder: integer('sort_order').default(0),
+  description: text('description'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 4b M-7] orders — 订单
+// ═══════════════════════════════════════
+
+export const orders = sqliteTable('orders', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  orderNo: text('order_no').notNull().unique(),    // 业务订单号 ML + 时间戳 + 随机
+  userId: integer('user_id').notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  planId: integer('plan_id').references(() => plans.id, { onDelete: 'set null' }),
+  planName: text('plan_name').notNull(),           // 下单时套餐名快照
+  amountCents: integer('amount_cents').notNull(),         // 应付金额（分）
+  status: text('status').default('pending').notNull(),      // 'pending' | 'paid' | 'cancelled' | 'refunded'
+  payMethod: text('pay_method'),                   // 'mock' | 'wechat' | 'alipay'
+  tradeNo: text('trade_no'),                       // 第三方流水号
+  paidAt: text('paid_at'),
+  refundedAt: text('refunded_at'),
+  expiredAt: text('expired_at'),                   // 未支付订单自动关闭时间
+  remark: text('remark'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 4b M-7] subscriptions — 用户订阅
+// ═══════════════════════════════════════
+
+export const subscriptions = sqliteTable('subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  planId: integer('plan_id').references(() => plans.id, { onDelete: 'set null' }),
+  orderId: integer('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  vipLevel: text('vip_level').notNull(),           // 订阅生效等级
+  startsAt: text('starts_at').notNull(),
+  endsAt: text('ends_at').notNull(),
+  quotaGranted: integer('quota_granted').default(0).notNull(),
+  status: text('status').default('active').notNull(),       // 'active' | 'expired' | 'cancelled'
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 4b M-8] analytics_events — 运营埋点事件
+// ═══════════════════════════════════════
+
+export const analyticsEvents = sqliteTable('analytics_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  event: text('event').notNull(),                  // 'paipan' | 'chat' | 'login' | 'register' | 'page_view' | ...
+  userId: integer('user_id'),                      // 未登录为 null
+  sessionId: text('session_id'),                   // 匿名会话标识
+  payload: text('payload').default('{}'),          // JSON 附加数据
+  ip: text('ip'),
+  userAgent: text('user_agent'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 })

@@ -10,7 +10,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import * as schema from './schema'
 import { runMigrations } from './migrate'
-import { seedDefaults, seedLocalProvider, seedKnowledgeAssets } from './seed'
+import { seedDefaults, seedLocalProvider, seedKnowledgeAssets, seedDefaultPlans } from './seed'
 
 let _db: ReturnType<typeof drizzle> | null = null
 let _sqlite: Database.Database | null = null
@@ -50,6 +50,9 @@ export function initDb() {
   // Phase 4b：写入命理基础数据种子（地支关系 12 项）
   seedKnowledgeAssets()
 
+  // Phase 4b M-7：写入默认订阅套餐（体验包 / 月度 / 年度）
+  seedDefaultPlans()
+
   console.log(`[DB] initialized: ${process.env.DB_PATH || 'data/mingli.db'}`)
 }
 
@@ -78,3 +81,7 @@ export * from './repositories/app-configs'
 export * from './repositories/sessions'
 export * from './repositories/audit-logs'
 export * from './repositories/knowledge-assets'
+// Phase 4b：C 端用户 / 订单订阅 / 运营埋点
+export * from './repositories/users'
+export * from './repositories/billing'
+export * from './repositories/analytics'

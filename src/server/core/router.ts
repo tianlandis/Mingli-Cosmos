@@ -12,30 +12,26 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /**
- * 自动扫描 modules/ 目录，动态加载并注册所有业务模块
+ * 自动扫描指定模块目录，动态加载并注册所有业务模块
  *
  * 约定：
- *   1. modules/<name>/index.ts 必须 export default 一个 Hono 实例
+ *   1. <dir>/<name>/index.ts 必须 export default 一个 Hono 实例
  *   2. 模块名 = 目录名 → 路由前缀 /<name>
  *   3. 若模块导出 meta: { prefix: 'custom' } 可覆盖前缀
- *
- * 用法：
- *   const adminRouter = createAdminRouter()
- *   app.route('/api/v1/admin', adminRouter)
  */
-export async function createAdminRouter(): Promise<Hono> {
-  const adminRouter = new Hono()
-  const modulesDir = join(__dirname, '..', 'modules')
+export async function createModuleRouter(dirName: string): Promise<Hono> {
+  const router = new Hono()
+  const modulesDir = join(__dirname, '..', dirName)
   const registered: string[] = []
 
   let entries: string[] = []
   try {
     entries = readdirSync(modulesDir, { withFileTypes: true })
-      .filter(d => d.isDirectory())
+      .filter(d => d.isDirectory() && !d.name.startsWith('__'))  // 跳过 __tests__ 等辅助目录
       .map(d => d.name)
   } catch {
-    console.warn('[Router] modules/ 目录不存在，跳过模块加载')
-    return adminRouter
+    console.warn(`[Router] ${dirName}/ 目录不存在，跳过模块加载`)
+    return router
   }
 
   for (const moduleName of entries) {
@@ -53,13 +49,32 @@ export async function createAdminRouter(): Promise<Hono> {
 
       // 路由前缀
       const prefix = mod.meta?.prefix || moduleName
-      adminRouter.route(`/${prefix}`, subRouter)
+      router.route(`/${prefix}`, subRouter)
       registered.push(moduleName)
     } catch (e: any) {
       console.warn(`[Router] ⚠ 加载模块 "${moduleName}" 失败:`, e.message)
     }
   }
 
-  console.log(`[Router] 已注册模块 (${registered.length}): ${registered.join(', ')}`)
-  return adminRouter
+  console.log(`[Router] ${dirName} 已注册模块 (${registered.length}): ${registered.join(', ')}`)
+  return router
+}
+
+/**
+ * 管理后台路由（modules/ → /api/v1/admin/*）
+ *
+ * 用法：
+ *   const adminRouter = await createAdminRouter()
+ *   app.route('/api/v1/admin', adminRouter)
+ */
+export async function createAdminRouter(): Promise<Hono> {
+  return createModuleRouter('modules')
+}
+
+/**
+ * C 端公开路由（modules-public/ → /api/v1/app/*）
+ * 与后台模块分开存放，避免后台鉴权中间件误伤 C 端接口
+ */
+export async function createPublicRouter(): Promise<Hono> {
+  return createModuleRouter('modules-public')
 }

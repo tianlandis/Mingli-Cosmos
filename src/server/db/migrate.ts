@@ -159,4 +159,120 @@ export function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(token_jti);
     CREATE INDEX IF NOT EXISTS idx_admin_sessions_active ON admin_sessions(is_active);
   `)
+
+  // ═══════════════════════════════════════
+  // Phase 4b M-6: C 端用户体系
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      phone TEXT,
+      email TEXT,
+      password_hash TEXT NOT NULL,
+      nickname TEXT,
+      avatar_url TEXT,
+      status TEXT DEFAULT 'active',
+      role TEXT DEFAULT 'user',
+      vip_level TEXT DEFAULT 'free',
+      vip_expires_at TEXT,
+      quota_total INTEGER DEFAULT 5,
+      quota_used INTEGER DEFAULT 0,
+      last_login_at TEXT,
+      last_login_ip TEXT,
+      register_ip TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+    CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_jti TEXT NOT NULL UNIQUE,
+      ip TEXT,
+      user_agent TEXT,
+      is_active INTEGER DEFAULT 1,
+      expires_at TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      logout_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_sessions_jti ON user_sessions(token_jti);
+    CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
+  `)
+
+  // ═══════════════════════════════════════
+  // Phase 4b M-7: 订单与订阅
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      price_cents INTEGER NOT NULL,
+      duration_days INTEGER NOT NULL,
+      quota_grant INTEGER DEFAULT 0,
+      vip_level TEXT DEFAULT 'basic',
+      features TEXT DEFAULT '[]',
+      is_active INTEGER DEFAULT 1,
+      sort_order INTEGER DEFAULT 0,
+      description TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_no TEXT NOT NULL UNIQUE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      plan_id INTEGER REFERENCES plans(id) ON DELETE SET NULL,
+      plan_name TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,
+      status TEXT DEFAULT 'pending',
+      pay_method TEXT,
+      trade_no TEXT,
+      paid_at TEXT,
+      refunded_at TEXT,
+      expired_at TEXT,
+      remark TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      plan_id INTEGER REFERENCES plans(id) ON DELETE SET NULL,
+      order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+      vip_level TEXT NOT NULL,
+      starts_at TEXT NOT NULL,
+      ends_at TEXT NOT NULL,
+      quota_granted INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'active',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_subs_user ON subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_subs_status ON subscriptions(status);
+  `)
+
+  // ═══════════════════════════════════════
+  // Phase 4b M-8: 运营埋点
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event TEXT NOT NULL,
+      user_id INTEGER,
+      session_id TEXT,
+      payload TEXT DEFAULT '{}',
+      ip TEXT,
+      user_agent TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_analytics_event ON analytics_events(event);
+    CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at);
+  `)
 }

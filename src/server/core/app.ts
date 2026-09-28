@@ -8,7 +8,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Hono } from 'hono'
 import { serveStatic } from '@hono/node-server/serve-static'
-import { createAdminRouter } from './router'
+import { createAdminRouter, createPublicRouter } from './router'
 import {
   configureLogger,
   requestLogger,
@@ -74,6 +74,13 @@ export async function createApp(options: AppOptions): Promise<Hono> {
   app.use('/api/v1/admin/*', versionHeaderMiddleware)
   const adminRouterV1 = await createAdminRouter()
   app.route('/api/v1/admin', adminRouterV1)
+
+  // ═══════════════════════════════════════
+  // [Phase 4b] API v1 C 端公开路由（modules-public/）
+  // 与后台模块分开扫描，避免后台鉴权误伤
+  // ═══════════════════════════════════════
+  const publicRouterV1 = await createPublicRouter()
+  app.route('/api/v1/app', publicRouterV1)
 
   // ═══════════════════════════════════════
   // 核心业务 API 路由（不受版本化影响）

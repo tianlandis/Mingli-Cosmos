@@ -7,6 +7,7 @@
 import { setConfig, getConfig } from './repositories/app-configs'
 import { listApiKeys, createApiKey } from './repositories/api-keys'
 import { createKnowledgeAsset, getKnowledgeAssetByKey } from './repositories/knowledge-assets'
+import { getPlanByCode, createPlan } from './repositories/billing'
 
 export function seedDefaults() {
   // 仅首次运行时写入（config 表为空时触发）
@@ -612,6 +613,57 @@ function seedClassicsAssets() {
   ]
   for (const a of assets) { writeSeedAsset(a) }
   console.log(`[DB] seed: ${assets.length} classics assets written`)
+}
+
+// ═══════════════════════════════════════
+// Phase 4b M-7 — 默认订阅套餐
+// ═══════════════════════════════════════
+
+/**
+ * 写入默认套餐（按 code 幂等，已存在则跳过）
+ * 管理员可在后台「订单管理 → 套餐」中增删改
+ */
+export function seedDefaultPlans() {
+  const defaults = [
+    {
+      code: 'trial',
+      name: '体验包',
+      priceCents: 990,
+      durationDays: 30,
+      quotaGrant: 10,
+      vipLevel: 'basic',
+      features: ['10 次 AI 深度解读', '完整命书报告', '30 天有效期'],
+      description: '首次尝鲜，含 10 次 AI 深度解读额度',
+      sortOrder: 10,
+    },
+    {
+      code: 'monthly',
+      name: '月度会员',
+      priceCents: 3900,
+      durationDays: 30,
+      quotaGrant: 60,
+      vipLevel: 'basic',
+      features: ['60 次 AI 深度解读', '完整命书报告', '不限次排盘'],
+      description: '按月订阅，适合持续使用',
+      sortOrder: 20,
+    },
+    {
+      code: 'yearly',
+      name: '年度会员',
+      priceCents: 29900,
+      durationDays: 365,
+      quotaGrant: 800,
+      vipLevel: 'pro',
+      features: ['800 次 AI 深度解读', '完整命书报告', '不限次排盘', '优先体验新功能'],
+      description: '年度订阅，性价比最高',
+      sortOrder: 30,
+    },
+  ]
+
+  for (const p of defaults) {
+    if (getPlanByCode(p.code)) continue
+    createPlan(p)
+  }
 }
 
 // ═══════════════════════════════════════
