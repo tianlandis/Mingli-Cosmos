@@ -194,12 +194,44 @@ docker compose exec bazipaipan-prod sh -c 'ls -l /app/data'
 # 用户与订单仍在 → 后台「C端用户」列表可见 smoke1
 ```
 
+### 3.7 数据库自动备份（ADR-008 / P5-1，**必做**）
+
+宿主机有 `python3`（无 `sqlite3`、无 `node`），用仓库内 `scripts/backup-db.py`
+（Python 标准库，**SQLite 在线备份 API**，对 WAL 安全）直接对挂载出来的库做备份，
+**无需重建容器、不中断服务**：
+
+```bash
+mkdir -p /opt/mingli/scripts /opt/mingli/backups
+cp /opt/mingli/scripts/backup-db.py /opt/mingli/scripts/ 2>/dev/null || true
+# 立即备份一次（验证可用）
+python3 /opt/mingli/scripts/backup-db.py --db /opt/mingli/data/mingli.db --out /opt/mingli/backups --retain 14
+ls -lh /opt/mingli/backups/
+
+# 安装每日定时（凌晨 03:17，保留 14 份）
+( crontab -l 2>/dev/null | grep -v 'backup-db.py'; \
+  echo '17 3 * * * /usr/bin/python3 /opt/mingli/scripts/backup-db.py --db /opt/mingli/data/mingli.db --out /opt/mingli/backups --retain 14 >> /var/log/mingli-backup.log 2>&1' ) | crontab -
+crontab -l | grep backup-db
+```
+
+**恢复演练**（务必先停容器）：
+
+```bash
+docker compose stop
+python3 /opt/mingli/scripts/backup-db.py --restore /opt/mingli/backups/mingli-YYYYmmdd-HHMMSS.db \
+        --to /opt/mingli/data/mingli.db --force
+docker compose start
+```
+
+> ⚠️ **禁止直接 `cp mingli.db`**：WAL 模式下未经 checkpoint 的浅拷贝可能损坏。
+> 必须用在线备份 API（本脚本已内置）。
+
 ---
 
 ## 四、上线后建议立即执行的配置
 
 | 配置项 | 位置 | 建议值 | 说明 |
 |--------|------|--------|------|
+| **每日自动备份** | 宿主机 cron | **已配置（03:17）** | `scripts/backup-db.py`，保留 14 份，见 3.7 |
 | `quota_enforce_chat` | 后台 → 系统配置 | 先 `false`，运营稳定后开 | 开启后登录用户每次 AI 对话扣 1 次额度，不足返回 402 |
 | 管理员密码 | 后台登录后可改 | 强密码 | 首次登录后立即修改，改密会强制所有后台会话下线 |
 | `USER_JWT_SECRET` | `.env` | 随机长字符串 | C 端令牌密钥，泄露可伪造用户身份 |

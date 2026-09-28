@@ -99,6 +99,11 @@ docker compose restart                 # 重启（.env 改动生效即可用此�
 docker compose up -d --build           # 代码更新后重建
 git pull && docker compose up -d --build   # 拉取新版本并重建
 
-# 备份数据库（SQLite 在线备份，勿直接 cp）
-docker exec bazipaipan-prod node -e "require('better-sqlite3')('/app/data/mingli.db').backup('/app/data/backup-'+Date.now()+'.db')"
+# 备份数据库（SQLite **在线备份 API**，勿直接 cp —— WAL 模式下浅拷贝可能损坏）
+python3 /opt/mingli/scripts/backup-db.py            # 手动备份一次（默认 DB/目录/保留份数）
+python3 /opt/mingli/scripts/backup-db.py --gzip     # 压缩备份
+python3 /opt/mingli/scripts/backup-db.py --restore /opt/mingli/backups/mingli-YYYYmmdd-HHMMSS.db \
+        --to /opt/mingli/data/mingli.db --force     # 恢复（先 docker compose stop）
+crontab -l | grep backup-db                          # 查看每日备份任务（03:17，保留 14 份）
+ls -lh /opt/mingli/backups/                          # 查看备份
 ```

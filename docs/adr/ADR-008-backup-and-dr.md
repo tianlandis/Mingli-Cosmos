@@ -1,10 +1,10 @@
 # ADR-008: 备份与灾难恢复策略
 
-- **状态**: `Proposed`
+- **状态**: `Accepted`（**P5-1 已实施**：`scripts/backup-db.py` 已就绪并部署至生产宿主机，每日 03:17 cron）
 - **日期**: 2026-09-28
 - **决策者**: 田哥
 - **类别**: 🧱 骨架（数据健壮性）
-- **关联**: `../arch/ARCHITECTURE-REVIEW.md` §4.1、`../deploy/DEPLOY-LOG-VPS.md`
+- **关联**: `../arch/ARCHITECTURE-REVIEW.md` §4.1、`../deploy/DEPLOY-LOG-VPS.md`、`scripts/backup-db.py`
 
 ---
 
@@ -51,3 +51,19 @@
 ## 关联
 
 ADR-002（迁移预案）｜ADR-006（PII 加密）｜ADR-007（备份任务需被监控）
+
+---
+
+## 实施记录（2026-09-28）
+
+- **工具**：`scripts/backup-db.py`（Python 标准库）。
+  - **为什么不用 shell + `sqlite3` CLI**：生产宿主机（Ubuntu）**无 sqlite3、无 node，有 python3**；
+    用 python3 标准库可**零安装、免重建容器**地直接对挂载库文件做在线备份（不中断线上服务）。
+  - **为什么必须用在线备份 API**：数据库是 WAL 模式，`cp mingli.db` 会漏掉未 checkpoint 的 `-wal`，
+    可能备份出损坏库；`Connection.backup()` 才是 WAL 安全的正解。
+- **本地验证（同一解释器实跑，9/9）**：建库 → 备份 → `integrity_check=ok` 且行数一致 →
+  保留策略（上限命中）→ **恢复演练**（删库→恢复→数据一致）→ gzip → 覆盖保护（退出码 4）→
+  缺库（退出码 2）→ 从 `.gz` 恢复。**过程中抓到并修复一个真 bug**：`sqlite3` 的 `with` 只管理事务、
+  不关闭连接，导致文件句柄泄漏、重命名失败 → 改为显式 `close()`。
+- **生产部署**：脚本置于 `/opt/mingli/scripts/backup-db.py`，备份目录 `/opt/mingli/backups/`，
+  cron：`17 3 * * * … --retain 14`。
