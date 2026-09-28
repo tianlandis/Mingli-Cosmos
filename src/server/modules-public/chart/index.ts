@@ -14,13 +14,9 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
-import {
-  calculateBazi,
-  calculateBaziFromLunar,
-  generateAnnotation,
-} from '../../../engine'
 import { saveChartSession } from '../../db'
-import { chartHash, ENGINE_VERSION } from '../../lib/chart-hash'
+import { requireSystemEngine, isKnownSystem, DEFAULT_SYSTEM } from '../../systems/registry'
+import type { BaziBundle } from '../../systems/bazi'
 import { optionalUserAuth, type UserEnv } from '../../core/middleware/user-auth'
 import { newTraceId } from '../../lib/trace'
 
@@ -37,6 +33,8 @@ const chartSchema = z.object({
   isLeapMonth: z.boolean().optional(),
   /** 复用已有会话（同一盘面续聊） */
   sessionId: z.string().max(64).optional(),
+  /** [ADR-011] 体系 id，缺省 'bazi'（当前仅支持 bazi） */
+  system: z.string().max(32).optional(),
 })
 
 route.post('/', optionalUserAuth, async (c) => {
@@ -57,11 +55,29 @@ route.post('/', optionalUserAuth, async (c) => {
 
   const d = parsed.data
 
-  let chart
+  // [ADR-011] 体系路由：缺省 bazi；未注册体系直接拒绝，杜绝走到不存在的引擎
+  const system = d.system ?? DEFAULT_SYSTEM
+  if (!isKnownSystem(system)) {
+    return c.json({
+      success: false,
+      error: { code: 'UNKNOWN_SYSTEM', message: `未知体系：${system}（当前仅支持 ${DEFAULT_SYSTEM}）` },
+    }, 400)
+  }
+  const engine = requireSystemEngine(system)
+
+  let bundle: BaziBundle
   try {
-    chart = d.calendarType === 'lunar'
-      ? await calculateBaziFromLunar(d.year, d.month, d.day, d.hour, d.minute, d.gender, d.isLeapMonth ?? false)
-      : await calculateBazi(d.year, d.month, d.day, d.hour, d.minute, d.gender)
+    // 计算委托体系引擎（bazi 引擎内部即 calculateBazi*/calculateBaziFromLunar + generateAnnotation）
+    bundle = (await engine.compute({
+      year: d.year,
+      month: d.month,
+      day: d.day,
+      hour: d.hour,
+      minute: d.minute,
+      gender: d.gender,
+      calendarType: d.calendarType,
+      isLeapMonth: d.isLeapMonth,
+    })) as BaziBundle
   } catch (e) {
     return c.json({
       success: false,
@@ -72,8 +88,8 @@ route.post('/', optionalUserAuth, async (c) => {
     }, 400)
   }
 
-  const annotation = generateAnnotation(chart)
-  const hash = chartHash(chart)
+  const { chart, annotation } = bundle
+  const hash = engine.hash(bundle)
   const sessionId = d.sessionId ?? `sess_${newTraceId()}_${randomUUID().slice(0, 8)}`
   const current = c.get('currentUser')
 
@@ -83,8 +99,9 @@ route.post('/', optionalUserAuth, async (c) => {
     chart: JSON.stringify(chart),
     annotation: JSON.stringify(annotation),
     chartHash: hash,
-    engineVersion: ENGINE_VERSION,
+    engineVersion: engine.version,
     userId: current?.userId ?? null,
+    system,
   })
 
   return c.json({
@@ -92,7 +109,8 @@ route.post('/', optionalUserAuth, async (c) => {
     data: {
       sessionId,
       chartHash: hash,
-      engineVersion: ENGINE_VERSION,
+      engineVersion: engine.version,
+      system,
       chart,
       annotation,
     },

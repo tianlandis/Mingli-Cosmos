@@ -5,8 +5,9 @@
 > → 端到端冒烟 + 登录限流修复 ✅ → **生产上线（216.167.120.225:3001）✅** → 架构评审 + ADR 决策 ✅
 > → **Phase 5 全落地 ✅** → **C 端应用骨架（路由/底部 Tab/我的页）✅** → **数据域分层 + 扩展指南 ✅**
 > → **前端切服务端权威排盘 ✅ + 历史命盘 ✅ + 推介奖励域（ADR-013）✅**
-> **基线**: `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**406/406（23 文件）** ｜ `vite build` 通过 ｜ `npm run smoke` **42/42**
-> **库表**: **20 张**（ADR-012 规划的 5 张缺口表已全部落地）｜ **ADR**: 001~013
+> → **多体系注册表泛化（ADR-011 阶段 1~3）✅ + 生产部署 ✅ + `chart_verify_mode` → warn ✅**
+> **基线**: `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**417/417（24 文件）** ｜ `vite build` 通过 ｜ `npm run smoke` **42/42**
+> **库表**: **20 张**（ADR-012 规划的 5 张缺口表已全部落地；session 增 `system` 维度）｜ **ADR**: 001~013
 
 ---
 
@@ -93,6 +94,24 @@
 | 10 | **推介奖励域**：`growth_referrals`/`growth_referral_rewards` + 邀请码无存储可逆 + 幂等发奖 + 前端卡 | **ADR-013** | `1075292` |
 
 **本批验收**：`typecheck` 0 错 ｜ `vitest` **406/406** ｜ `build` 通过 ｜ `smoke` **42/42** ｜ 真机自检零控制台错误。
+
+---
+
+## ✅ 2026-09-29 批次 II（多体系注册表泛化 + 上线 + 灰度）
+
+> 目标：把「八字专用垂直实现」升级为「多体系注册表」骨架（**引擎零侵入**），
+> 并完成生产上线与计算权威灰度。ADR-011 由 `Proposed` → **`Accepted`**（阶段 1~3 落地）。
+
+| 项 | 任务 | 关联 | 提交 |
+|:--|------|:--|:--|
+| 11 | **阶段1**：`sessions` 加 `system` 列（`ALTER TABLE ... DEFAULT 'bazi'` 在线回填）+ 索引 | ADR-011 | 本批 |
+| 12 | **阶段2**：`SystemEngine` 接口 + `bazi` 薄适配器（包住封版引擎，`engine/` 零改动）+ 注册表 | ADR-011 | 本批 |
+| 13 | **阶段3**：`resolveContext` 泛化 + prompt 按体系路由（`buildSystemPromptFor`，**行为等价**） | ADR-011 | 本批 |
+| 14 | **可插拔性回归**：`systems/__tests__/registry.test.ts`（注册 mock 体系即插即用 + 八字 prompt 逐字等价） | ADR-011 | 本批 |
+| 15 | **生产上线**：备份 → `docker compose up -d --build` → 深度健康检查 | 部署 | 本批 |
+| 16 | **`chart_verify_mode` → `warn`**：前端已切服务端权威，灰度前提满足（回退仅需改回 `off`） | ADR-005 | 本批 |
+
+**本批验收**：`typecheck` 0 错 ｜ `vitest` **417/417**（24 文件）｜ `build` 通过 ｜ `smoke` **42/42** ｜ 实测 `system=bazi`→200、`system=astro`→400。
 
 ---
 

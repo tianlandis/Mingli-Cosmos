@@ -103,6 +103,11 @@ export const sessions = sqliteTable('sessions', {
   chartHash: text('chart_hash'),                  // v1:<sha256>
   engineVersion: text('engine_version'),          // v4.1.0
   userId: integer('user_id'),                     // 可空：匿名排盘亦允许
+  // [ADR-011 阶段1] 体系维度（多体系注册表）
+  //   'bazi' | 'astro' | 'mbti' | ...；旧数据缺省回填 'bazi'（向后兼容）。
+  //   注意：chart / annotation 列名保留（不改既有读路径），语义上升为「体系产物 payload」。
+  //   ⚠️ 所有读路径必须先看 system 再解析 payload，杜绝按列名猜语义。
+  system: text('system').default('bazi').notNull(),
   lastActive: text('last_active').default(sql`(datetime('now'))`),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 })

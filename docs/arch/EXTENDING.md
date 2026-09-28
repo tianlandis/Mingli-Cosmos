@@ -36,7 +36,7 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-**四个扩展点**，对应下面四节：
+**五个扩展点**，对应下面各节：
 
 | 想加什么 | 改哪里 | 章节 |
 |:--|:--|:--:|
@@ -44,6 +44,7 @@
 | 一张数据表 | `db/schema.ts` + `db/migrate.ts` + 仓储 | §2 |
 | 一个前端页面 | `pages/` + `main.tsx` | §3 |
 | 一批知识数据（爬虫） | `seeds/knowledge/*.json` | §4 |
+| **一个新的术数/测评体系**（星座/紫微/…） | `src/server/systems/` 实现一个 `SystemEngine` + 注册一行 | §5 |
 
 ---
 
@@ -260,7 +261,58 @@ knowledge_assets（category='zodiac'）
 
 ---
 
-## 5. 完整走一遍：新增"推介奖励"域（**已实施 · ADR-013**）
+## 5. 新增一个术数/测评体系（多体系注册表 · **ADR-011 阶段 1~3 已落地**）
+
+把「体系」提升为一等概念后，**第 N 个体系 = 实现一个 `SystemEngine` + 注册一行**，
+共享骨架（鉴权 / 额度 / 对话 / 会话持久化 / 可观测 / 支付结算）零重复。
+
+> ⚠️ 引擎红线：**绝不修改 `src/engine/`**（八字引擎已封版）。新体系是**新增**一个适配器/实现，
+> 不是改造既有引擎——八字自己也是通过 `src/server/systems/bazi.ts` 这个**薄适配器**接入的。
+
+### 5.1 三步走
+
+**① 实现引擎**（`src/server/systems/astro.ts`）—— 照 `bazi.ts` 抄骨架：
+
+```ts
+import type { SystemEngine } from './types'
+
+export const astroEngine: SystemEngine<BirthInput, AstroBundle> = {
+  id: 'astro',
+  version: 'v1.0.0',
+  compute(input) { /* 天文历/宫位计算 → AstroBundle */ },
+  hash(bundle) { return `astro:v1:${sha256(stableStringify(bundle))}` }, // 口径须带体系前缀
+  isValidResult(v): v is AstroBundle { /* 形状守卫 */ },
+  ctxFor(bundle) { return '## 星盘数据（唯一数据源）\n...' },
+  buildPrompt(bundle, { reportSummary, adminSection }) { /* 角色+数据+护栏 */ },
+}
+```
+
+**② 注册一行**（`src/server/systems/registry.ts` 末尾）：
+
+```ts
+import { astroEngine } from './astro'
+registerSystem(astroEngine)   // ← 新增体系只动这一行
+```
+
+**③ 数据落库自动带体系**：`/api/v1/app/chart` 已支持可选 `system`（缺省 `bazi`），
+计算/落库/指纹/引擎版本全部经注册表；`sessions.system` 自动写入 —— **无需改任何路由代码**。
+
+### 5.2 关键约定（务必遵守）
+
+- **hash 口径带体系前缀命名空间**（如 `astro:v1:<sha256>`），否则跨体系一致性校验会失效。
+- **`sessions.chart` / `annotation` 两列是「体系 payload 载体」**：读路径**必须先看 `sessions.system`**
+  再解析 payload（`resolveContext` 已强制），杜绝「按列名猜语义」。
+- **计费/鉴权/SSE/护栏链路完全不动**（已被 ADR-004 / ADR-005 验证）：新体系自动继承。
+- 现有前端 `BirthForm` 输入壳、`ChatPanel`、`ResultTabs` 容器壳可复用；各体系自带 L0/L1/L2 结果组件。
+
+### 5.3 可插拔性怎么验
+
+`src/server/systems/__tests__/registry.test.ts` 已用「注册一个 mock 体系 → 立刻可发现/可计算/可路由 prompt」
+证明插件化真的成立。加新体系时照此补一组即可。
+
+---
+
+## 6. 完整走一遍：新增"推介奖励"域（**已实施 · ADR-013**）
 
 以**客户推介奖励**为例，完整流程（下称的路径即仓库现状，可直接对照）：
 
@@ -289,7 +341,7 @@ knowledge_assets（category='zodiac'）
 
 ---
 
-## 6. 提交前检查清单
+## 7. 提交前检查清单
 
 **数据层**
 - [ ] 新表已归入 7 域之一，且更新了 `DATA-DOMAINS.md`
@@ -316,7 +368,7 @@ knowledge_assets（category='zodiac'）
 
 ---
 
-## 7. 不要做的事
+## 8. 不要做的事
 
 | ❌ 不要 | 为什么 |
 |:--|:--|

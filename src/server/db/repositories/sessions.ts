@@ -42,6 +42,8 @@ export function saveChartSession(data: {
   chartHash: string
   engineVersion: string
   userId?: number | null
+  /** [ADR-011] 体系标识，缺省 'bazi'（向后兼容旧调用） */
+  system?: string
 }): SessionRow {
   const existing = getSession(data.id)
   if (existing) {
@@ -52,6 +54,7 @@ export function saveChartSession(data: {
         chartHash: data.chartHash,
         engineVersion: data.engineVersion,
         userId: data.userId ?? existing.userId,
+        system: data.system ?? existing.system ?? 'bazi',
         lastActive: new Date().toISOString(),
       })
       .where(eq(sessions.id, data.id))
@@ -64,6 +67,7 @@ export function saveChartSession(data: {
     chartHash: data.chartHash,
     engineVersion: data.engineVersion,
     userId: data.userId ?? null,
+    system: data.system ?? 'bazi',
     messageCount: 0,
     lastActive: new Date().toISOString(),
     createdAt: new Date().toISOString(),
@@ -88,6 +92,7 @@ export function listChartSummariesByUser(userId: number, limit = 20): Array<{
   id: string
   chartHash: string | null
   engineVersion: string | null
+  system: string
   lastActive: string | null
   createdAt: string | null
   chart: string
@@ -96,6 +101,7 @@ export function listChartSummariesByUser(userId: number, limit = 20): Array<{
     id: sessions.id,
     chartHash: sessions.chartHash,
     engineVersion: sessions.engineVersion,
+    system: sessions.system,
     lastActive: sessions.lastActive,
     createdAt: sessions.createdAt,
     chart: sessions.chart,

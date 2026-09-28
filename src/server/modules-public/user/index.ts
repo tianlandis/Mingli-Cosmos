@@ -7,7 +7,7 @@
 //   PUT  /profile
 // ============================================================
 
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import {
@@ -119,14 +119,14 @@ function sanitize(u: UserRow) {
   }
 }
 
-function clientIp(c: any): string {
+function clientIp(c: Context): string {
   return c.req.header('x-forwarded-for')?.split(',')[0].trim()
     || c.req.header('x-real-ip')
     || '127.0.0.1'
 }
 
 /** 登录成功后统一：更新登录信息 + 建会话 + 埋点 */
-function issueLogin(c: any, user: { id: number; username: string }) {
+function issueLogin(c: Context, user: { id: number; username: string }) {
   const { token, jti, expiresAt } = signUserToken(user.id, user.username)
   const ip = clientIp(c)
   createUserSession({
@@ -378,6 +378,7 @@ route.get('/charts', userAuthMiddleware, (c) => {
       id: r.id,
       chartHash: r.chartHash,
       engineVersion: r.engineVersion,
+      system: r.system,
       createdAt: r.createdAt,
       lastActive: r.lastActive,
       birthDate: birth.birthDate ?? null,
@@ -409,6 +410,7 @@ route.get('/charts/:id', userAuthMiddleware, (c) => {
       id: row.id,
       chartHash: row.chartHash,
       engineVersion: row.engineVersion,
+      system: row.system,
       lastActive: row.lastActive,
       chart,
       annotation,
@@ -520,6 +522,7 @@ route.get('/data/export', userAuthMiddleware, (c) => {
     sessionId: s.id,
     chartHash: s.chartHash,
     engineVersion: s.engineVersion,
+    system: s.system,
     chart: parse<unknown>(s.chart),
     annotation: parse<unknown>(s.annotation),
     createdAt: s.createdAt,

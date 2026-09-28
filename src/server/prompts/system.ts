@@ -1,10 +1,16 @@
 // ============================================================
-// A 模式 System Prompt 构建器
+// System Prompt 构建器（多体系路由）
+// 文件：src/server/prompts/system.ts
+//
+// [ADR-011 阶段3] 行为等价重构：
+//   - 骨架只负责「读后台自定义指令 + 按体系选引擎」，不再感知任何体系细节；
+//   - 体系细节（角色 / 数据段 / 护栏）全部下沉到该体系的 SystemEngine.buildPrompt；
+//   - buildSystemPrompt(chart, annotation, ...) 保留原签名，内部委托 bazi 引擎，
+//     对既有调用方与回归测试**逐字等价**。
 // ============================================================
 
 import type { BaZiResult, AnnotationResult } from '../../engine/index'
-import { buildAntiHallucinationPromptDynamic } from '../lib/anti-hallucination'
-import { formatPillars, formatShiShen, formatDaYun, formatShenSha } from './formatters'
+import { requireSystemEngine, DEFAULT_SYSTEM } from '../systems/registry'
 import { isDbReady, listPrompts } from '../db'
 
 /**
@@ -20,11 +26,11 @@ function buildAdminInstructionSection(): string | null {
     if (!isDbReady()) return null
 
     const customs = listPrompts().filter(
-      (p: any) => p.isActive === 1 && (p.category === 'custom' || p.isBuiltin === 0),
+      p => p.isActive === 1 && (p.category === 'custom' || p.isBuiltin === 0),
     )
     if (customs.length === 0) return null
 
-    const blocks = customs.map((p: any) => `### ${p.displayName || p.name}\n${p.content}`)
+    const blocks = customs.map(p => `### ${p.displayName || p.name}\n${p.content}`)
     return `## 管理员自定义指令（prompt_templates · 热生效）\n\n${blocks.join('\n\n')}`
   } catch {
     return null
@@ -32,33 +38,32 @@ function buildAdminInstructionSection(): string | null {
 }
 
 /**
- * 构建 A 模式（对话 Copilot）的 System Prompt
- * - 命盘数据注入 ~200 tokens
- * - 防幻觉指令由 anti-hallucination.ts 独立模块管理
- * - 管理员自定义指令（若配置了启用中的自定义模板）排在护栏之前
+ * [ADR-011] 按体系构建 System Prompt —— 唯一入口。
+ *
+ * @param system  体系 id（如 'bazi'）；未注册将抛错（调用方应先用 isKnownSystem 校验）
+ * @param result  该体系的产物（bazi: { chart, annotation }）
+ * @param reportSummary 命书摘要（可选，跨体系通用）
+ */
+export function buildSystemPromptFor(
+  system: string,
+  result: unknown,
+  reportSummary?: string,
+): string {
+  const engine = requireSystemEngine(system)
+  return engine.buildPrompt(result, {
+    reportSummary,
+    adminSection: buildAdminInstructionSection(),
+  })
+}
+
+/**
+ * 八字专用快捷入口（保持既有签名与输出，内部委托注册表）。
+ * 上游（A 模式对话 / B 模式命书 / 集成测试）无需改动。
  */
 export function buildSystemPrompt(
   chart: BaZiResult,
   annotation: AnnotationResult,
   reportSummary?: string,
 ): string {
-  const adminSection = buildAdminInstructionSection()
-
-  return [
-    '## 角色',
-    '你是八字命理分析师"墨白"。',
-    '',
-    '## 命盘数据（唯一数据源）',
-    `- 四柱：${formatPillars(chart)}`,
-    `- 日主：${chart.dayMaster}（${annotation.strengthAnalysis.strength}，${annotation.strengthAnalysis.score}/100）`,
-    `- 格局：${annotation.patternAnalysis.patternName}（${annotation.patternAnalysis.quality}）`,
-    `- 十神：${formatShiShen(annotation.shiShenProfile)}`,
-    `- 当前大运：${formatDaYun(annotation.luckAnalysis)}`,
-    `- 神煞：${formatShenSha(annotation.shenSha)}`,
-    '',
-    reportSummary ? `## 命书摘要\n${reportSummary}\n` : '',
-    adminSection ? `${adminSection}\n` : '',
-    // ⬇️ L3 热加载：优先 DB 配置，回退硬编码常量
-    buildAntiHallucinationPromptDynamic(chart, annotation),
-  ].join('\n')
+  return buildSystemPromptFor(DEFAULT_SYSTEM, { chart, annotation }, reportSummary)
 }

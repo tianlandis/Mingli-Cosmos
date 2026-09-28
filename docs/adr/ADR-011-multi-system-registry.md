@@ -1,6 +1,6 @@
 # ADR-011: 多体系注册表（System Registry）—— 从「八字专用」到「多术数/测评体系共存」
 
-- **状态**: `Proposed`（待评审；阶段 0 可先行实施）
+- **状态**: `Accepted`（2026-09-29 定稿；**阶段 0~3 已实施并回归通过**；阶段 4~5 待需求确认后启动）
 - **日期**: 2026-09-29
 - **决策者**: 田哥
 - **类别**: 🧱 骨架（决定系统形态 / 领域边界）
@@ -126,18 +126,47 @@ export interface SystemEngine<TInput, TResult> {
 
 ## 实施分期（建议）
 
-| 阶段 | 内容 | 是否动架构 | 风险 |
-|:--:|---|:--:|:--:|
-| **0** | **16 型人格「突出重点」**（前端信息架构，零后端改动） | 否 | 🟢 极低 |
-| 1 | `sessions` 加 `system` 列 + 迁移 + 回填（纯新增） | 是（兼容） | 🟢 低 |
-| 2 | `SystemEngine` 接口 + `bazi` 适配器 + 注册表（**行为等价重构**） | 是 | 🟡 中（需回归） |
-| 3 | `resolveContext` / prompt 路由泛化（**行为等价重构**） | 是 | 🟡 中 |
-| 4 | 星座引擎 + `/api/v1/app/chart` 支持 `system=astro` | 是（新增） | 🟡 中 |
-| 5 | 前端体系选择器 + 星盘 L0/L1/L2 | 否（新增 UI） | 🟢 低 |
+| 阶段 | 内容 | 是否动架构 | 风险 | 状态 |
+|:--:|---|:--:|:--:|:--:|
+| **0** | **16 型人格「突出重点」**（前端信息架构，零后端改动） | 否 | 🟢 极低 | ✅ 已完成 |
+| 1 | `sessions` 加 `system` 列 + 迁移 + 回填（纯新增） | 是（兼容） | 🟢 低 | ✅ 已完成 |
+| 2 | `SystemEngine` 接口 + `bazi` 适配器 + 注册表（**行为等价重构**） | 是 | 🟡 中（需回归） | ✅ 已完成 |
+| 3 | `resolveContext` / prompt 路由泛化（**行为等价重构**） | 是 | 🟡 中 | ✅ 已完成 |
+| 4 | 星座引擎 + `/api/v1/app/chart` 支持 `system=astro` | 是（新增） | 🟡 中 | ⏳ 待需求确认 |
+| 5 | 前端体系选择器 + 星盘 L0/L1/L2 | 否（新增 UI） | 🟢 低 | ⏳ 待需求确认 |
 
 > **原则**：阶段 1~3 全部是**行为等价重构**（重构前后对外行为不变），
-> 必须先让 `npm run typecheck` 零错误、`vitest` 393/393、`npm run smoke` 42/42 保持全绿，
+> 必须先让 `npm run typecheck` 零错误、`vitest` 全绿、`npm run smoke` 全绿，
 > **再**进入阶段 4 的新增。任何阶段失败 → 立即回滚，不带病前进。
+
+## 实施注记（2026-09-29 · 阶段 1~3 落地）
+
+实际实现与本 ADR 草案的**收敛点**（均为降低风险/尊重既有分层所做的收敛，对外行为不变）：
+
+1. **代码落位**：`src/systems/*` → **`src/server/systems/*`**。
+   原因：体系引擎需复用 `src/server/lib/chart-hash`、`src/server/prompts/formatters`、
+   `src/server/lib/anti-hallucination`，放在 `src/server/` 内可避免「systems → server」的反向依赖。
+2. **接口增补**：`SystemEngine` 在草案的 5 成员（`id/version/compute/hash/ctxFor`）之外，
+   增补 3 个成员以获得**真正可插拔**：
+   - `isValidResult(value): value is TResult` —— 产物形状守卫（替代硬编码 `looksLikeChart`）；
+   - `firstDifference?(expected, actual)` —— 校验不一致时的可读差异（bazi 专属，可选）；
+   - `buildPrompt(result, opts)` —— **体系自持**完整 System Prompt（角色+数据+护栏），
+     使共享骨架 `prompts/system.ts` 不再感知任何体系细节。
+   所有方法以「方法简写」声明以获得 TS **方法双变性**，使具体体系可无 `any` 存入异质注册表。
+3. **会话 payload 载体不变**：仍用 `sessions.chart` / `sessions.annotation` 两列承载体系产物
+   （`chart` 列语义上升为「体系 payload」），本阶段**不引入 payload 信封 / 子表**
+   —— 留给「复审触发条件」中「单列不足以承载某体系产物」时再议。
+4. **读路径强制看 `system`**：`sessions.system` 缺省 `'bazi'`（旧数据经 `ALTER TABLE ADD COLUMN ... DEFAULT 'bazi'` 回填）；
+   `resolveContext` 命中 `sessionId` 时先比对 `row.system` 与请求体系，不一致即拒（`SESSION_NOT_FOUND`），
+   杜绝「按列名猜语义」的认知风险。
+5. **灰度开关**：`/api/v1/app/chart` 接受可选 `system`（缺省 `bazi`），未注册体系 → `400 UNKNOWN_SYSTEM`（快速失败）。
+
+**落地物（阶段 1~3）**
+- 数据：`sessions.system`（schema + 迁移 + 索引 `idx_sessions_system`）。
+- 代码：`src/server/systems/{types,bazi,registry}.ts`、`src/server/lib/chart-source.ts`（`resolveContext`）、
+  `src/server/prompts/system.ts`（`buildSystemPromptFor`）、`src/server/modules-public/chart/index.ts`。
+- 回归：新增 `src/server/systems/__tests__/registry.test.ts`（注册表基础 / **可插拔性** / 八字 prompt 行为等价）。
+- 验收：`typecheck` 0 错 · `vitest` **417/417** · `build` ✓ · `smoke` **42/42**；实测 `system=bazi`→200、`system=astro`→400。
 
 ## 复审触发条件
 

@@ -15,11 +15,12 @@ function safeAlter(sqlite: Database.Database, table: string, colDef: string) {
     sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${colDef}`)
     console.log(`[Migrate] ✅ ${table}.${colName}`)
   }
-  catch (e: any) {
-    if (e.message?.includes('duplicate column') || e.message?.includes('already exists')) {
+  catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (msg.includes('duplicate column') || msg.includes('already exists')) {
       console.log(`[Migrate] ⏭️ ${table}.${colName} (已存在)`)
     } else {
-      console.error(`[Migrate] ❌ ${table}.${colName} 失败:`, e.message)
+      console.error(`[Migrate] ❌ ${table}.${colName} 失败:`, msg)
     }
   }
 }
@@ -283,6 +284,14 @@ export function runMigrations(sqlite: Database.Database) {
   safeAlter(sqlite, 'sessions', 'engine_version TEXT')
   safeAlter(sqlite, 'sessions', 'user_id INTEGER')
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`)
+
+  // ═══════════════════════════════════════
+  // [ADR-011 阶段1] sessions 体系维度（多体系注册表）
+  //   ALTER TABLE ADD COLUMN（带常量默认值）—— 在线、不锁表、不重建；
+  //   旧数据缺省回填 'bazi'，既有查询行为不变。
+  // ═══════════════════════════════════════
+  safeAlter(sqlite, 'sessions', "system TEXT NOT NULL DEFAULT 'bazi'")
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_system ON sessions(system);`)
 
   // users 扩展：软删除
   safeAlter(sqlite, 'users', 'deleted_at TEXT')
