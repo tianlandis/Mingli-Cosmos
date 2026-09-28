@@ -224,6 +224,16 @@ async function main() {
   const channels = await api('GET', '/api/v1/app/payment/channels')
   ok('支付渠道端点 → 200', channels.status === 200, `status=${channels.status}`)
 
+  // 移动端 / PWA：manifest 必须真被静态服务命中并给出正确 MIME。
+  // 回归背景：manifest 曾落到 SPA 兜底，返回 text/html 的 index.html → 浏览器解析失败。
+  const manifest = await rawText('/manifest.webmanifest')
+  const manifestCt = manifest.headers.get('content-type') || ''
+  ok('PWA manifest → 200 且 MIME 为 manifest+json',
+    manifest.status === 200 && manifestCt.includes('manifest+json'),
+    `status=${manifest.status} ct=${manifestCt}`)
+  ok('PWA manifest 内容为 JSON（非 SPA 兜底 HTML）',
+    manifest.text.trimStart().startsWith('{'), `head=${manifest.text.slice(0, 40)}`)
+
   // 计费安全（P5-4）：上游不可用时对话必须失败但**不计费**
   const quotaBefore = await api('GET', '/api/v1/app/user/quota', { token: loginToken })
   const usedBefore = quotaBefore.json?.data?.quotaUsed ?? 0

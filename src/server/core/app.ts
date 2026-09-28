@@ -138,6 +138,21 @@ export async function createApp(options: AppOptions): Promise<Hono> {
     // Favicon
     app.get('/favicon.svg', serveStatic({ root: distDir }))
 
+    // PWA manifest
+    // 注意：不能交给 serveStatic —— 其 MIME 表未收录 .webmanifest 后缀，
+    // 且根级文件不在 /assets/* 白名单内，会落到下面的 SPA 兜底返回 HTML。
+    // 这里显式读取并指定 application/manifest+json。
+    app.get('/manifest.webmanifest', (c) => {
+      try {
+        const raw = readFileSync(join(distDir, 'manifest.webmanifest'), 'utf-8')
+        c.header('Content-Type', 'application/manifest+json; charset=utf-8')
+        c.header('Cache-Control', 'public, max-age=3600')
+        return c.body(raw)
+      } catch {
+        return c.notFound()
+      }
+    })
+
     // SPA 兜底（非 API 请求 → index.html）
     app.get('/*', (c) => {
       try {
