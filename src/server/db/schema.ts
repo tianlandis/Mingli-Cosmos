@@ -246,7 +246,12 @@ export const birthProfiles = sqliteTable('birth_profiles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  label: text('label'),                            // '本人' / '父亲' / 自定义
+  label: text('label'),                            // 显示名：'老妈' / '我家老大'（用户自由填）
+  relation: text('relation'),                      // 结构化关系：self/father/mother/spouse/child/
+                                                   // sibling/friend/classmate/colleague/other
+                                                   // ⚠️ 与 label 分工：label 管显示，relation 管语义。
+                                                   // 未来「关系合盘」需按关系选规则（夫妻看日支夫妻宫、
+                                                   // 亲子看食伤），靠 label 文本猜不可靠，故必须结构化。
   calendarType: text('calendar_type').notNull(),   // 'solar' | 'lunar'
   birthYear: integer('birth_year').notNull(),
   birthMonth: integer('birth_month').notNull(),

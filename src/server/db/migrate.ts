@@ -343,6 +343,7 @@ export function runMigrations(sqlite: Database.Database) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       label TEXT,
+      relation TEXT,
       calendar_type TEXT NOT NULL,
       birth_year INTEGER NOT NULL,
       birth_month INTEGER NOT NULL,
@@ -358,6 +359,11 @@ export function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_birth_profiles_user ON birth_profiles(user_id);
     CREATE INDEX IF NOT EXISTS idx_birth_profiles_default ON birth_profiles(user_id, is_default);
   `)
+
+  // 关系标签：老库增量补列（CREATE TABLE 为 IF NOT EXISTS，已存在的库不会重建，
+  // 故必须走 safeAlter）。存量档案 relation 为空 → 语义上视作「其他」，不影响既有行为。
+  safeAlter(sqlite, 'birth_profiles', 'relation TEXT')
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_birth_profiles_relation ON birth_profiles(user_id, relation);`)
 
   // ═══════════════════════════════════════
   // [ADR-012] 运营分析域：AI 调用明细（追加式只增不改）

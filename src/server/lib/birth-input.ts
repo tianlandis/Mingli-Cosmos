@@ -62,3 +62,35 @@ export const birthFieldsObject = z.object({
 export const birthInputSchema = birthFieldsObject.superRefine(checkRealDate)
 
 export type BirthInput = z.infer<typeof birthInputSchema>
+
+// ═══════════════════════════════════════
+// 关系标签（档案专属，非生辰字段）
+// ═══════════════════════════════════════
+
+/**
+ * 关系标签：这条档案与本人是什么关系。
+ *
+ * 为什么不用 label 文本代替：label 是**显示名**（用户可写「老妈」「我家老大」），
+ * relation 是**语义**（下拉结构化）。未来「关系合盘」需要按关系选规则——
+ * 夫妻看日支夫妻宫 + 日干相合，亲子看子女宫 + 食伤，合伙人看财官互补——
+ * 靠 label 文本猜关系不可靠，两者必须分工。
+ *
+ * ⚠️ 前端 src/lib/birth.ts 的 RELATION_OPTIONS 必须与此保持一致
+ * （有测试锁定，改任一侧另一侧会对不上）。
+ */
+export const RELATION_VALUES = [
+  'self',      // 本人
+  'father',    // 父亲
+  'mother',    // 母亲
+  'spouse',    // 配偶
+  'child',     // 子女
+  'sibling',   // 兄弟姐妹
+  'friend',    // 朋友
+  'classmate', // 同学
+  'colleague', // 同事
+  'other',     // 其他
+] as const
+
+export type RelationValue = (typeof RELATION_VALUES)[number]
+
+export const relationSchema = z.enum(RELATION_VALUES, { message: '关系标签不合法' })

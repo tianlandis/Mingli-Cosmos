@@ -29,6 +29,7 @@ import { signUserToken } from '@/server/core/middleware/user-auth'
 
 let app: Hono
 let aliceToken = ''
+let aliceUserId = 0
 let bobToken = ''
 
 function makeUser(username: string) {
@@ -98,6 +99,7 @@ const SOLAR_1990 = {
 interface ProfileDto {
   id: number
   label: string | null
+  relation: string | null
   calendarType: string
   birthYear: number
   birthMonth: number
@@ -119,7 +121,9 @@ beforeAll(() => {
   app.route('/api/v1/app/user/birth-profiles', birthProfileRoute)
   app.route('/api/v1/app/user', userRoute)
 
-  aliceToken = makeUser('alice-birth').token
+  const alice = makeUser('alice-birth')
+  aliceToken = alice.token
+  aliceUserId = alice.user.id
   bobToken = makeUser('bob-birth').token
 })
 
@@ -368,5 +372,85 @@ describe('注册即建档 / 登录自动出盘的数据链路', () => {
     const meBody = await body<{ data: { defaultBirthProfile: ProfileDto | null } }>(me)
     // Bob 只有通过档案接口建的档，没有默认之外的干扰
     expect(meBody.data).toHaveProperty('defaultBirthProfile')
+  })
+})
+
+// ═══════════════════════════════════════
+// E. 关系标签（家人 / 朋友 / 同学 …）
+//
+// 锁定三条：建档带 relation 生效、PATCH 改 relation 不静默失效、
+// 非法值被拒。第三条尤其重要——updateSchema 若在 .partial() 前漏声明
+// relation，zod 会静默剥掉该键，表现为「改了但没生效」。
+// ═══════════════════════════════════════
+
+describe('关系标签', () => {
+  it('建档带 relation → 回传一致（本人/父亲/朋友）', async () => {
+    for (const relation of ['self', 'father', 'friend']) {
+      const res = await createProfile(aliceToken, { ...SOLAR_1990, label: `档-${relation}`, relation })
+      expect(res.status).toBe(201)
+      const d = await body<{ data: ProfileDto }>(res)
+      expect(d.data.relation).toBe(relation)
+    }
+  })
+
+  it('PATCH 改 relation → 生效（防 zod 剥离导致静默失效）', async () => {
+    const created = await body<{ data: ProfileDto }>(
+      await createProfile(aliceToken, { ...SOLAR_1990, label: '待改关系', relation: 'other' })
+    )
+    const id = created.data.id
+    expect(created.data.relation).toBe('other')
+
+    const patched = await body<{ data: ProfileDto }>(
+      await patchProfile(aliceToken, id, { relation: 'mother' })
+    )
+    expect(patched.data.relation).toBe('mother')
+
+    // 落库复核：接口回传对了但库里没改，等于没改
+    const rows = listBirthProfilesByUser(aliceUserId)
+    expect(rows.find(r => r.id === id)?.relation).toBe('mother')
+  })
+
+  it('单独改 label 不影响 relation（局部更新不互相覆盖）', async () => {
+    const created = await body<{ data: ProfileDto }>(
+      await createProfile(aliceToken, { ...SOLAR_1990, label: '原名', relation: 'colleague' })
+    )
+    const patched = await body<{ data: ProfileDto }>(
+      await patchProfile(aliceToken, created.data.id, { label: '改名了' })
+    )
+    expect(patched.data.label).toBe('改名了')
+    expect(patched.data.relation).toBe('colleague')
+  })
+
+  it('非法 relation → 400', async () => {
+    const res = await createProfile(aliceToken, { ...SOLAR_1990, relation: '前任' })
+    expect(res.status).toBe(400)
+  })
+
+  it('未填 relation → null（老数据/不关心关系的场景兼容）', async () => {
+    const res = await createProfile(aliceToken, { ...SOLAR_1990, label: '无关系档' })
+    expect(res.status).toBe(201)
+    const d = await body<{ data: ProfileDto }>(res)
+    expect(d.data.relation).toBeNull()
+  })
+
+  it('注册建档 → relation 恒为 self', async () => {
+    const reg = await app.request('/api/v1/app/user/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'frank-rel', password: 'secret123', birth: SOLAR_1990 }),
+    })
+    expect(reg.status).toBe(201)
+    const regBody = await body<{ data: { user: { id: number } } }>(reg)
+    const rows = listBirthProfilesByUser(regBody.data.user.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].relation).toBe('self')
+  })
+
+  it('前端 RELATION_OPTIONS 的 key 与服务端枚举完全一致（防前后端漂移）', async () => {
+    const { RELATION_OPTIONS } = await import('@/lib/birth')
+    const { RELATION_VALUES } = await import('@/server/lib/birth-input')
+    const feKeys = RELATION_OPTIONS.map(o => o.key).sort()
+    const beKeys = [...RELATION_VALUES].sort()
+    expect(feKeys).toEqual(beKeys)
   })
 })

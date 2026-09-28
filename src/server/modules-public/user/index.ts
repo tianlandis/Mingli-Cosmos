@@ -209,6 +209,7 @@ route.post('/register', async (c) => {
       createBirthProfile({
         userId: user.id,
         label: '本人',
+        relation: 'self', // 注册建档恒为本人：注册采集的是注册者自己的生辰
         calendarType: birth.calendarType,
         birthYear: birth.birthYear,
         birthMonth: birth.birthMonth,
@@ -572,12 +573,9 @@ route.get('/data/export', userAuthMiddleware, (c) => {
       notice: '本文件包含您的个人信息（含生辰），请妥善保管',
       user: sanitize(user),
       // [ADR-012] 生辰档案（含核心 PII，随导出一并交付）
-      birthProfiles: listBirthProfilesByUser(user.id).map(p => ({
-        id: p.id, label: p.label, calendarType: p.calendarType,
-        birthYear: p.birthYear, birthMonth: p.birthMonth, birthDay: p.birthDay,
-        birthHour: p.birthHour, birthMinute: p.birthMinute, isLeapMonth: p.isLeapMonth === 1,
-        gender: p.gender, isDefault: p.isDefault === 1, createdAt: p.createdAt,
-      })),
+      // 复用 DTO 而非手写字段清单：导出权要求「完整交付」，手写清单每加一列就会漏
+      // （本次加 relation 时正是这里险些漏掉）。改用 DTO 后字段永不漂移。
+      birthProfiles: listBirthProfilesByUser(user.id).map(toBirthProfileDto),
       consents: listConsentsByUser(user.id).map(r => ({
         type: r.type, version: r.version, agreed: r.agreed === 1, createdAt: r.createdAt,
       })),

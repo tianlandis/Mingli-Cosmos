@@ -20,7 +20,8 @@ import { useShell } from '../lib/shell'
 import BirthFields from '../components/BirthFields'
 import {
   createDefaultBirthValue, formatBirth, genderText, toBirthPayload,
-  type BirthProfileDto, type BirthValue,
+  relationLabel, RELATION_OPTIONS,
+  type BirthProfileDto, type BirthValue, type RelationKey,
 } from '../lib/birth'
 
 interface OrderItem {
@@ -112,6 +113,8 @@ export default function MyPage() {
   const [addingProfile, setAddingProfile] = useState(false)
   const [draftBirth, setDraftBirth] = useState<BirthValue>(createDefaultBirthValue)
   const [draftLabel, setDraftLabel] = useState('')
+  /** 新增档案的关系标签；默认给「其他」以外的中性值，避免用户漏选落到 null */
+  const [draftRelation, setDraftRelation] = useState<RelationKey>('other')
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
 
@@ -250,11 +253,13 @@ export default function MyPage() {
     try {
       const res = await userApi.post('/api/v1/app/user/birth-profiles', {
         ...(draftLabel.trim() ? { label: draftLabel.trim() } : {}),
+        relation: draftRelation,
         ...toBirthPayload(draftBirth),
       })
       if (!res.success) throw new Error(res.error?.message || '保存失败')
       setAddingProfile(false)
       setDraftLabel('')
+      setDraftRelation('other')
       setDraftBirth(createDefaultBirthValue())
       await afterProfileChange()
     } catch (e) {
@@ -395,7 +400,14 @@ export default function MyPage() {
               <li key={p.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 text-sm text-fg-primary truncate">
-                    {p.label || '生辰档案'}
+                    {/* 显示名优先；未填时回退关系名，避免只显示「生辰档案」这种无信息量的占位 */}
+                    {p.label || relationLabel(p.relation) || '生辰档案'}
+                    {/* 关系徽章：仅在「有显示名且有关系」时才另起一枚，否则与标题重复 */}
+                    {p.label && relationLabel(p.relation) && (
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-sm text-[10px] text-fg-secondary bg-surface-muted border border-line-strong">
+                        {relationLabel(p.relation)}
+                      </span>
+                    )}
                     {p.isDefault && (
                       <span className="shrink-0 px-1.5 py-0.5 rounded-sm text-[10px] text-brand bg-cinnabar-100 border border-cinnabar-200">
                         默认
@@ -440,14 +452,36 @@ export default function MyPage() {
         {addingProfile ? (
           <div className="mt-3 pt-4 border-t border-line-soft">
             <div className="mb-3">
-              <label className="block text-[11px] text-fg-secondary mb-1 tracking-wide">
-                标签（选填，如「本人」「父亲」）
+              <label htmlFor="draft-relation" className="block text-[11px] text-fg-secondary mb-1 tracking-wide">
+                关系（选一个，便于日后区分家人 / 朋友）
+              </label>
+              {/* 原生 select + optgroup：移动端调起系统选择器，10 个选项也不占版面 */}
+              <select
+                id="draft-relation"
+                value={draftRelation}
+                onChange={e => setDraftRelation(e.target.value as RelationKey)}
+                disabled={profileBusy}
+                className="w-full px-3 py-2 rounded-sm border border-line-strong bg-white text-sm text-fg-primary focus:outline-none focus:border-brand transition-colors cursor-pointer disabled:opacity-60"
+              >
+                {(['家人', '社交', '其他'] as const).map(group => (
+                  <optgroup key={group} label={group}>
+                    {RELATION_OPTIONS.filter(o => o.group === group).map(o => (
+                      <option key={o.key} value={o.key}>{o.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+            <div className="mb-3">
+              <label htmlFor="draft-label" className="block text-[11px] text-fg-secondary mb-1 tracking-wide">
+                显示名（选填，如「老妈」「我家老大」）
               </label>
               <input
+                id="draft-label"
                 value={draftLabel}
                 onChange={e => setDraftLabel(e.target.value)}
                 disabled={profileBusy}
-                placeholder="本人"
+                placeholder="不填则显示关系名"
                 className="w-full px-3 py-2 rounded-sm border border-line-strong bg-white text-sm text-fg-primary placeholder:text-fg-tertiary focus:outline-none focus:border-brand transition-colors"
               />
             </div>

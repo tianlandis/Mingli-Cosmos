@@ -28,7 +28,7 @@ import {
   setDefaultBirthProfile,
   toBirthProfileDto,
 } from '../../db'
-import { birthFieldsObject, checkRealDate } from '../../lib/birth-input'
+import { birthFieldsObject, checkRealDate, relationSchema } from '../../lib/birth-input'
 
 export const route = new Hono<UserEnv>()
 
@@ -41,7 +41,8 @@ export const meta = { prefix: 'user/birth-profiles' }
 
 const createSchema = birthFieldsObject
   .extend({
-    label: z.string().max(32, '标签最多 32 字').optional(),
+    label: z.string().max(32, '显示名最多 32 字').optional(),
+    relation: relationSchema.optional(),
     isDefault: z.boolean().optional(),
   })
   .superRefine(checkRealDate)
@@ -49,8 +50,9 @@ const createSchema = birthFieldsObject
 const updateSchema = birthFieldsObject
   .extend({
     // label 必须先声明再 partial：zod 默认丢弃未声明键，
-    // 漏掉会让「改标签」静默失效（测试已锁定该回归）。
-    label: z.string().max(32, '标签最多 32 字'),
+    // 漏掉会让「改标签」静默失效（测试已锁定该回归）。relation 同理。
+    label: z.string().max(32, '显示名最多 32 字'),
+    relation: relationSchema,
   })
   .partial()
   .superRefine((v, ctx) => {
@@ -103,6 +105,7 @@ route.post('/', userAuthMiddleware, async (c) => {
   const row = createBirthProfile({
     userId: current.userId,
     label: d.label ?? null,
+    relation: d.relation ?? null,
     calendarType: d.calendarType,
     birthYear: d.birthYear,
     birthMonth: d.birthMonth,

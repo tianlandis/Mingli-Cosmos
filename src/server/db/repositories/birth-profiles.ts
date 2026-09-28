@@ -9,6 +9,7 @@
 
 import { getDb, schema } from '../index'
 import { eq, and, desc } from 'drizzle-orm'
+import type { RelationValue } from '../../lib/birth-input'
 
 const { birthProfiles } = schema
 
@@ -23,6 +24,7 @@ export function toBirthProfileDto(p: BirthProfileRow) {
   return {
     id: p.id,
     label: p.label,
+    relation: p.relation,
     calendarType: p.calendarType,
     birthYear: p.birthYear,
     birthMonth: p.birthMonth,
@@ -40,6 +42,7 @@ export function toBirthProfileDto(p: BirthProfileRow) {
 export interface CreateBirthProfileInput {
   userId: number
   label?: string | null
+  relation?: RelationValue | null
   calendarType: 'solar' | 'lunar'
   birthYear: number
   birthMonth: number
@@ -109,6 +112,7 @@ export function createBirthProfile(input: CreateBirthProfileInput): BirthProfile
     return tx.insert(birthProfiles).values({
       userId: input.userId,
       label: input.label ?? null,
+      relation: input.relation ?? null,
       calendarType: input.calendarType,
       birthYear: input.birthYear,
       birthMonth: input.birthMonth,
@@ -127,6 +131,7 @@ export function createBirthProfile(input: CreateBirthProfileInput): BirthProfile
 export function updateBirthProfile(id: number, patch: UpdateBirthProfilePatch): BirthProfileRow | undefined {
   const set: Record<string, unknown> = { updatedAt: new Date().toISOString() }
   if (patch.label !== undefined) set.label = patch.label
+  if (patch.relation !== undefined) set.relation = patch.relation
   if (patch.calendarType !== undefined) set.calendarType = patch.calendarType
   if (patch.birthYear !== undefined) set.birthYear = patch.birthYear
   if (patch.birthMonth !== undefined) set.birthMonth = patch.birthMonth

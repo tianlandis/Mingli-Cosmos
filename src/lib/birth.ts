@@ -36,6 +36,48 @@ export const HOUR_OPTIONS: HourOption[] = [
   { label: '晚子', hour: 23, range: '23:00–24:00' },
 ]
 
+// ═══════════════════════════════════════
+// 关系标签
+// ═══════════════════════════════════════
+
+/**
+ * 关系标签：这条档案与本人是什么关系。
+ * key 必须与服务端 src/server/lib/birth-input.ts 的 RELATION_VALUES 完全一致
+ * （有测试锁定：src/server/modules/__tests__/birth-profiles.test.ts）。
+ *
+ * 与 label 分工：label 是显示名（可写「老妈」「我家老大」），relation 是语义（下拉选）。
+ * 未来「关系合盘」按关系选规则（夫妻看日支夫妻宫、亲子看食伤），故必须结构化。
+ */
+export type RelationKey =
+  | 'self' | 'father' | 'mother' | 'spouse' | 'child' | 'sibling'
+  | 'friend' | 'classmate' | 'colleague' | 'other'
+
+export interface RelationOption {
+  key: RelationKey
+  label: string
+  group: '家人' | '社交' | '其他'
+}
+
+/** 关系选项（分组展示：家人 / 社交 / 其他） */
+export const RELATION_OPTIONS: RelationOption[] = [
+  { key: 'self', label: '本人', group: '家人' },
+  { key: 'father', label: '父亲', group: '家人' },
+  { key: 'mother', label: '母亲', group: '家人' },
+  { key: 'spouse', label: '配偶', group: '家人' },
+  { key: 'child', label: '子女', group: '家人' },
+  { key: 'sibling', label: '兄弟姐妹', group: '家人' },
+  { key: 'friend', label: '朋友', group: '社交' },
+  { key: 'classmate', label: '同学', group: '社交' },
+  { key: 'colleague', label: '同事', group: '社交' },
+  { key: 'other', label: '其他', group: '其他' },
+]
+
+/** 关系 key → 中文（列表徽章用；未填/未知回退 null，调用方决定是否显示） */
+export function relationLabel(key: string | null | undefined): string | null {
+  if (!key) return null
+  return RELATION_OPTIONS.find(o => o.key === key)?.label ?? null
+}
+
 /** 界面值（与 BirthFields 受控值一致） */
 export interface BirthValue {
   calendarType: 'solar' | 'lunar'
@@ -64,6 +106,7 @@ export interface BirthPayload {
 export interface BirthProfileDto {
   id: number
   label: string | null
+  relation: RelationKey | null
   calendarType: 'solar' | 'lunar'
   birthYear: number
   birthMonth: number
