@@ -46,6 +46,39 @@
   --wx-metal: #C4A458;
   --wx-water: #3D5A80;
 
+  /* 十神语义色 —— 正/偏成对（正 = 主色，偏 = 浅一档）
+   * 独立于五行色板：按十神类别着色（官杀/印/比劫/食伤/财），
+   * 原先硬编码在 TenGods.tsx 的 SHISHEN_COLORS，设计师无法改动。 */
+  --shishen-guan-zheng: #3D5A80; /* 正官 · 水蓝 */
+  --shishen-guan-pian:  #5A7BA0; /* 偏官 · 水蓝浅 */
+  --shishen-yin-zheng:  #4A7C3F; /* 正印 · 木绿 */
+  --shishen-yin-pian:   #6B9A5E; /* 偏印 · 木绿浅 */
+  --shishen-bi-zheng:   #B8973E; /* 比肩 · 土黄 */
+  --shishen-bi-pian:    #C4A458; /* 劫财 · 金 */
+  --shishen-shi-zheng:  #7B4A8F; /* 食神 · 紫 */
+  --shishen-shi-pian:   #9B6AAF; /* 伤官 · 紫浅 */
+  --shishen-cai-zheng:  #B83A2E; /* 正财 · 朱砂 */
+  --shishen-cai-pian:   #D4685A; /* 偏财 · 朱砂浅 */
+
+  /* 朱砂 tint —— 淡底 / 淡边（选中态、提示条、标签底色） */
+  --cinnabar-050: #FDF5F3;
+  --cinnabar-100: #F5EDEB;
+  --cinnabar-200: #D4A8A4;
+
+  /* 中性 —— 滚动条、边框 hover、进度槽 */
+  --neutral-300: #C4B8A8;
+  --neutral-400: #A89880;
+  --paper-350: #E8E3D9;
+  --line-100: #E0DBD0;
+  --ink-600: #5B5040;
+
+  /* 强调色 —— MBTI / 专题卡片等非命理语义的装饰色 */
+  --accent-purple: #7B4A8F;
+  --accent-purple-deep: #5A3068;
+  --accent-purple-soft: #C4B8D8;
+  --accent-green-soft: #E8F0E4;
+  --gold-600: #8A6D20;
+
   /* 语义层：组件只认这些 */
   --surface-page: var(--paper-100);
   --surface-raised: #FFFFFF;
@@ -78,6 +111,32 @@
   --color-wx-earth: var(--wx-earth);
   --color-wx-metal: var(--wx-metal);
   --color-wx-water: var(--wx-water);
+
+  --color-shishen-guan-zheng: var(--shishen-guan-zheng);
+  --color-shishen-guan-pian: var(--shishen-guan-pian);
+  --color-shishen-yin-zheng: var(--shishen-yin-zheng);
+  --color-shishen-yin-pian: var(--shishen-yin-pian);
+  --color-shishen-bi-zheng: var(--shishen-bi-zheng);
+  --color-shishen-bi-pian: var(--shishen-bi-pian);
+  --color-shishen-shi-zheng: var(--shishen-shi-zheng);
+  --color-shishen-shi-pian: var(--shishen-shi-pian);
+  --color-shishen-cai-zheng: var(--shishen-cai-zheng);
+  --color-shishen-cai-pian: var(--shishen-cai-pian);
+
+  --color-cinnabar-050: var(--cinnabar-050);
+  --color-cinnabar-100: var(--cinnabar-100);
+  --color-cinnabar-200: var(--cinnabar-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-paper-350: var(--paper-350);
+  --color-line-100: var(--line-100);
+  --color-ink-600: var(--ink-600);
+
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-deep: var(--accent-purple-deep);
+  --color-accent-purple-soft: var(--accent-purple-soft);
+  --color-accent-green-soft: var(--accent-green-soft);
+  --color-gold-600: var(--gold-600);
 }
 
 body {

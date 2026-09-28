@@ -4,12 +4,14 @@ interface Props {
   tenGods: ShiShenItem[]
 }
 
+// 十神色 —— 值指向设计 token（src/index.css 的 --shishen-*）。
+// 正/偏成对：正 = 主色，偏 = 浅一档。改动色板请改 token，勿在此写裸值。
 const SHISHEN_COLORS: Record<string, string> = {
-  '正官': '#3D5A80', '偏官': '#5A7BA0',
-  '正印': '#4A7C3F', '偏印': '#6B9A5E',
-  '比肩': '#B8973E', '劫财': '#C4A458',
-  '食神': '#7B4A8F', '伤官': '#9B6AAF',
-  '正财': '#B83A2E', '偏财': '#D4685A',
+  '正官': 'var(--shishen-guan-zheng)', '偏官': 'var(--shishen-guan-pian)',
+  '正印': 'var(--shishen-yin-zheng)', '偏印': 'var(--shishen-yin-pian)',
+  '比肩': 'var(--shishen-bi-zheng)', '劫财': 'var(--shishen-bi-pian)',
+  '食神': 'var(--shishen-shi-zheng)', '伤官': 'var(--shishen-shi-pian)',
+  '正财': 'var(--shishen-cai-zheng)', '偏财': 'var(--shishen-cai-pian)',
 }
 
 export default function TenGods({ tenGods }: Props) {
