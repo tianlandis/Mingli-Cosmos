@@ -8,6 +8,7 @@ import { setConfig, getConfig } from './repositories/app-configs'
 import { listApiKeys, createApiKey } from './repositories/api-keys'
 import { createKnowledgeAsset, getKnowledgeAssetByKey } from './repositories/knowledge-assets'
 import { getPlanByCode, createPlan } from './repositories/billing'
+import { MBTI_CORE32_PROFILES, MBTI_DIMENSION_COUNSELOR } from '../knowledge/mbti-expression-corpus'
 
 export function seedDefaults() {
   // 仅首次运行时写入（config 表为空时触发）
@@ -441,6 +442,18 @@ function seedPersonalityAssets() {
         '食神': { dominant: 'Fi', auxiliary: 'Ne/Se', mbtiTypes: ['INFP', 'ISFP'] },
         '伤官': { dominant: 'Fe', auxiliary: 'Ni/Se', mbtiTypes: ['INFJ', 'ESFJ'] },
       },
+    },
+    {
+      // Phase 4e — MBTI 表达语料（32 核心档案）
+      category: 'personality', key: 'mbti_core32_profiles', sortOrder: 20,
+      description: 'MBTI咨询师口吻核心档案 | Machine-Mindset语料提炼+原创 | Record<"TYPE-A/T",{cnName,group,baziArchetype,profile,innerNeed,careTip}> | 16类型×A/T，A↔身强，T↔身弱',
+      value: MBTI_CORE32_PROFILES,
+    },
+    {
+      // Phase 4e — MBTI 维度级表达语料（8 维度）
+      category: 'personality', key: 'mbti_dimension_counselor', sortOrder: 30,
+      description: 'MBTI维度咨询师档案 | Machine-Mindset语料提炼+原创 | Record<"E/I/S/N/T/F/J/P",{name,baziAnchor,profile,examples,careTip}> | 维度级表达风格参考',
+      value: MBTI_DIMENSION_COUNSELOR,
     },
   ]
   for (const a of assets) { writeSeedAsset(a) }

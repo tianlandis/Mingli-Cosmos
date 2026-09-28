@@ -7,6 +7,7 @@ import type { AnnotationResult } from '../../engine/index'
 import type { Try, PersonalityOutput } from '../lib/types'
 import { createModel, loadConfig, withRetry } from '../lib/llm'
 import { buildPersonalityPrompt } from '../prompts/personality'
+import { buildMbtiAnchorBlock, resolveMbtiExpression } from './mbti-expression'
 
 const MODEL_OVERRIDE = {
   temperature: 0.1,
@@ -24,7 +25,10 @@ export async function generatePersonality(
   const model = createModel(config)
 
   return withRetry(async () => {
-    const { system, prompt } = buildPersonalityPrompt(annotation)
+    // MBTI 表达锚点：命中知识字典则注入，缺失则静默降级为原行为
+    const expr = resolveMbtiExpression(annotation)
+    const mbtiAnchor = expr ? buildMbtiAnchorBlock(expr) : undefined
+    const { system, prompt } = buildPersonalityPrompt(annotation, mbtiAnchor)
 
     const { text } = await generateText({
       model,

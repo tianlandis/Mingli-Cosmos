@@ -12,8 +12,12 @@ const SYSTEM = `你是八字命理分析师。基于给定的结构化数据撰�
 
 /**
  * 构建 Step 1（性格与格局总评）的 LLM 消息
+ * @param mbtiAnchor 可选的 MBTI 表达锚点块（来自 mbti-expression 解析器），缺省时保持原行为
  */
-export function buildPersonalityPrompt(annotation: AnnotationResult): { system: string; prompt: string } {
+export function buildPersonalityPrompt(
+  annotation: AnnotationResult,
+  mbtiAnchor?: string,
+): { system: string; prompt: string } {
   const { patternAnalysis, shiShenProfile, strengthAnalysis } = annotation
 
   // 十神列表
@@ -41,14 +45,15 @@ export function buildPersonalityPrompt(annotation: AnnotationResult): { system: 
 判断依据：${strengthAnalysis.reasons.join('；')}
 
 十神分布：${tenGodList}
-${mbtiInfo}
+${mbtiInfo}${mbtiAnchor ? `\n\n${mbtiAnchor}` : ''}
 
 要求：
 1. 先解释格局名称的来源和含义
 2. 结合十神分布描述性格特质
 3. 如 MBTI 映射可用，自然融入人格画像
-4. 字数控制在 overview ~250字、mbtiProfile ~150字
-5. 结尾附"以上分析仅供参考"`
+4. mbtiProfile 段落如提供了"MBTI 表达锚点"，遵循其口吻（先共情→再描述→后照护建议），全篇使用倾向性措辞（可能/往往/倾向于），禁用绝对化断言，段末加"（现代心理类型视角参考）"
+5. 字数控制在 overview ~250字、mbtiProfile ~150字
+6. 结尾附"以上分析仅供参考"`
 
   return { system: SYSTEM, prompt }
 }

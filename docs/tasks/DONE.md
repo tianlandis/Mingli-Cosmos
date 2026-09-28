@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-09-29 — 🎭 Phase 4e：MBTI 表达语料接入知识字典 + Step1 锚点注入 ✅
+
+> 目标：排盘报告的 `mbtiProfile` 段落从"泛泛而谈"升级为"心理咨询师口吻"——
+> 先共情 → 再描述 → 后照护建议，全篇倾向性措辞，禁绝对化断言（对齐 L3 护栏）。
+
+| 落点 | 内容 |
+|---|---|
+| `src/server/data/mbti-expression-corpus.ts` | 新建语料数据模块：**32 份核心档案**（16 类型 × A/T）+ **8 维度咨询师档案**，提炼自北大 Machine-Mindset 中文语料（Apache 2.0）+ 原创改写 |
+| `src/server/db/seed.ts` | `personality` 分类新增 2 个知识资产：`mbti_core32_profiles`（sortOrder 20）、`mbti_dimension_counselor`（sortOrder 30），writeSeedAsset 按 key 幂等 |
+| `src/server/workflows/mbti-expression.ts` | 新建解析器：格局 MBTI 典型类型 + 日主强弱（强侧→-A / 弱侧→-T / 中和按 score 分界）→ 档案查找 → Prompt 锚点块；字典未命中静默降级 |
+| `src/server/prompts/personality.ts` | `buildPersonalityPrompt` 增加可选 `mbtiAnchor` 参数（缺省行为不变，兼容既有回归测试） |
+| `src/server/workflows/step-personality.ts` | Step1 工作流解析锚点并注入 Prompt |
+| `src/server/workflows/__tests__/mbti-expression.test.ts` | 新增 11 项测试：强弱映射、降级路径、字典热覆盖、兜底数据完整性、锚点块护栏标注 |
+| `docs/corpus/mbti-corpus/` | 语料来源/许可/版权红线（SOURCES）、说明总结（SUMMARY）、口吻规则（expression_rules）、语料 JSON 全套归档 |
+
+**架构对齐**：数据走 Phase 4c 知识字典路线（`knowledge_assets` → `KnowledgeRegistry` → `getOrFallback` 编译时兜底），管理后台可 CRUD 热更新；表达层不改排盘算法，`mbtiProfile` 段末挂"（现代心理类型视角参考）"。
+
+**验证**：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**428/428（25 文件，+11）** ｜ `vite build` 通过。
+
+**版权红线**：16personalities.com 官网文案禁止整段入库；语料许可 Apache 2.0，表达文案为原创改写可商用。
+
+---
+
 ## 2026-09-28 — 🔴 生产事故修复：数据库文件被 git 覆盖（最严重）✅
 
 > 部署备份脚本时**顺带发现**：生产库磁盘文件是 9 表旧库，而应用在写一个**被删除的 inode**

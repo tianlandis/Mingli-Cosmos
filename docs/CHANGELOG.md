@@ -2,6 +2,21 @@
 
 ---
 
+## 未发布 — 🎭 Phase 4e：MBTI 表达语料接入 + Step1 咨询师口吻升级 (2026-09-29)
+
+### 新增
+- **知识字典**：`personality` 分类新增 `mbti_core32_profiles`（16 类型 × A/T 共 32 份咨询师口吻核心档案）与 `mbti_dimension_counselor`（8 维度档案），来源为北大 Machine-Mindset 中文语料（Apache 2.0）提炼 + 原创改写，seed 幂等写入、后台可热更新。
+- **Step1 表达锚点**：新增 `src/server/workflows/mbti-expression.ts` 解析器——由格局 MBTI 典型类型 + 日主强弱（强侧→-A / 弱侧→-T）解析档案并注入 `buildPersonalityPrompt`；`mbtiProfile` 段落升级为"共情→描述→照护建议"三段式，全篇倾向性措辞，段末挂"（现代心理类型视角参考）"。
+- **语料归档**：`docs/corpus/mbti-corpus/`（来源许可、说明总结、口吻规则、语料 JSON）。
+
+### 变更
+- `buildPersonalityPrompt` 增加可选 `mbtiAnchor` 参数，缺省行为不变（向后兼容）。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）428/428（25 文件，新增 11 项）｜ `vite build` 通过。
+
+---
+
 ## 未发布 — 🔴 生产事故修复：数据库文件被 git 覆盖（数据持久化承重柱）(2026-09-28)
 
 > **现象**：部署备份脚本后核对，发现生产库**磁盘文件只有 9 张表**（缺 users/orders 等），
