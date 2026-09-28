@@ -275,4 +275,54 @@ export function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_analytics_event ON analytics_events(event);
     CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at);
   `)
+
+  // ═══════════════════════════════════════
+  // Phase 5 P5-3/P5-6: sessions 扩展（计算权威锚点 + PII 归属）
+  // ═══════════════════════════════════════
+  safeAlter(sqlite, 'sessions', 'chart_hash TEXT')
+  safeAlter(sqlite, 'sessions', 'engine_version TEXT')
+  safeAlter(sqlite, 'sessions', 'user_id INTEGER')
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`)
+
+  // users 扩展：软删除
+  safeAlter(sqlite, 'users', 'deleted_at TEXT')
+
+  // ═══════════════════════════════════════
+  // Phase 5 P5-4 (ADR-004): 额度追加式台账
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS quota_ledger (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      idempotency_key TEXT NOT NULL UNIQUE,
+      user_id INTEGER NOT NULL,
+      delta INTEGER NOT NULL,
+      balance_after INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      ref_key TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_quota_ledger_user ON quota_ledger(user_id);
+    CREATE INDEX IF NOT EXISTS idx_quota_ledger_key ON quota_ledger(idempotency_key);
+    CREATE INDEX IF NOT EXISTS idx_quota_ledger_status ON quota_ledger(status);
+  `)
+
+  // ═══════════════════════════════════════
+  // Phase 5 P5-6 (ADR-006): 告知同意留痕
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS consent_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      version TEXT NOT NULL,
+      agreed INTEGER DEFAULT 1,
+      ip TEXT,
+      user_agent TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_consent_user ON consent_records(user_id);
+    CREATE INDEX IF NOT EXISTS idx_consent_type ON consent_records(type);
+  `)
 }

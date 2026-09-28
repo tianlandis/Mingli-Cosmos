@@ -22,10 +22,66 @@ export function seedDefaults() {
   setConfig('max_chat_messages', '10', '对话窗口大小', '滑动窗口最大消息数', 'number', 'general')
   setConfig('max_retries', '1', 'LLM 重试次数', '失败后最大重试次数', 'number', 'llm')
   setConfig('llm_timeout_ms', '30000', 'LLM 超时(ms)', '单次请求超时时间', 'number', 'llm')
-  // Phase 4b M-6：AI 对话额度扣减开关（默认关闭，开启后登录用户每次对话扣 1 次额度）
-  setConfig('quota_enforce_chat', 'false', 'AI 对话扣减额度', '开启后登录用户每次对话消耗 1 次额度，额度不足返回 402', 'boolean', 'general')
+  // Phase 4b M-6：AI 对话额度扣减开关
+  // [P5-4 ADR-004] 生产环境默认开启（Freemium 商业模型真实生效），开发/测试默认关闭
+  const quotaDefault = process.env.NODE_ENV === 'production' ? 'true' : 'false'
+  setConfig('quota_enforce_chat', quotaDefault, 'AI 对话扣减额度', '开启后登录用户每次对话消耗 1 次额度，额度不足返回 402', 'boolean', 'general')
 
   console.log('[DB] seed: default configs written')
+}
+
+/**
+ * [Phase 5] 增量配置补齐（对**已存在**的库同样生效）
+ * seedDefaults 只在首次初始化运行；本函数按 key 幂等补齐新引入的配置项，
+ * 保证老部署也能在后台看到并调整这些开关。
+ */
+export function seedPhase5Configs() {
+  const ensure = (
+    key: string,
+    value: string,
+    displayName: string,
+    description: string,
+    valueType: string,
+    category: string,
+  ) => {
+    if (getConfig(key)) return
+    setConfig(key, value, displayName, description, valueType, category)
+    console.log(`[DB] seed: config "${key}" added`)
+  }
+
+  // P5-3 计算权威校验闸门：off | warn | enforce
+  ensure(
+    'chart_verify_mode',
+    process.env.CHART_VERIFY_MODE || 'off',
+    '排盘校验模式',
+    '客户端 chart 重算校验闸门：off=仅告警 / warn=告警放行 / enforce=不一致拒绝',
+    'string',
+    'security',
+  )
+
+  // P5-4 额度门禁（老库补齐；新库由 seedDefaults 按环境写入）
+  ensure(
+    'quota_enforce_chat',
+    process.env.NODE_ENV === 'production' ? 'true' : 'false',
+    'AI 对话扣减额度',
+    '开启后登录用户每次对话消耗 1 次额度，额度不足返回 402',
+    'boolean',
+    'general',
+  )
+
+  // P5-5 支付回调签名密钥（留空 = 回调端点关闭，默认安全）
+  ensure(
+    'payment_notify_secret',
+    process.env.PAYMENT_NOTIFY_SECRET || '',
+    '支付回调签名密钥',
+    '留空则支付回调端点不可用；填入后启用签名校验（HMAC-SHA256）',
+    'string',
+    'security',
+  )
+
+  // P5-6 合规：协议版本号（变更时递增，用于同意记录留痕）
+  ensure('consent_privacy_version', 'v1.0', '隐私政策版本', '隐私政策当前版本号', 'string', 'general')
+  ensure('consent_agreement_version', 'v1.0', '用户协议版本', '用户协议当前版本号', 'string', 'general')
 }
 
 /**

@@ -30,7 +30,6 @@ import {
   createPlan,
   updatePlan,
   deletePlan,
-  createSubscription,
   getActiveSubscription,
   grantQuota,
   updateUser,
@@ -38,6 +37,7 @@ import {
   expireStaleSubscriptions,
   countActiveSubscriptions,
 } from '../../db'
+import { settleOrderPaid } from '../../services/order-settlement'
 import { eq } from 'drizzle-orm'
 import { getDb, schema } from '../../db'
 
@@ -289,45 +289,25 @@ route.post('/:id/confirm', async (c) => {
     return c.json({ success: false, error: { code: 'CONFLICT', message: `订单状态为 ${order.status}，无法确认` } }, 409)
   }
 
-  const nowIso = new Date().toISOString()
-  const paid = updateOrderStatus(id, {
-    status: 'paid',
-    payMethod: parsed.success ? parsed.data.payMethod : 'offline',
+  // [P5-5] 走统一结算入口（幂等）；后台人工确认允许结算已超时订单
+  const outcome = settleOrderPaid({
+    orderId: id,
     tradeNo: (parsed.success ? parsed.data.tradeNo : undefined) ?? `ADMIN-${Date.now()}`,
-    paidAt: nowIso,
-    remark: parsed.success ? parsed.data.remark ?? undefined : undefined,
+    channel: parsed.success ? parsed.data.payMethod : 'offline',
+    allowExpired: true,
   })
-
-  // 发放订阅权益
-  let subscription = null
-  if (order.planId) {
-    const plan = getPlanById(order.planId)
-    if (plan) {
-      const existing = getActiveSubscription(order.userId)
-      const startsAt = existing && existing.endsAt > nowIso ? existing.endsAt : nowIso
-      const endsAt = new Date(
-        new Date(startsAt).getTime() + plan.durationDays * 86_400_000,
-      ).toISOString()
-
-      subscription = createSubscription({
-        userId: order.userId,
-        planId: plan.id,
-        orderId: order.id,
-        vipLevel: plan.vipLevel || 'basic',
-        startsAt,
-        endsAt,
-        quotaGranted: plan.quotaGrant ?? 0,
-      })
-      if (plan.quotaGrant > 0) grantQuota(order.userId, plan.quotaGrant)
-      updateUser(order.userId, { vipLevel: plan.vipLevel || 'basic', vipExpiresAt: endsAt })
-    }
+  if (!outcome.ok) {
+    return c.json({ success: false, error: { code: 'CONFLICT', message: outcome.message } }, 409)
   }
+  const paid = outcome.order
+  const subscription = outcome.subscription
 
   logAudit(c, {
     action: 'update',
     resource: 'order',
     resourceId: id,
     detail: `后台确认收款：订单 ${order.orderNo} ¥${order.amountCents / 100}` +
+            (parsed.success && parsed.data.remark ? `，备注：${parsed.data.remark}` : '') +
             (subscription ? `，订阅生效至 ${subscription.endsAt}` : ''),
   })
 

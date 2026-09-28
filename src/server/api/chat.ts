@@ -15,9 +15,17 @@ import { validateResponse } from '../lib/guardrail'
 import { detectPaipanAttempt, buildBlockSSE } from '../lib/anti-hallucination'
 import { createModel, loadConfig } from '../lib/llm'
 import { getEnabledTools } from '../modules/llm/tools-executor'
-import { getActiveApiKeys, isDbReady, getConfig, consumeQuota } from '../db/index'
+import { getActiveApiKeys, isDbReady, getConfig } from '../db/index'
+import {
+  reserveQuota,
+  commitQuota,
+  refundQuota,
+  type ReserveFailReason,
+} from '../db/index'
 import { orchestrate } from '../agents/orchestrate'
 import { extractBearerToken, verifyUserToken } from '../core/middleware/user-auth'
+import { resolveChartSource } from '../lib/chart-source'
+import { newTraceId } from '../lib/trace'
 
 /** 滑动窗口：最多保留最近 N 条消息 */
 const MAX_MESSAGES = 10
@@ -66,58 +74,96 @@ function loadActiveTools(): Record<string, ReturnType<typeof import('ai').tool>>
 export const chatRoute = new Hono()
 
 /**
- * Phase 4b M-6 — 登录用户 AI 对话额度扣减
+ * [P5-4 ADR-004] 幂等额度预留（替代旧的 consumeQuota 单点扣减）
  *
  * 安全边界（保证不影响既有行为）：
  *   1. 仅在 DB 已初始化时才读取配置（isDbReady），避免在测试中误建真实库文件
  *   2. 默认关闭（quota_enforce_chat != 'true'），未登录 / 无 token 请求直接放行
- *   3. 扣减失败（额度不足或账号停用）返回 402，由前端引导订阅
+ *   3. 预留失败（额度不足 / 账号停用）返回结构化错误，由前端引导订阅
  *
- * @returns 需要中断请求时返回 Response，否则返回 null
+ * @returns { reject } 需要中断请求；{ key } 预留成功（流结束需 commit / 失败需 refund）
  */
-function consumeChatQuota(c: any): Response | null {
-  if (!isDbReady()) return null
+function reserveChatQuota(c: any, refKey?: string): {
+  reject?: Response
+  key?: string
+} {
+  if (!isDbReady()) return {}
 
   let enabled = false
   try {
     enabled = getConfig('quota_enforce_chat')?.value === 'true'
   } catch {
-    return null
+    return {}
   }
-  if (!enabled) return null
+  if (!enabled) return {}
 
   const token = extractBearerToken(c)
-  if (!token) return null
+  if (!token) return {}
 
   const payload = verifyUserToken(token)
-  if (!payload) return null
+  if (!payload) return {}
 
-  if (!consumeQuota(payload.userId)) {
-    return c.json({
-      error: 'QUOTA_EXHAUSTED',
+  // 幂等键：优先取客户端头（重试复用），否则服务端生成
+  const headerKey = c.req.header('x-idempotency-key')
+  const key = headerKey && /^[\w.:-]{8,128}$/.test(headerKey)
+    ? headerKey
+    : `chat_${payload.userId}_${newTraceId()}`
+
+  const res = reserveQuota({
+    userId: payload.userId,
+    idempotencyKey: key,
+    cost: 1,
+    reason: 'chat',
+    refKey: refKey ?? null,
+  })
+
+  if (res.ok) return { key }
+
+  const map: Record<ReserveFailReason, { status: 402 | 403 | 401 | 409; code: string; message: string }> = {
+    QUOTA_EXHAUSTED: {
+      status: 402, code: 'QUOTA_EXHAUSTED',
       message: 'AI 深度解读额度已用完，请订阅套餐或联系客服',
-      code: 'QUOTA_EXHAUSTED',
-    }, 402)
+    },
+    ACCOUNT_DISABLED: { status: 403, code: 'ACCOUNT_DISABLED', message: '账号已被停用，请联系客服' },
+    USER_NOT_FOUND: { status: 401, code: 'UNAUTHORIZED', message: '登录状态失效，请重新登录' },
+    KEY_REFUNDED: { status: 409, code: 'IDEMPOTENCY_KEY_REFUNDED', message: '该幂等键已退款，请用新键重试' },
   }
-  return null
+  const m = map[res.reason ?? 'QUOTA_EXHAUSTED']
+  return {
+    reject: c.json({
+      error: m.code,
+      code: m.code,
+      message: m.message,
+      quotaRemaining: res.balanceAfter ?? 0,
+    }, m.status),
+  }
 }
 
 chatRoute.post('/api/chat', async (c) => {
   const body = await c.req.json() as ChatRequest
 
-  if (!body.chart || !body.annotation) {
-    return c.json({ error: 'BAD_REQUEST', message: '缺少 chart 或 annotation 字段' }, 400)
-  }
-
-  // 校验 chart 结构完整性（必须有 yearPillar + dayMaster 等排盘核心字段）
-  if (!body.chart.yearPillar || !body.chart.dayMaster) {
+  // ── [P5-3 ADR-005] 解析权威排盘数据源（session 权威 / 重算校验 / 兼容旧客户端）──
+  const resolved = await resolveChartSource({
+    sessionId: body.sessionId,
+    chart: body.chart,
+    annotation: body.annotation,
+    birth: body.birth,
+  })
+  if (!resolved.ok) {
+    const status = resolved.code === 'SESSION_NOT_FOUND' ? 404
+      : resolved.code === 'CHART_MISMATCH' ? 409
+        : 400
     return c.json({
-      error: 'BAD_REQUEST',
-      message: 'chart 必须包含完整八字排盘结果',
-      hint: '请先调用 POST /api/report 完成排盘后，将返回的 chart + annotation 传入 /api/chat',
-      required: ['yearPillar', 'monthPillar', 'dayPillar', 'hourPillar', 'dayMaster'],
-    }, 400)
+      error: resolved.code,
+      message: resolved.message,
+      ...(resolved.detail ? { detail: resolved.detail } : {}),
+      ...(resolved.hint ? { hint: resolved.hint } : {}),
+    }, status)
   }
+  const { chart, annotation } = resolved.data
+  c.header('X-Chart-Verified', String(resolved.data.verified))
+  c.header('X-Chart-Source', resolved.data.source)
+  for (const w of resolved.warnings) console.warn('[ChartSource]', w)
 
   if (!body.messages || body.messages.length === 0) {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 messages 字段' }, 400)
@@ -132,17 +178,17 @@ chatRoute.post('/api/chat', async (c) => {
     }
   }
 
-  // Phase 4b M-6：登录用户额度扣减（默认关闭，配置 quota_enforce_chat=true 开启）
-  const quotaReject = consumeChatQuota(c)
-  if (quotaReject) return quotaReject
+  // ── [P5-4 ADR-004] 幂等额度预留（默认关闭，配置 quota_enforce_chat=true 开启）──
+  const quota = reserveChatQuota(c, resolved.data.sessionId)
+  if (quota.reject) return quota.reject
 
-  const systemPrompt = buildSystemPrompt(body.chart, body.annotation, body.reportSummary)
+  const systemPrompt = buildSystemPrompt(chart, annotation, body.reportSummary)
   const trimmedMessages = trimMessages(body.messages)
   const model = createModel(loadConfig())
   const tools = loadActiveTools()
 
   console.log(`\n[Chat] ═══ 新对话 ═══`)
-  console.log(`[Chat] 日主: ${body.chart.dayMaster} | 消息: ${trimmedMessages.length}`)
+  console.log(`[Chat] 日主: ${chart.dayMaster} | 消息: ${trimmedMessages.length} | 来源: ${resolved.data.source} verified=${resolved.data.verified}`)
   console.log(`[Chat] 工具: ${Object.keys(tools).length > 0 ? Object.keys(tools).join(', ') : '无'}`)
   if (lastUserMsg) {
     const preview = lastUserMsg.content.slice(0, 80)
@@ -289,9 +335,16 @@ chatRoute.post('/api/chat', async (c) => {
         }
 
         controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+        // [P5-4] AI 成功 → 落定额度（幂等）
+        if (quota.key) commitQuota(quota.key)
         controller.close()
       } catch (err) {
         console.error('[Chat SSE] stream error:', err)
+        // [P5-4] AI 失败 → 退回额度（幂等，且不会退两次）
+        if (quota.key) {
+          const r = refundQuota(quota.key)
+          if (r.refunded) console.warn(`[Chat] 额度已退回 ${r.amount}（key=${quota.key}）`)
+        }
         controller.error(err)
       }
     },
@@ -314,16 +367,28 @@ chatRoute.post('/api/chat', async (c) => {
 chatRoute.post('/api/chat/route', async (c) => {
   const body = await c.req.json() as ChatRequest
 
-  if (!body.chart || !body.annotation) {
-    return c.json({ error: 'BAD_REQUEST', message: '缺少 chart 或 annotation 字段' }, 400)
-  }
-  if (!body.chart.yearPillar || !body.chart.dayMaster) {
+  // ── [P5-3 ADR-005] 权威数据源解析（与 /api/chat 同口径）──
+  const resolved = await resolveChartSource({
+    sessionId: body.sessionId,
+    chart: body.chart,
+    annotation: body.annotation,
+    birth: body.birth,
+  })
+  if (!resolved.ok) {
+    const status = resolved.code === 'SESSION_NOT_FOUND' ? 404
+      : resolved.code === 'CHART_MISMATCH' ? 409
+        : 400
     return c.json({
-      error: 'BAD_REQUEST',
-      message: 'chart 必须包含完整八字排盘结果',
-      hint: '请先调用 POST /api/report 完成排盘后，将返回的 chart + annotation 传入 /api/chat/route',
-    }, 400)
+      error: resolved.code,
+      message: resolved.message,
+      ...(resolved.detail ? { detail: resolved.detail } : {}),
+      ...(resolved.hint ? { hint: resolved.hint } : {}),
+    }, status)
   }
+  const { chart, annotation } = resolved.data
+  c.header('X-Chart-Verified', String(resolved.data.verified))
+  c.header('X-Chart-Source', resolved.data.source)
+
   if (!body.messages || body.messages.length === 0) {
     return c.json({ error: 'BAD_REQUEST', message: '缺少 messages 字段' }, 400)
   }
@@ -343,15 +408,15 @@ chatRoute.post('/api/chat/route', async (c) => {
   let routeResult: Awaited<ReturnType<typeof orchestrate>>
   try {
     routeResult = await orchestrate({
-      chart: body.chart,
-      annotation: body.annotation,
+      chart,
+      annotation,
       messages: trimmedMessages,
       reportSummary: body.reportSummary,
     })
   } catch (err) {
     console.error('[Multi-Agent] 路由失败:', err)
     // 回退：使用默认墨白 prompt
-    const fallbackPrompt = buildSystemPrompt(body.chart, body.annotation, body.reportSummary)
+    const fallbackPrompt = buildSystemPrompt(chart, annotation, body.reportSummary)
     return createSSEStream(trimmedMessages, fallbackPrompt, 'general')
   }
 

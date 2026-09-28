@@ -42,7 +42,13 @@ async function api(method, path, { token, body, admin } = {}) {
   })
   let json = null
   try { json = await res.json() } catch { /* 非 JSON 响应 */ }
-  return { status: res.status, json }
+  return { status: res.status, json, headers: res.headers }
+}
+
+/** 需要读取文本响应（/api/metrics）时用 */
+async function rawText(path) {
+  const res = await fetch(BASE + path)
+  return { status: res.status, text: await res.text(), headers: res.headers }
 }
 
 const suffix = Date.now().toString().slice(-6)
@@ -157,6 +163,58 @@ async function main() {
 
   const noAdmin = await api('GET', '/api/v1/admin/users')
   ok('无 token 访问后台 → 401', noAdmin.status === 401, `status=${noAdmin.status}`)
+
+  // ── 8. Phase 5 骨架能力 ──────────────────────
+  console.log('\n[8] Phase 5（可观测性 / 计算权威 / 额度与合规）')
+
+  const deep = await api('GET', '/api/health/deep')
+  ok('深度健康检查 → 200', deep.status === 200, `status=${deep.status}`)
+  ok('深度检查含 database 项', Array.isArray(deep.json?.checks) &&
+    deep.json.checks.some((c) => c.name === 'database'), JSON.stringify(deep.json?.checks || []))
+
+  ok('所有响应带 X-Trace-Id', !!health.headers.get('x-trace-id'),
+    `trace=${health.headers.get('x-trace-id')}`)
+
+  const metrics = await rawText('/api/metrics')
+  ok('指标端点 → 200 且为 Prometheus 文本', metrics.status === 200 &&
+    metrics.text.includes('mingli_http_requests_total'), `status=${metrics.status}`)
+
+  // 计算权威：服务端权威排盘
+  const chart = await api('POST', '/api/v1/app/chart', {
+    token: loginToken,
+    body: { year: 1990, month: 6, day: 15, hour: 12, minute: 30, gender: '男', calendarType: 'solar' },
+  })
+  ok('服务端权威排盘 → 200', chart.status === 200, `status=${chart.status} ${JSON.stringify(chart.json?.error || '')}`)
+  ok('返回 sessionId + chartHash + 引擎版本',
+    !!chart.json?.data?.sessionId && /^v1:/.test(chart.json?.data?.chartHash || '') &&
+    !!chart.json?.data?.engineVersion,
+    `sessionId=${chart.json?.data?.sessionId} hash=${chart.json?.data?.chartHash}`)
+  const sessionId = chart.json?.data?.sessionId
+
+  // 未知 session → 拒绝（权威校验生效，不触达 LLM）
+  const badSession = await api('POST', '/api/chat', {
+    token: loginToken,
+    body: { sessionId: 'sess_does_not_exist', messages: [{ role: 'user', content: '你好' }] },
+  })
+  ok('未知 sessionId 对话 → 404', badSession.status === 404, `status=${badSession.status}`)
+
+  // 合规：告知同意 + 数据导出
+  const consent = await api('POST', '/api/v1/app/user/consent', {
+    token: loginToken, body: { type: 'privacy_policy' },
+  })
+  ok('告知同意留痕 → 201', consent.status === 201, `status=${consent.status}`)
+
+  const exportData = await api('GET', '/api/v1/app/user/data/export', { token: loginToken })
+  ok('数据导出 → 200 且含排盘与同意', exportData.status === 200 &&
+    Array.isArray(exportData.json?.data?.charts) &&
+    (exportData.json?.data?.consents?.length ?? 0) >= 1, `status=${exportData.status}`)
+  ok('导出不含密码哈希', !('passwordHash' in (exportData.json?.data?.user || {})))
+  ok('导出含本次排盘 session', sessionId
+    ? exportData.json?.data?.charts?.some((c) => c.sessionId === sessionId)
+    : true)
+
+  const channels = await api('GET', '/api/v1/app/payment/channels')
+  ok('支付渠道端点 → 200', channels.status === 200, `status=${channels.status}`)
 
   // ── 汇总 ─────────────────────────────────────
   console.log('\n────────────────────────────')

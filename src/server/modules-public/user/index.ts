@@ -32,8 +32,22 @@ import {
   updateUser,
   createUserSession,
   invalidateUserSession,
+  invalidateAllUserSessions,
   getRemainingQuota,
   listUserSessions,
+  softDeleteUser,
+  listSessionsByUser,
+  deleteSessionsByUser,
+  listLedgerByUser,
+  listSubscriptions,
+  listOrders,
+  listEventsByUser,
+  anonymizeEventsByUser,
+  recordConsent,
+  listConsentsByUser,
+  CONSENT_TYPES,
+  createAuditLog,
+  getConfig,
 } from '../../db'
 import { getActiveSubscription } from '../../db'
 import { trackEvent, type UserRow } from '../../db'
@@ -340,6 +354,178 @@ route.get('/status', optionalUserAuth, (c) => {
       authenticated: true,
       user: user ? sanitize(user) : null,
       quotaRemaining: user ? getRemainingQuota(user.id) : 0,
+    },
+  })
+})
+
+// ═══════════════════════════════════════
+// [P5-6 ADR-006] 合规底座
+//   POST   /consent        告知同意留痕
+//   GET    /data/export    数据导出（机读 JSON）
+//   DELETE /data           数据删除（软删 + 硬删 PII + 审计）
+// ═══════════════════════════════════════
+
+const consentSchema = z.object({
+  type: z.enum(['privacy_policy', 'user_agreement']),
+  version: z.string().max(32).optional(),
+  agreed: z.boolean().optional(),
+})
+
+route.post('/consent', userAuthMiddleware, async (c) => {
+  let body: unknown
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
+  }
+
+  const parsed = consentSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message || '参数错误' },
+    }, 400)
+  }
+
+  const { type, agreed } = parsed.data
+  // 版本号：请求优先 → 后台配置兜底
+  const configKey = type === 'privacy_policy' ? 'consent_privacy_version' : 'consent_agreement_version'
+  let version = parsed.data.version
+  if (!version) {
+    try { version = getConfig(configKey)?.value || 'v1.0' } catch { version = 'v1.0' }
+  }
+
+  const current = c.get('currentUser')!
+  const row = recordConsent({
+    userId: current.userId,
+    type,
+    version,
+    agreed: agreed !== false,
+    ip: clientIp(c),
+    userAgent: c.req.header('user-agent') ?? null,
+  })
+
+  return c.json({
+    success: true,
+    data: { id: row.id, type: row.type, version: row.version, agreed: row.agreed === 1, createdAt: row.createdAt },
+  }, 201)
+})
+
+route.get('/consent', userAuthMiddleware, (c) => {
+  const current = c.get('currentUser')!
+  return c.json({
+    success: true,
+    data: {
+      types: CONSENT_TYPES,
+      records: listConsentsByUser(current.userId).map(r => ({
+        id: r.id,
+        type: r.type,
+        version: r.version,
+        agreed: r.agreed === 1,
+        createdAt: r.createdAt,
+      })),
+    },
+  })
+})
+
+route.get('/data/export', userAuthMiddleware, (c) => {
+  const current = c.get('currentUser')!
+  const user = getUserById(current.userId)
+  if (!user) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: '用户不存在' } }, 404)
+  }
+
+  const parse = <T>(raw: string | null): T | null => {
+    if (!raw) return null
+    try { return JSON.parse(raw) as T } catch { return null }
+  }
+
+  const charts = listSessionsByUser(user.id).map(s => ({
+    sessionId: s.id,
+    chartHash: s.chartHash,
+    engineVersion: s.engineVersion,
+    chart: parse<unknown>(s.chart),
+    annotation: parse<unknown>(s.annotation),
+    createdAt: s.createdAt,
+  }))
+
+  return c.json({
+    success: true,
+    data: {
+      exportedAt: new Date().toISOString(),
+      notice: '本文件包含您的个人信息（含生辰），请妥善保管',
+      user: sanitize(user),
+      consents: listConsentsByUser(user.id).map(r => ({
+        type: r.type, version: r.version, agreed: r.agreed === 1, createdAt: r.createdAt,
+      })),
+      subscriptions: listSubscriptions(user.id),
+      orders: listOrders({ userId: user.id, pageSize: 100 }).items,
+      quotaLedger: listLedgerByUser(user.id).map(l => ({
+        key: l.idempotencyKey, delta: l.delta, balanceAfter: l.balanceAfter,
+        reason: l.reason, status: l.status, createdAt: l.createdAt,
+      })),
+      charts,
+      events: listEventsByUser(user.id).map(e => ({
+        event: e.event, payload: parse<unknown>(e.payload), createdAt: e.createdAt,
+      })),
+    },
+  })
+})
+
+const deleteSchema = z.object({
+  confirm: z.literal('DELETE', { message: '请输入 DELETE 以确认删除' }),
+  password: z.string().min(1, '请输入密码以验证身份'),
+})
+
+route.delete('/data', userAuthMiddleware, async (c) => {
+  let body: unknown
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
+  }
+
+  const parsed = deleteSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message || '参数错误' },
+    }, 400)
+  }
+
+  const current = c.get('currentUser')!
+  const user = getUserById(current.userId)
+  if (!user) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: '用户不存在' } }, 404)
+  }
+  if (!bcrypt.compareSync(parsed.data.password, user.passwordHash)) {
+    return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: '密码错误，删除未执行' } }, 401)
+  }
+
+  // 1) 硬删 PII：排盘快照（含生辰）
+  const purgedCharts = deleteSessionsByUser(user.id)
+  // 2) 匿名化埋点（保留统计价值，抹除身份关联）
+  const anonymizedEvents = anonymizeEventsByUser(user.id)
+  // 3) 软删用户（状态置 deleted + 清空可识别字段）
+  softDeleteUser(user.id)
+  // 4) 立即失效所有登录会话
+  const revokedSessions = invalidateAllUserSessions(user.id)
+
+  // 5) 审计（只留操作元数据，不留原始 PII）
+  createAuditLog({
+    action: 'delete',
+    resource: 'user_data',
+    resourceId: user.id,
+    detail: JSON.stringify({ purgedCharts, anonymizedEvents, revokedSessions, self: true }),
+    operator: `user:${user.id}`,
+    ip: clientIp(c),
+    createdAt: new Date().toISOString(),
+  })
+
+  return c.json({
+    success: true,
+    data: {
+      deleted: true,
+      purgedCharts,
+      anonymizedEvents,
+      revokedSessions,
+      message: '账号数据已删除，登录会话已失效',
     },
   })
 })

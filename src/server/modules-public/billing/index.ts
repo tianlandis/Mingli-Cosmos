@@ -18,16 +18,13 @@ import {
   createOrder,
   getOrderById,
   listOrders,
-  updateOrderStatus,
-  createSubscription,
-  getActiveSubscription,
   listSubscriptions,
-  grantQuota,
-  updateUser,
+  getActiveSubscription,
   getUserById,
 } from '../../db'
 import { trackEvent } from '../../db'
 import type { PlanRow } from '../../db'
+import { settleOrderPaid } from '../../services/order-settlement'
 
 export const route = new Hono<UserEnv>()
 
@@ -79,30 +76,10 @@ function formatPlan(p: PlanRow) {
  * - 已有有效订阅 → 在原到期时间上顺延
  * - 无有效订阅或已过期 → 从当前时间起算
  * 同时发放套餐额度并提升会员等级
+ *
+ * ⚠️ [P5-5] 实现已上移至 `services/order-settlement.ts`（结算单一入口），
+ *    此处不再保留本地实现，避免「两处发货」造成的幂等漏洞。
  */
-function activateSubscription(userId: number, plan: PlanRow, orderId: number) {
-  const nowIso = new Date().toISOString()
-  const existing = getActiveSubscription(userId)
-  const startsAt = existing && existing.endsAt > nowIso ? existing.endsAt : nowIso
-  const endsAt = new Date(
-    new Date(startsAt).getTime() + plan.durationDays * 86_400_000,
-  ).toISOString()
-
-  const sub = createSubscription({
-    userId,
-    planId: plan.id,
-    orderId,
-    vipLevel: plan.vipLevel || 'basic',
-    startsAt,
-    endsAt,
-    quotaGranted: plan.quotaGrant ?? 0,
-  })
-
-  if (plan.quotaGrant > 0) grantQuota(userId, plan.quotaGrant)
-  updateUser(userId, { vipLevel: plan.vipLevel || 'basic', vipExpiresAt: endsAt })
-
-  return sub
-}
 
 // ═══════════════════════════════════════
 // GET /plans — 套餐列表（公开）
@@ -236,32 +213,24 @@ route.post('/orders/:id/pay', userAuthMiddleware, async (c) => {
   if (order.status !== 'pending') {
     return c.json({ success: false, error: { code: 'CONFLICT', message: `订单当前状态为 ${order.status}，无法支付` } }, 409)
   }
-  if (order.expiredAt && order.expiredAt < new Date().toISOString()) {
-    updateOrderStatus(id, { status: 'cancelled', remark: '超时未支付自动关闭' })
-    return c.json({ success: false, error: { code: 'ORDER_EXPIRED', message: '订单已超时关闭，请重新下单' } }, 410)
-  }
 
-  const nowIso = new Date().toISOString()
-  const paid = updateOrderStatus(id, {
-    status: 'paid',
-    payMethod,
-    tradeNo: tradeNo ?? `MOCK-${Date.now()}`,
-    paidAt: nowIso,
+  // [P5-5] 走统一结算入口（幂等）
+  const outcome = settleOrderPaid({
+    orderId: id,
+    tradeNo,
+    channel: payMethod,
   })
-
-  // 发放权益
-  let subscription = null
-  if (order.planId) {
-    const plan = getPlanById(order.planId)
-    if (plan) {
-      const sub = activateSubscription(order.userId, plan, order.id)
-      subscription = {
-        vipLevel: sub.vipLevel,
-        startsAt: sub.startsAt,
-        endsAt: sub.endsAt,
-        quotaGranted: sub.quotaGranted,
-      }
-    }
+  if (!outcome.ok) {
+    const status = outcome.code === 'ORDER_EXPIRED' ? 410
+      : outcome.code === 'NOT_FOUND' ? 404
+        : 409
+    return c.json({
+      success: false,
+      error: {
+        code: outcome.code === 'ORDER_EXPIRED' ? 'ORDER_EXPIRED' : 'CONFLICT',
+        message: outcome.message,
+      },
+    }, status)
   }
 
   trackEvent({
@@ -275,14 +244,14 @@ route.post('/orders/:id/pay', userAuthMiddleware, async (c) => {
   return c.json({
     success: true,
     data: {
-      order: paid ? {
-        id: paid.id,
-        orderNo: paid.orderNo,
-        status: paid.status,
-        amountCents: paid.amountCents,
-        paidAt: paid.paidAt,
+      order: outcome.order ? {
+        id: outcome.order.id,
+        orderNo: outcome.order.orderNo,
+        status: outcome.order.status,
+        amountCents: outcome.order.amountCents,
+        paidAt: outcome.order.paidAt,
       } : null,
-      subscription,
+      subscription: outcome.subscription,
       quotaRemaining: user ? Math.max(0, user.quotaTotal - user.quotaUsed) : 0,
     },
   })

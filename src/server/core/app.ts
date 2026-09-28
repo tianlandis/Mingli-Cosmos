@@ -15,6 +15,9 @@ import {
   logger,
   rotateLogs,
 } from '../lib/logger'
+import { observabilityMiddleware } from '../lib/trace'
+import { renderPrometheus } from '../lib/metrics'
+import { deepHealthcheck } from '../lib/health'
 
 export interface AppOptions {
   isProduction: boolean
@@ -27,6 +30,11 @@ export interface AppOptions {
 export async function createApp(options: AppOptions): Promise<Hono> {
   const app = new Hono()
   const { isProduction, logEnabled } = options
+
+  // ═══════════════════════════════════════
+  // [P5-2 ADR-007] 追踪 + 分维度指标（必须最先注册）
+  // ═══════════════════════════════════════
+  app.use('*', observabilityMiddleware())
 
   // ═══════════════════════════════════════
   // 日志中间件
@@ -57,6 +65,20 @@ export async function createApp(options: AppOptions): Promise<Hono> {
       node_version: process.version,
       env: isProduction ? 'production' : 'development',
     })
+  })
+
+  // ── [P5-2 ADR-007] 深度健康检查：探测 DB 可读 + LLM 上游可达 ──
+  app.get('/api/health/deep', async (c) => {
+    const result = await deepHealthcheck()
+    const httpStatus = result.status === 'down' ? 503 : 200
+    return c.json(result, httpStatus)
+  })
+
+  // ── [P5-2 ADR-007] 指标暴露（Prometheus 文本格式；进程内单实例口径）──
+  app.get('/api/metrics', (c) => {
+    // 指标端点自身不应被计入业务延迟统计的干扰项——已在中间件中按 scope 归类为 core
+    c.header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+    return c.body(renderPrometheus())
   })
 
   // ═══════════════════════════════════════

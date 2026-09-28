@@ -2,10 +2,19 @@
 // B 模式流水线执行器 — runReportPipeline
 // ============================================================
 
-import type { Try, ReportResult, ReportRequest } from '../lib/types'
+import type { Try, ReportResult } from '../lib/types'
+import type { BaZiResult, AnnotationResult } from '../../engine'
 import { generatePersonality } from './step-personality'
 import { generateLuck } from './step-luck'
 import { assembleReport } from './step-assemble'
+
+/**
+ * B 模式流水线输入（[P5-3] 数据源解析后，权威 chart/annotation 必填）
+ */
+export interface ReportPipelineInput {
+  chart: BaZiResult
+  annotation: AnnotationResult
+}
 
 /**
  * B 模式：命书生成 SOP 流水线
@@ -19,7 +28,7 @@ import { assembleReport } from './step-assemble'
  * 任意步骤失败 → Try.ok = false 短路返回
  */
 export async function runReportPipeline(
-  req: ReportRequest,
+  req: ReportPipelineInput,
 ): Promise<Try<ReportResult>> {
   // Step 1: 性格格局
   const s1 = await generatePersonality(req.annotation)

@@ -146,3 +146,21 @@ export function recentEvents(limit = 20): AnalyticsEventRow[] {
     .limit(limit)
     .all()
 }
+
+/** [P5-6 ADR-006] 某用户的事件流水（数据导出用） */
+export function listEventsByUser(userId: number, limit = 500): AnalyticsEventRow[] {
+  return getDb().select().from(analyticsEvents)
+    .where(eq(analyticsEvents.userId, userId))
+    .orderBy(desc(analyticsEvents.id))
+    .limit(limit)
+    .all()
+}
+
+/** [P5-6 ADR-006] 匿名化某用户的埋点（保留统计价值，抹除身份关联） */
+export function anonymizeEventsByUser(userId: number): number {
+  const res = getDb().update(analyticsEvents)
+    .set({ userId: null, ip: null, userAgent: null })
+    .where(eq(analyticsEvents.userId, userId))
+    .run()
+  return res.changes
+}

@@ -48,8 +48,13 @@ export interface ReportResult {
 }
 
 export interface ReportRequest {
-  chart: BaZiResult
-  annotation: AnnotationResult
+  /** [P5-3] 权威排盘会话 ID（推荐；提供后忽略 chart/annotation） */
+  sessionId?: string
+  /** 兼容旧客户端：客户端计算的排盘结果 */
+  chart?: BaZiResult
+  annotation?: AnnotationResult
+  /** [P5-3] 生辰：提供后服务端重算并比对 chartHash */
+  birth?: BirthInput
 }
 
 // ═══════════════════════════════════════
@@ -57,11 +62,30 @@ export interface ReportRequest {
 // ═══════════════════════════════════════
 
 export interface ChatRequest {
-  chart: BaZiResult
-  annotation: AnnotationResult
+  /** [P5-3] 权威排盘会话 ID（推荐；提供后忽略 chart/annotation） */
+  sessionId?: string
+  chart?: BaZiResult
+  annotation?: AnnotationResult
+  /** [P5-3] 生辰：提供后服务端重算并比对 chartHash */
+  birth?: BirthInput
   messages: ChatMessage[]
   /** 如果已生成命书，注入摘要 */
   reportSummary?: string
+}
+
+/**
+ * [P5-3 ADR-005] 排盘生辰输入（重算校验用）
+ * 放在纯类型层，供前端与各 API 复用，不引入 server/db 依赖。
+ */
+export interface BirthInput {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute?: number
+  gender: '男' | '女'
+  calendarType?: 'solar' | 'lunar'
+  isLeapMonth?: boolean
 }
 
 export interface ChatMessage {

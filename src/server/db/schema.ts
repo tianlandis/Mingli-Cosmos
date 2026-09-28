@@ -99,7 +99,43 @@ export const sessions = sqliteTable('sessions', {
   chart: text('chart').notNull(),                 // JSON: BaZiResult
   annotation: text('annotation').notNull(),       // JSON: AnnotationResult
   messageCount: integer('message_count').default(0),
+  // [P5-3 ADR-005] 计算权威锚点：稳定指纹 + 引擎口径版本 + 归属用户（PII 删除用）
+  chartHash: text('chart_hash'),                  // v1:<sha256>
+  engineVersion: text('engine_version'),          // v4.1.0
+  userId: integer('user_id'),                     // 可空：匿名排盘亦允许
   lastActive: text('last_active').default(sql`(datetime('now'))`),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 5 P5-4 ADR-004] quota_ledger — 额度追加式台账（幂等消费）
+// ═══════════════════════════════════════
+
+export const quotaLedger = sqliteTable('quota_ledger', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  idempotencyKey: text('idempotency_key').notNull().unique(), // (userId, key) 语义，key 全局唯一
+  userId: integer('user_id').notNull(),
+  delta: integer('delta').notNull(),              // 负数=消费，正数=发放/退款
+  balanceAfter: integer('balance_after').notNull(), // 记账后剩余额度（对账锚点）
+  reason: text('reason').notNull(),               // 'chat' | 'subscribe' | 'refund' | 'admin'
+  status: text('status').default('pending').notNull(), // 'pending' | 'committed' | 'refunded'
+  refKey: text('ref_key'),                        // 关联对象（sessionId / orderNo）
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [Phase 5 P5-6 ADR-006] consent_records — 告知同意留痕
+// ═══════════════════════════════════════
+
+export const consentRecords = sqliteTable('consent_records', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull(),
+  type: text('type').notNull(),                   // 'privacy_policy' | 'user_agreement'
+  version: text('version').notNull(),             // 协议版本号
+  agreed: integer('agreed').default(1).notNull(), // 1=同意 0=拒绝
+  ip: text('ip'),
+  userAgent: text('user_agent'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 })
 
@@ -172,6 +208,8 @@ export const users = sqliteTable('users', {
   lastLoginAt: text('last_login_at'),
   lastLoginIp: text('last_login_ip'),
   registerIp: text('register_ip'),
+  // [P5-6 ADR-006] 软删除时间（到期硬删由维护任务处理）
+  deletedAt: text('deleted_at'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
 })

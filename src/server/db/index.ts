@@ -10,7 +10,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import * as schema from './schema'
 import { runMigrations } from './migrate'
-import { seedDefaults, seedLocalProvider, seedKnowledgeAssets, seedDefaultPlans } from './seed'
+import { seedDefaults, seedLocalProvider, seedKnowledgeAssets, seedDefaultPlans, seedPhase5Configs } from './seed'
 
 let _db: ReturnType<typeof drizzle> | null = null
 let _sqlite: Database.Database | null = null
@@ -73,6 +73,9 @@ export function initDb() {
   seedDefaults()
   seedLocalProvider()
 
+  // Phase 5：增量配置补齐（老库同样生效）
+  seedPhase5Configs()
+
   // Phase 4b：写入命理基础数据种子（地支关系 12 项）
   seedKnowledgeAssets()
 
@@ -111,3 +114,6 @@ export * from './repositories/knowledge-assets'
 export * from './repositories/users'
 export * from './repositories/billing'
 export * from './repositories/analytics'
+// Phase 5：额度幂等台账（P5-4）/ 告知同意（P5-6）
+export * from './repositories/quota'
+export * from './repositories/consent'

@@ -5,6 +5,7 @@
 import { Hono } from 'hono'
 import type { ReportRequest } from '../lib/types'
 import { runReportPipeline } from '../workflows/index'
+import { resolveChartSource } from '../lib/chart-source'
 
 export const reportRoute = new Hono()
 
@@ -12,13 +13,32 @@ reportRoute.post('/api/report', async (c) => {
   try {
     const body = await c.req.json() as ReportRequest
 
-    // 基础校验
-    if (!body.chart || !body.annotation) {
-      return c.json({ error: 'BAD_REQUEST', message: '缺少 chart 或 annotation 字段' }, 400)
+    // ── [P5-3 ADR-005] 权威数据源解析（session / 重算校验 / 兼容旧客户端）──
+    const resolved = await resolveChartSource({
+      sessionId: body.sessionId,
+      chart: body.chart,
+      annotation: body.annotation,
+      birth: body.birth,
+    })
+    if (!resolved.ok) {
+      const status = resolved.code === 'SESSION_NOT_FOUND' ? 404
+        : resolved.code === 'CHART_MISMATCH' ? 409
+          : 400
+      return c.json({
+        error: resolved.code,
+        message: resolved.message,
+        ...(resolved.detail ? { detail: resolved.detail } : {}),
+        ...(resolved.hint ? { hint: resolved.hint } : {}),
+      }, status)
     }
+    c.header('X-Chart-Verified', String(resolved.data.verified))
+    c.header('X-Chart-Source', resolved.data.source)
+    for (const w of resolved.warnings) console.warn('[ChartSource]', w)
 
-    console.log(`[Report] 开始生成命书，日主=${body.chart.dayMaster}`)
-    const result = await runReportPipeline(body)
+    const { chart, annotation } = resolved.data
+
+    console.log(`[Report] 开始生成命书，日主=${chart.dayMaster} 来源=${resolved.data.source}`)
+    const result = await runReportPipeline({ chart, annotation })
 
     if (!result.ok) {
       console.error(`[Report] 流水线失败 [${result.step}]: ${result.error}`)

@@ -173,6 +173,30 @@ export function deleteUser(id: number): boolean {
   return res.changes > 0
 }
 
+/**
+ * [P5-6 ADR-006] 软删除用户（删除权）
+ * - 状态置 deleted（登录时被 status!=='active' 拦截）
+ * - 清空可识别 PII（手机 / 邮箱 / 昵称 / 头像）
+ * - 保留 username 与 passwordHash 以避免唯一键冲突与审计需要（到期由维护任务硬删）
+ */
+export function softDeleteUser(id: number): UserRow | undefined {
+  const nowIso = new Date().toISOString()
+  return getDb().update(users)
+    .set({
+      status: 'deleted',
+      deletedAt: nowIso,
+      phone: null,
+      email: null,
+      nickname: null,
+      avatarUrl: null,
+      vipExpiresAt: null,
+      updatedAt: nowIso,
+    })
+    .where(eq(users.id, id))
+    .returning()
+    .get()
+}
+
 // ═══════════════════════════════════════
 // 配额
 // ═══════════════════════════════════════

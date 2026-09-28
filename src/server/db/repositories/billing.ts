@@ -284,6 +284,14 @@ export function listSubscriptions(userId: number): SubscriptionRow[] {
     .all()
 }
 
+/** [P5-5 ADR-009] 某订单已发放的订阅（回调幂等时回读已结算结果） */
+export function getSubscriptionByOrder(orderId: number): SubscriptionRow | undefined {
+  return getDb().select().from(subscriptions)
+    .where(eq(subscriptions.orderId, orderId))
+    .orderBy(desc(subscriptions.id))
+    .get()
+}
+
 export function countActiveSubscriptions(): number {
   const now = new Date().toISOString()
   return getDb().select({ count: sql<number>`count(*)` })
