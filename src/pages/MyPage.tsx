@@ -17,6 +17,11 @@ import {
 } from 'lucide-react'
 import { userApi } from '../lib/user-api'
 import { useShell } from '../lib/shell'
+import BirthFields from '../components/BirthFields'
+import {
+  createDefaultBirthValue, formatBirth, genderText, toBirthPayload,
+  type BirthProfileDto, type BirthValue,
+} from '../lib/birth'
 
 interface OrderItem {
   id: number
@@ -73,7 +78,7 @@ function fmtDate(iso: string | null): string {
 }
 
 export default function MyPage() {
-  const { user, subscription, quotaRemaining, verifying, openAuth, logout, loadChart } = useShell()
+  const { user, subscription, quotaRemaining, verifying, openAuth, logout, loadChart, refreshUser } = useShell()
   const navigate = useNavigate()
   // 订单：以 owner(user.id) 标记归属；null 表示尚未加载
   const [ordersState, setOrdersState] = useState<{
@@ -95,6 +100,20 @@ export default function MyPage() {
     info: ReferralInfo | null
   } | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // [ADR-012] 生辰档案：登录后自动出盘的数据来源
+  const [profilesState, setProfilesState] = useState<{
+    owner: number
+    items: BirthProfileDto[]
+    error: string | null
+  } | null>(null)
+  /** 递增即触发重新拉取（增删改后的刷新开关） */
+  const [profilesTick, setProfilesTick] = useState(0)
+  const [addingProfile, setAddingProfile] = useState(false)
+  const [draftBirth, setDraftBirth] = useState<BirthValue>(createDefaultBirthValue)
+  const [draftLabel, setDraftLabel] = useState('')
+  const [profileBusy, setProfileBusy] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
 
   // 登录后拉取最近订单（仅在异步回调中落状态，避免 effect 内同步 setState）
   useEffect(() => {
@@ -142,6 +161,23 @@ export default function MyPage() {
       })
     return () => { cancelled = true }
   }, [user])
+
+  // 登录后拉取生辰档案
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    const owner = user.id
+    userApi.get<{ items: BirthProfileDto[]; total: number }>('/api/v1/app/user/birth-profiles')
+      .then(res => {
+        if (cancelled) return
+        setProfilesState(
+          res.success
+            ? { owner, items: res.data?.items ?? [], error: null }
+            : { owner, items: [], error: res.error?.message || '生辰档案加载失败' },
+        )
+      })
+    return () => { cancelled = true }
+  }, [user, profilesTick])
 
   // ── 校验登录态中 ──
   if (verifying) {
@@ -193,6 +229,69 @@ export default function MyPage() {
 
   // 派生推介信息
   const referral = referralState?.owner === user.id ? referralState.info : null
+
+  // 派生生辰档案视图状态
+  const profilesLoading = profilesState?.owner !== user.id
+  const profiles = profilesState?.owner === user.id ? profilesState.items : []
+  const profilesError = profilesState?.owner === user.id ? profilesState.error : null
+
+  /**
+   * 档案变更后：刷新本卡列表，并同步外壳上的默认档案。
+   * 后者是「登录自动出盘」的依据，不同步会导致改了档案但自动出盘仍用旧值。
+   */
+  const afterProfileChange = async () => {
+    setProfilesTick(t => t + 1)
+    await refreshUser()
+  }
+
+  const saveNewProfile = async () => {
+    setProfileError(null)
+    setProfileBusy(true)
+    try {
+      const res = await userApi.post('/api/v1/app/user/birth-profiles', {
+        ...(draftLabel.trim() ? { label: draftLabel.trim() } : {}),
+        ...toBirthPayload(draftBirth),
+      })
+      if (!res.success) throw new Error(res.error?.message || '保存失败')
+      setAddingProfile(false)
+      setDraftLabel('')
+      setDraftBirth(createDefaultBirthValue())
+      await afterProfileChange()
+    } catch (e) {
+      setProfileError(e instanceof Error ? e.message : '保存失败')
+    } finally {
+      setProfileBusy(false)
+    }
+  }
+
+  const makeDefaultProfile = async (id: number) => {
+    setProfileError(null)
+    setProfileBusy(true)
+    try {
+      const res = await userApi.post(`/api/v1/app/user/birth-profiles/${id}/default`)
+      if (!res.success) throw new Error(res.error?.message || '设置失败')
+      await afterProfileChange()
+    } catch (e) {
+      setProfileError(e instanceof Error ? e.message : '设置失败')
+    } finally {
+      setProfileBusy(false)
+    }
+  }
+
+  const removeProfile = async (id: number) => {
+    if (!window.confirm('删除这份生辰档案？删除后不可恢复。')) return
+    setProfileError(null)
+    setProfileBusy(true)
+    try {
+      const res = await userApi.del(`/api/v1/app/user/birth-profiles/${id}`)
+      if (!res.success) throw new Error(res.error?.message || '删除失败')
+      await afterProfileChange()
+    } catch (e) {
+      setProfileError(e instanceof Error ? e.message : '删除失败')
+    } finally {
+      setProfileBusy(false)
+    }
+  }
 
   /** 复制邀请码 */
   const copyCode = async () => {
@@ -262,6 +361,131 @@ export default function MyPage() {
         >
           <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${usedPct}%` }} />
         </div>
+      </section>
+
+      {/* ── 我的生辰 ── */}
+      <section className="rounded-md border border-line-soft bg-white p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <CalendarDays size={15} className="text-brand" aria-hidden="true" />
+          <span className="text-sm font-bold text-fg-primary tracking-wide">我的生辰</span>
+          {profiles.length > 0 && (
+            <span className="ml-auto text-[11px] text-fg-tertiary tabular-nums">
+              共 {profiles.length} 个
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-fg-tertiary leading-relaxed mb-3">
+          登录后自动用默认档案出盘，不需要再手填生辰。
+        </p>
+
+        {profilesLoading ? (
+          <div className="flex items-center justify-center gap-2 py-6 text-xs text-fg-secondary">
+            <Loader2 size={14} className="animate-spin text-brand" aria-hidden="true" />
+            加载中…
+          </div>
+        ) : profilesError ? (
+          <p className="py-6 text-center text-xs text-fg-secondary">{profilesError}</p>
+        ) : profiles.length === 0 ? (
+          <p className="py-5 text-center text-xs text-fg-tertiary">
+            还没有生辰档案 · 添加后登录即自动出盘
+          </p>
+        ) : (
+          <ul className="divide-y divide-line-soft list-none p-0 m-0">
+            {profiles.map(p => (
+              <li key={p.id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm text-fg-primary truncate">
+                    {p.label || '生辰档案'}
+                    {p.isDefault && (
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-sm text-[10px] text-brand bg-cinnabar-100 border border-cinnabar-200">
+                        默认
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-fg-tertiary tabular-nums mt-0.5">
+                    {formatBirth(p)} · {genderText(p.gender)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {!p.isDefault && (
+                    <button
+                      type="button"
+                      disabled={profileBusy}
+                      onClick={() => { void makeDefaultProfile(p.id) }}
+                      className="px-2 py-1.5 rounded-sm text-[11px] text-fg-secondary border border-line-strong hover:bg-surface-muted transition-colors disabled:opacity-50"
+                    >
+                      设为默认
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={profileBusy}
+                    onClick={() => { void removeProfile(p.id) }}
+                    className="px-2 py-1.5 rounded-sm text-[11px] text-brand-strong border border-cinnabar-200 bg-cinnabar-100/60 hover:bg-cinnabar-100 transition-colors disabled:opacity-50"
+                  >
+                    删除
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {profileError && (
+          <p className="mt-3 text-xs text-brand-strong bg-[#F5EDEB] border border-[#D4A8A4] rounded-sm px-3 py-2">
+            {profileError}
+          </p>
+        )}
+
+        {addingProfile ? (
+          <div className="mt-3 pt-4 border-t border-line-soft">
+            <div className="mb-3">
+              <label className="block text-[11px] text-fg-secondary mb-1 tracking-wide">
+                标签（选填，如「本人」「父亲」）
+              </label>
+              <input
+                value={draftLabel}
+                onChange={e => setDraftLabel(e.target.value)}
+                disabled={profileBusy}
+                placeholder="本人"
+                className="w-full px-3 py-2 rounded-sm border border-line-strong bg-white text-sm text-fg-primary placeholder:text-fg-tertiary focus:outline-none focus:border-brand transition-colors"
+              />
+            </div>
+            <BirthFields
+              value={draftBirth}
+              onChange={patch => setDraftBirth(v => ({ ...v, ...patch }))}
+              disabled={profileBusy}
+              compact
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={profileBusy}
+                onClick={() => { void saveNewProfile() }}
+                className="flex-1 py-2.5 rounded-sm bg-brand text-white text-sm font-medium hover:bg-brand-strong transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              >
+                {profileBusy && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
+                保存
+              </button>
+              <button
+                type="button"
+                disabled={profileBusy}
+                onClick={() => { setAddingProfile(false); setProfileError(null) }}
+                className="px-5 py-2.5 rounded-sm border border-line-strong text-sm text-fg-secondary hover:bg-surface-muted transition-colors disabled:opacity-60"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setProfileError(null); setAddingProfile(true) }}
+            className="mt-3 w-full py-2.5 rounded-sm border border-dashed border-line-strong text-sm text-fg-secondary hover:bg-surface-muted transition-colors"
+          >
+            + 添加生辰档案
+          </button>
+        )}
       </section>
 
       {/* ── 历史命盘 ── */}

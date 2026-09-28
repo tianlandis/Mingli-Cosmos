@@ -10,6 +10,7 @@
 import { Hono, type Context } from 'hono'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { birthInputSchema } from '../../lib/birth-input'
 import {
   userAuthMiddleware,
   signUserToken,
@@ -53,6 +54,9 @@ import {
   // [ADR-012] 生辰档案（用户身份域 · 核心 PII）
   listBirthProfilesByUser,
   deleteBirthProfilesByUser,
+  createBirthProfile,
+  getDefaultBirthProfile,
+  toBirthProfileDto,
   // [ADR-013] 增长域：推介绑定
   bindReferralByCode,
   listReferralsByReferrer,
@@ -81,6 +85,12 @@ const registerSchema = z.object({
   email: z.string().email('邮箱格式不正确').optional(),
   /** [ADR-013] 推介邀请码（选填，注册后即绑定） */
   referralCode: z.string().max(32).optional(),
+  /**
+   * 生辰（前端注册表单必填）。
+   * 采到即建「默认生辰档案」，实现「注册一次、此后登录直接出盘」——
+   * 这是 login 后无需重复录入排盘信息的唯一数据来源。
+   */
+  birth: birthInputSchema.optional(),
 })
 
 const loginSchema = z.object({
@@ -159,7 +169,7 @@ route.post('/register', async (c) => {
     }, 400)
   }
 
-  const { username, password, nickname, phone, email, referralCode } = parsed.data
+  const { username, password, nickname, phone, email, referralCode, birth } = parsed.data
 
   // 唯一性校验（用户名 / 手机 / 邮箱三者均不可重复）
   if (getUserByUsername(username)) {
@@ -188,6 +198,29 @@ route.post('/register', async (c) => {
       if (!bind.ok) console.warn(`[Referral] 注册绑定未生效（ignored）：${bind.reason}`)
     } catch (e) {
       console.error('[Referral] 注册绑定异常（ignored）:', e)
+    }
+  }
+
+  // [ADR-012] 生辰建档：注册即写入「默认档案」。
+  // 这是「登录后无需重复录入排盘信息」的数据来源 —— 失败虽不影响注册，
+  // 但会让该用户失去自动出盘能力，故必须告警而不能静默吞掉。
+  if (birth) {
+    try {
+      createBirthProfile({
+        userId: user.id,
+        label: '本人',
+        calendarType: birth.calendarType,
+        birthYear: birth.birthYear,
+        birthMonth: birth.birthMonth,
+        birthDay: birth.birthDay,
+        birthHour: birth.birthHour ?? null,
+        birthMinute: birth.birthMinute ?? 0,
+        isLeapMonth: birth.isLeapMonth ?? false,
+        gender: birth.gender ?? null,
+        isDefault: true,
+      })
+    } catch (e) {
+      console.error('[BirthProfile] 注册建档异常（ignored）:', e)
     }
   }
 
@@ -268,6 +301,9 @@ route.get('/me', userAuthMiddleware, (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: '用户不存在' } }, 404)
   }
   const sub = getActiveSubscription(user.id)
+  // [ADR-012] 默认生辰档案：前端据此在登录后自动出盘，用户无需重复录入
+  // （排盘不消耗额度，故自动出盘对用户无成本）
+  const defaultProfile = getDefaultBirthProfile(user.id)
   return c.json({
     success: true,
     data: {
@@ -276,6 +312,7 @@ route.get('/me', userAuthMiddleware, (c) => {
       subscription: sub
         ? { vipLevel: sub.vipLevel, startsAt: sub.startsAt, endsAt: sub.endsAt, status: sub.status }
         : null,
+      defaultBirthProfile: defaultProfile ? toBirthProfileDto(defaultProfile) : null,
     },
   })
 })

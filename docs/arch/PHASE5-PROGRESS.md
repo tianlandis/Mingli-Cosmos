@@ -33,6 +33,11 @@
 | GET | `/api/v1/app/user/consent` | 同意记录查询 | 是 |
 | GET | `/api/v1/app/user/data/export` | 数据导出（机读 JSON） | 是 |
 | DELETE | `/api/v1/app/user/data` | 数据删除（软删 + 硬删 PII） | 是 + 密码 |
+| GET | `/api/v1/app/user/birth-profiles` | 生辰档案列表 | 是 |
+| POST | `/api/v1/app/user/birth-profiles` | 新建生辰档案 | 是 |
+| PATCH | `/api/v1/app/user/birth-profiles/:id` | 改标签 / 字段 | 是 |
+| DELETE | `/api/v1/app/user/birth-profiles/:id` | 删除（默认顺延） | 是 |
+| POST | `/api/v1/app/user/birth-profiles/:id/default` | 设为默认 | 是 |
 
 ## 既有接口的**向后兼容**扩展
 
@@ -134,6 +139,33 @@
    · **待推进 `warn → enforce`**：观察一段时间 `CHART_MISMATCH_WARN` 比例，确认无不一致（即无异常客户端）
      后再切 `enforce`（不一致直接 409）。**回退**：后台改回 `off` 即可，无需发版。
 5. **P5-5**：`payment_notify_secret` 保持空（回调关闭）直到真实渠道接入并完成证书/域名准备。
+
+---
+
+## 补齐既有能力闭环：注册收录生辰 · 登录免重复排盘（2026-09-29）
+
+**背景**：`birth_profiles`（ADR-012 用户身份域）此前只有**表 + schema + migrate + 仓储**，
+**没有 API 路由**，注册也不收生辰 —— 用户登录后仍要每次手填排盘信息，属"数据层做完、能力未闭环"。
+
+**补齐内容**：
+
+| 层 | 落点 |
+|---|---|
+| API 模块 | `modules-public/birth-profiles/`（`meta.prefix='user/birth-profiles'`，5 路由） |
+| 共享校验 | `server/lib/birth-input.ts`（注册与 CRUD 复用，杜绝口径漂移） |
+| 注册入口 | `registerSchema` 收可选 `birth` → `createBirthProfile({label:'本人',isDefault:true})` |
+| 读取回传 | `GET /user/me` 增 `defaultBirthProfile` |
+| 前端消费 | `App.tsx` 登录后自动排盘；注册弹窗生辰**必填**；`MyPage` 「我的生辰」管理卡 |
+| 共享组件 | `components/BirthFields.tsx` + `lib/birth.ts`（排盘表单/注册/我的页三处共用） |
+| 回归 | `modules/__tests__/birth-profiles.test.ts`（19 项：默认唯一/删除顺延/越权 404/真实日期/注册建档） |
+
+**顺带修掉的缺陷**：`PATCH` 改标签静默失效 —— `updateSchema` 漏声明 `label`，
+被 zod 默认剥离；改为先 `.extend({ label })` 再 `.partial()`（已写入 EXTENDING.md 坑表）。
+
+**验收**：`tsc -b --noEmit` 零错 ｜ `vitest run` **447/447（26 文件）** ｜ `vite build` ✓ ｜ `smoke` **42/42**；
+真机 390px 注册→自动出盘→我的生辰增删设默认全绿，控制台零错误。
+
+---
 
 ## 剩余（需外部输入，非代码问题）
 

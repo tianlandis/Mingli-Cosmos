@@ -71,6 +71,8 @@ export const userApi = {
       method: 'PUT',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
+  del: <T = unknown>(path: string) =>
+    userApiFetch<T>(path, { method: 'DELETE' }),
 }
 
 // ═══════════════════════════════════════

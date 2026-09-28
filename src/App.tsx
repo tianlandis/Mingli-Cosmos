@@ -11,7 +11,7 @@
 // 页面本身在 src/pages/ 下，路由表在 src/main.tsx。
 // ============================================================
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
@@ -19,11 +19,15 @@ import AuthDialog from './components/AuthDialog'
 import { useBazi } from './hooks/useBazi'
 import { useUser } from './hooks/useUser'
 import { track } from './lib/user-api'
+import { profileToChartInput } from './lib/birth'
 import type { PaipanInput, ShellContextValue } from './lib/shell'
 
 export default function App() {
-  const { result, annotation, sessionId, loading, error, handleCalculate, loadChart } = useBazi()
-  const { user, subscription, quotaRemaining, verifying, refresh, logout, login, register } = useUser()
+  const { result, annotation, sessionId, loading, error, handleCalculate, loadChart, reset } = useBazi()
+  const {
+    user, subscription, defaultBirthProfile, quotaRemaining, verifying,
+    refresh, logout, login, register,
+  } = useUser()
   const [showChat, setShowChat] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
@@ -38,6 +42,30 @@ export default function App() {
     await handleCalculate(data)
     track('paipan', { calendarType: data.calendarType, gender: data.gender })
   }
+
+  // ── 身份切换：命盘跟随身份 ──
+  // 换账号（含退出登录）时清空屏幕上的命盘，避免把上一个账号的命盘留给自己或他人看。
+  const prevUserIdRef = useRef<number | null>(null)
+  useEffect(() => {
+    const id = user?.id ?? null
+    // 首次挂载（本就未登录）不清空，否则会把匿名排盘结果误清
+    if (prevUserIdRef.current === null && id === null) return
+    if (prevUserIdRef.current === id) return
+    prevUserIdRef.current = id
+    reset()
+  }, [user, reset])
+
+  // ── 登录后自动出盘（免去重复录入排盘信息）──
+  // 有默认生辰档案且当前无命盘时自动推演一次；排盘不消耗额度，对用户无成本。
+  // 用 ref 记住已出盘的档案 id，避免同一份档案反复触发。
+  const autoPaipanProfileRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!user || !defaultBirthProfile) return
+    if (autoPaipanProfileRef.current === defaultBirthProfile.id) return
+    if (result || loading) return
+    autoPaipanProfileRef.current = defaultBirthProfile.id
+    void handleCalculate(profileToChartInput(defaultBirthProfile))
+  }, [user, defaultBirthProfile, result, loading, handleCalculate])
 
   const ctx: ShellContextValue = {
     user, subscription, quotaRemaining, verifying,

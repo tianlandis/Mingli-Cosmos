@@ -14,6 +14,29 @@ const { birthProfiles } = schema
 
 export type BirthProfileRow = typeof birthProfiles.$inferSelect
 
+/**
+ * DB 行 → 对外 DTO（0/1 转 boolean，不外泄内部列）。
+ * 放在仓储层是为了让 `/user/birth-profiles` 与 `/user/me` 共用同一份形状定义，
+ * 避免两处手写映射日后字段漂移。（与 sessions.ts 的 listChartSummariesByUser 同思路）
+ */
+export function toBirthProfileDto(p: BirthProfileRow) {
+  return {
+    id: p.id,
+    label: p.label,
+    calendarType: p.calendarType,
+    birthYear: p.birthYear,
+    birthMonth: p.birthMonth,
+    birthDay: p.birthDay,
+    birthHour: p.birthHour,
+    birthMinute: p.birthMinute ?? 0,
+    isLeapMonth: p.isLeapMonth === 1,
+    gender: p.gender,
+    isDefault: p.isDefault === 1,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  }
+}
+
 export interface CreateBirthProfileInput {
   userId: number
   label?: string | null

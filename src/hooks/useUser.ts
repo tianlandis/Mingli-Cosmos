@@ -1,11 +1,12 @@
 // ============================================================
 // Phase 4b M-6 — C 端登录状态 Hook
 // 文件：src/hooks/useUser.ts
-// 职责：登录 / 注册 / 登出 / 额度与订阅状态
+// 职责：登录 / 注册 / 登出 / 额度与订阅状态 / 默认生辰档案
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react'
 import { userApi, getUserToken, setUserToken, clearUserToken } from '../lib/user-api'
+import type { BirthPayload, BirthProfileDto } from '../lib/birth'
 
 export interface CurrentUser {
   id: number
@@ -30,6 +31,11 @@ export interface UserSubscription {
 export function useUser() {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [subscription, setSubscription] = useState<UserSubscription | null>(null)
+  /**
+   * [ADR-012] 默认生辰档案 —— 登录后据此自动出盘，
+   * 用户因此不需要在排盘页重复录入生辰。
+   */
+  const [defaultBirthProfile, setDefaultBirthProfile] = useState<BirthProfileDto | null>(null)
   const [verifying, setVerifying] = useState(true)
 
   /** 拉取当前登录态（有 token 时查 /me，否则查 /status） */
@@ -38,20 +44,26 @@ export function useUser() {
     if (!token) {
       setUser(null)
       setSubscription(null)
+      setDefaultBirthProfile(null)
       setVerifying(false)
       return
     }
 
-    const res = await userApi.get<{ user: CurrentUser; quotaRemaining: number; subscription: UserSubscription | null }>(
-      '/api/v1/app/user/me',
-    )
+    const res = await userApi.get<{
+      user: CurrentUser
+      quotaRemaining: number
+      subscription: UserSubscription | null
+      defaultBirthProfile: BirthProfileDto | null
+    }>('/api/v1/app/user/me')
     if (res.success && res.data?.user) {
       setUser({ ...res.data.user, quotaRemaining: res.data.quotaRemaining })
       setSubscription(res.data.subscription ?? null)
+      setDefaultBirthProfile(res.data.defaultBirthProfile ?? null)
     } else {
       // token 失效或账号不可用
       setUser(null)
       setSubscription(null)
+      setDefaultBirthProfile(null)
       clearUserToken()
     }
     setVerifying(false)
@@ -82,6 +94,8 @@ export function useUser() {
     email?: string
     /** [ADR-013] 推介邀请码（选填） */
     referralCode?: string
+    /** [ADR-012] 生辰（注册表单必填）：服务端据此建默认档案 */
+    birth: BirthPayload
   }) => {
     const res = await userApi.post<{ token: string; user: CurrentUser }>(
       '/api/v1/app/user/register',
@@ -100,11 +114,13 @@ export function useUser() {
     clearUserToken()
     setUser(null)
     setSubscription(null)
+    setDefaultBirthProfile(null)
   }, [])
 
   return {
     user,
     subscription,
+    defaultBirthProfile,
     verifying,
     isLogin: !!user,
     quotaRemaining: user?.quotaRemaining ?? 0,

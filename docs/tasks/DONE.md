@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-09-29 — 👤 真实用户闭环：注册收录生辰 + 登录免重复排盘 ✅
+
+> 目标：修掉"数据层做完、能力未闭环"——`birth_profiles` 早有表+仓储，却**无 API、注册不收**，
+> 用户登录后仍要每次手填排盘信息。本批补齐：**注册即收生辰 → 落默认档案 → 登录自动排盘 → 我的页可管理**。
+> 起因：测试账号 `123456`/`123456` 不能登录（生产库本无该账号；本地库不随部署同步）→ 现场真实注册并顺带补齐注册生辰。
+
+| 落点 | 内容 |
+|---|---|
+| `src/server/modules-public/birth-profiles/index.ts` | 新建 C 端模块（`meta.prefix='user/birth-profiles'`）：列表/新建/改/删/设默认；删默认自动顺延（回传 `promotedDefaultId`）；越权 404 |
+| `src/server/lib/birth-input.ts` | 新建共享校验：`birthFieldsObject` / `birthInputSchema` / `checkRealDate`（阳历真实月天数，农历 30 天），注册与 CRUD 复用 |
+| `src/server/db/repositories/birth-profiles.ts` | 增 `toBirthProfileDto()`（0/1→boolean），模块与 `/me` 共用 |
+| `src/server/modules-public/user/index.ts` | `registerSchema` 收可选 `birth` → 建默认档案；`GET /me` 回传 `defaultBirthProfile` |
+| `src/lib/birth.ts` | 新建纯逻辑：类型、13 时辰选项、`toBirthPayload`/`birthPayloadToChartInput`/`profileToChartInput` |
+| `src/components/BirthFields.tsx` | 新建共享字段组件（历法/性别/年月日/闰月/时辰），排盘表单/注册弹窗/我的页三处共用 |
+| `src/components/AuthDialog.tsx` | 注册模式生辰**必填**；必填项（账号→密码→生辰）前置，可选项（昵称/手机/邀请码）后置 |
+| `src/hooks/useUser.ts` / `useBazi.ts` / `src/App.tsx` | `useUser` 暴露 `defaultBirthProfile`；`useBazi` 增 `reset()`；App 身份切换 reset + 登录后自动排盘 |
+| `src/pages/MyPage.tsx` | 新增「我的生辰」卡：列表 / 设为默认 / 删除 / 展开式新增 |
+| `src/server/modules/__tests__/birth-profiles.test.ts` | 新增 19 项：默认唯一 + 删除顺延、越权 404、真实日期（2/30 拒、2/29 受）、注册建档 + `/me` 回传 |
+
+**顺带修复**：`PATCH` 改标签静默失效 —— `updateSchema` 漏声明 `label` 被 zod 剥离；改为先 `.extend({label})再.partial()`（坑已写入 EXTENDING.md）。
+
+**验证**：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**447/447（26 文件，+19）** ｜ `vite build` 通过 ｜ `npm run smoke` **42/42** ｜ 真机 390px：注册弹窗含「生辰信息(必填)」，登录后**免填表自动出盘**，「我的生辰」增删设默认正常，控制台零错误。
+
+---
+
 ## 2026-09-29 — 🎭 Phase 4e：MBTI 表达语料接入知识字典 + Step1 锚点注入 ✅
 
 > 目标：排盘报告的 `mbtiProfile` 段落从"泛泛而谈"升级为"心理咨询师口吻"——

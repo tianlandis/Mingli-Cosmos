@@ -106,5 +106,13 @@ export function useBazi() {
     }
   }, [])
 
-  return { result, annotation, sessionId, loading, error, handleCalculate, loadChart }
+  /** 清空当前命盘（身份切换时调用，避免把他人命盘留在屏幕上） */
+  const reset = useCallback(() => {
+    setResult(null)
+    setAnnotation(null)
+    setSessionId(null)
+    setError(null)
+  }, [])
+
+  return { result, annotation, sessionId, loading, error, handleCalculate, loadChart, reset }
 }

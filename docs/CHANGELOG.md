@@ -2,6 +2,43 @@
 
 ---
 
+## 未发布 — 👤 注册收录生辰 · 登录免重复排盘（真实用户闭环）(2026-09-29)
+
+> **背景**：`birth_profiles` 表与仓储层（ADR-012 用户身份域）早已存在，但**没有任何 API 路由**，
+> 注册也不收生辰 —— 用户登录后仍要每次手填排盘信息，不符合"真实用户"预期。
+> 本批次把断掉的闭环补齐：**注册即收生辰 → 落默认档案 → 登录自动排盘 → 我的页可管理**。
+
+### 新增
+- **C 端模块 `src/server/modules-public/birth-profiles/index.ts`**（`meta.prefix='user/birth-profiles'`）：
+  `GET /`（列表）/ `POST /`（新建）/ `PATCH /:id` / `DELETE /:id` / `POST /:id/default`。
+  删除默认档案时**自动提升**剩余首个为默认（回传 `promotedDefaultId`）；越权访问一律 404。
+- **共享校验 `src/server/lib/birth-input.ts`**：`birthFieldsObject` / `birthInputSchema` / `checkRealDate`
+  （阳历按真实月天数校验，农历按 30 天），注册与 CRUD 复用同一份，杜绝口径漂移。
+- **共享前端字段组件 `src/components/BirthFields.tsx`** + **纯逻辑 `src/lib/birth.ts`**
+  （类型、13 时辰选项、值↔载荷转换 `toBirthPayload` / `birthPayloadToChartInput` / `profileToChartInput`），
+  排盘表单与注册弹窗、我的页共用。
+- **「我的生辰」管理卡**（`src/pages/MyPage.tsx`）：列表 / 设为默认 / 删除 / 展开式新增。
+- **回归测试 `src/server/modules/__tests__/birth-profiles.test.ts`**（19 项）：默认唯一 + 删除自动提升、
+  越权 404、真实日期校验（2/30 拒绝、2/29 闰年接受）、注册建档案 + `/me` 回传。
+
+### 变更
+- **注册收生辰**：`registerSchema` 增可选 `birth`；`POST /user/register` 建默认档案（`label='本人'`, `isDefault=1`）。
+- **`GET /user/me`** 回传 `defaultBirthProfile`；`useUser.refresh()` 读取并暴露。
+- **登录后自动排盘**（`src/App.tsx`）：身份切换时 `reset()`；存在默认档案且无结果时自动 `profileToChartInput` 排盘。
+- **注册弹窗**（`AuthDialog.tsx`）生辰为**必填**，且必填项（账号→密码→生辰）排在前，可选项（昵称/手机/邀请码）在后。
+- `user-api.ts` 增 `del`（DELETE）；`repositories/birth-profiles.ts` 增 `toBirthProfileDto()`（0/1→boolean，模块与 `/me` 共用）。
+
+### 修复
+- **PATCH 标签静默失效**（测试暴露）：`updateSchema` 漏声明 `label`，zod 默认剥离未声明键 →
+  改标签无效。改为先 `.extend({ label })` 再 `.partial()`。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**447/447（26 文件）** ｜ `vite build` 通过 ｜ `npm run smoke` **42/42**。
+- 真机（Playwright + Chrome，390px）：注册弹窗含「生辰信息(必填)」，登录后**无需填表自动出盘**，
+  「我的生辰」卡增删/设默认正常，控制台零错误。
+
+---
+
 ## 未发布 — 🎭 Phase 4e：MBTI 表达语料接入 + Step1 咨询师口吻升级 (2026-09-29)
 
 ### 新增

@@ -96,11 +96,19 @@ export default route   // ★ 必须 default export（或导出名为 route 的 
 ### 1.4 约定与坑
 
 - ✅ 目录名 = 路由前缀。想自定义：`export const meta = { prefix: 'custom-name' }`
+  - 活例：`modules-public/birth-profiles/` 用 `meta.prefix='user/birth-profiles'` 挂到 `/api/v1/app/user/birth-profiles`
+    （把业务资源收敛到 `/user/*` 前缀下）——**证明 prefix 覆盖确有其用，不是纸面功能**。
 - ✅ 响应统一 `{ success, data }` / `{ success:false, error:{ code, message } }`
 - ✅ 用 `zod` 校验入参（项目惯例）
 - ⚠️ **C 端模块必须放 `modules-public/`** —— 后台鉴权中间件会误伤 C 端接口
 - ⚠️ `__` 开头的目录会被跳过（留给 `__tests__`）
 - ⚠️ 服务器启动时打印 `[Router] modules-public 已注册模块 (N): ...`，**加模块后看一眼这行确认挂上了**
+- 💡 **同一份入参结构被多处复用 → 抽到 `src/server/lib/`**。活例：`birth-input.ts`
+  （`birthFieldsObject` / `birthInputSchema` / `checkRealDate`）被「注册收生辰」与「生辰档案 CRUD」共用，
+  避免两处各写一份 zod 导致口径漂移（一个收 2/30、另一个拒绝）。
+- ⚠️ **zod 默认剥离未声明键**：`z.object({...}).partial()` 只会放行**已声明**的键。
+  想支持 `PATCH` 改某字段，必须先在 schema 里**声明**它再 `.partial()`，
+  否则该字段会被静默丢弃（表现为"改了但没生效"，无报错）。
 
 ---
 
@@ -338,6 +346,25 @@ registerSystem(astroEngine)   // ← 新增体系只动这一行
 **⑩ 风控与决策**：防刷（自邀拦截 / 一次性绑定 / 奖励以真实付费为前提）、税务口径、奖励形态 → 已在 **[ADR-013](../adr/ADR-013-referral-rewards.md)** 定档。
 
 > 这个例子说明：**有了域约定和模块约定，"加一个领域"就是一条机械流程**，不需要重新设计架构。本领域已全程跑通，可当**活样板**参照。
+
+### 6.1 反面教训：表有了 ≠ 能力闭环（生辰档案已补齐）
+
+`birth_profiles` 很早就随 ADR-012 落了 **表 + schema + migrate + 仓储（含完整 CRUD）**，
+看上去"数据层做完了"，但**没有任何 API 路由**，前端也无从调用 —— 结果是
+"注册不收生辰、登录后仍要手填排盘信息"，用户侧体感就是**功能缺失**。
+
+**补齐闭环的必要动作**（下次别只做一半）：
+
+| 层 | 缺了会怎样 | 本次补了什么 |
+|:--|:--|:--|
+| API 模块 | 前端无从调用 | `modules-public/birth-profiles/`（5 个路由） |
+| 注册入口 | 新用户没有档案 | `registerSchema` 收可选 `birth` → 建默认档案 |
+| 读取回传 | 前端不知道有档案 | `GET /user/me` 回传 `defaultBirthProfile` |
+| 前端消费 | 档案躺着没人用 | 登录后自动排盘 + 「我的生辰」管理卡 |
+| 回归测试 | 下次又断 | `birth-profiles.test.ts`（默认唯一/越权/日期/注册建档） |
+
+> **判据**：一个数据能力算不算"做完"，看它**能不能从界面走通**（入口→落库→读回→消费→可管理）。
+> 只有表层能编译、仓储有函数，不算完成。
 
 ---
 
