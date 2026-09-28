@@ -35,6 +35,8 @@
 | [008](./ADR-008-backup-and-dr.md) | 备份与灾难恢复策略 | 🧱 骨架 | `Accepted` ✅ | 数据健壮性 |
 | [009](./ADR-009-payment-integration.md) | 支付接入与回调幂等 | 🧱 骨架 | `Accepted` 🔶 | 计费闭环 |
 | [010](./ADR-010-api-versioning.md) | API 版本与弃用策略（`/api/admin` 退场） | 🔧 完善 | `Proposed` | 遗留兼容 |
+| [011](./ADR-011-multi-system-registry.md) | 多体系注册表：从「八字专用」到「多体系共存」 | 🧱 骨架 | `Proposed` | 领域扩展 |
+| [012](./ADR-012-data-domain-strategy.md) | 数据域分层与多库演进策略（7 域 · 物理拆分触发条件） | 🧱 骨架 | `Accepted` ✅ | 数据扩展 |
 
 > 图例：`✅` 已实施并有测试守；`🔶` 核心/框架已落地，外部依赖（商户资质 / 法务文案 / 前端入口）待补。
 
