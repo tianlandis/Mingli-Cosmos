@@ -4,6 +4,13 @@
 // 来源：PKU-YuanGroup/Machine-Mindset 中文语料（Apache 2.0）提炼 +
 //       原创改写（心理咨询师口吻），详见 docs/corpus/mbti-corpus/SUMMARY.md
 //
+// 权威依据：
+//   - 类型 ↔ 十神/格局映射一律以 docs/八字格局与MBTI类型映射.md（三阶精修版）为准，
+//     与引擎 src/engine/pattern/mbtiMapping.ts（知识字典热接管）同源；
+//   - baziArchetype 字段仅注明该类型在权威文档中的来源（十神·功能 / 格局组合），
+//     文档未覆盖的类型如实标注，不做自由推论；
+//   - -A/-T 身份认同（身强/身弱）为表达层设计，权威文档未涉及。
+//
 // 铁律：
 //   - 本语料仅用于表达层润色（"怎么说"），不改变排盘结论（"算什么"）
 //   - 全篇倾向性措辞，禁绝对化断言（对齐 L3 护栏）
@@ -36,193 +43,193 @@ export interface MbtiDimensionProfile {
 
 export const MBTI_CORE32_PROFILES: Record<string, MbtiCoreProfile> = {
   'INTJ-A': {
-    cnName: '建筑师', group: '分析家', baziArchetype: '七杀+正印（杀印相生）',
+    cnName: '建筑师', group: '分析家', baziArchetype: '偏印·Ni / 正官·Te；煞印相生（Ti+Ni）',
     profile: '你心里的那张地图不但画得远，而且笃定能走到。标准严是你的风格，但你很少内耗——错了就改图，天经地义。你身上有种"谋定后动"的从容，身边的人会被这份笃定感染。',
     innerNeed: '被放手去做，而不是被反复验证。',
     careTip: '笃定很好，记得留一个愿意听你复盘的伙伴，防止地图太久没校准。',
   },
   'INTJ-T': {
-    cnName: '建筑师', group: '分析家', baziArchetype: '七杀+正印（杀印相生）',
+    cnName: '建筑师', group: '分析家', baziArchetype: '偏印·Ni / 正官·Te；煞印相生（Ti+Ni）',
     profile: '你心里的地图画得远，也改得勤。你对自己要求严，常常图已经够好了还在改。那份不安其实是你在乎的证明——但图是拿来走的，不是拿来供的，八成就可以出发了。',
     innerNeed: '一句"你已经做得够好了"，而且要是真的。',
     careTip: '给自己定一条"完成线"：到达就庆祝，禁止无限返工。',
   },
   'INTP-A': {
-    cnName: '逻辑学家', group: '分析家', baziArchetype: '伤官配印',
+    cnName: '逻辑学家', group: '分析家', baziArchetype: '七杀·Ti（逻辑分析家）',
     profile: '拆解世界对你来说是游戏，而且你是玩得起的玩家——错了就推倒重来，不伤面子。你的从容让理论走得更远：敢想，也敢搁置。',
     innerNeed: '思考不被打扰，错了不被嘲笑。',
     careTip: '偶尔把"算了不说了"改成"我想到一半"，别人会更懂你。',
   },
   'INTP-T': {
-    cnName: '逻辑学家', group: '分析家', baziArchetype: '伤官配印',
+    cnName: '逻辑学家', group: '分析家', baziArchetype: '七杀·Ti（逻辑分析家）',
     profile: '你享受拆解，但拆完总要回头怀疑一遍——那根"我是不是想错了"的弦绷得紧。其实你的严谨正是思考质量的一部分，只是别让怀疑变成停摆。',
     innerNeed: '一个不催你、但会在你怀疑时帮你看一眼的人。',
     careTip: '把怀疑写成清单逐条验证，别让它们在脑子里空转。',
   },
   'ENTJ-A': {
-    cnName: '指挥官', group: '分析家', baziArchetype: '七杀格身强',
+    cnName: '指挥官', group: '分析家', baziArchetype: '官印相生（Te+Ne）/ 财官相生（Se+Te）/ 羊刃格',
     profile: '你天生站在开路的位置，而且你很清楚自己扛得住。决策快、认错也快，你的字典里没有"输不起"。这种底气是团队的定心丸。',
     innerNeed: '值得打的仗，和并肩的将才。',
     careTip: '赢惯了，偶尔也问问团队"我们有什么没看见的"。',
   },
   'ENTJ-T': {
-    cnName: '指挥官', group: '分析家', baziArchetype: '七杀格身强',
+    cnName: '指挥官', group: '分析家', baziArchetype: '官印相生（Te+Ne）/ 财官相生（Se+Te）/ 羊刃格',
     profile: '你依然是那个站出来开路的人，只是深夜里你会反复核对白天所有的决定。你比看起来更累——你的高标准是资产，但别把它当鞭子抽自己。',
     innerNeed: '有人告诉你：就算这条路走错了，你也还是那个能带大家再走一次的人。',
     careTip: '每天睡前写下一件"今天做对了的事"，只写一件。',
   },
   'ENTP-A': {
-    cnName: '辩论家', group: '分析家', baziArchetype: '伤官吐秀+比劫',
+    cnName: '辩论家', group: '分析家', baziArchetype: '正印·Ne；官印相生（Te+Ne）',
     profile: '你抬杠是真的开心，赢了不狂，输了服气，脑子转得明明白白。这种松弛感让你越辩越聪明，朋友们其实都爱跟你过招。',
     innerNeed: '观点交锋里不被记仇。',
     careTip: '留几个"不辩区"——比如家人面前，让脑子休息一下。',
   },
   'ENTP-T': {
-    cnName: '辩论家', group: '分析家', baziArchetype: '伤官吐秀+比劫',
+    cnName: '辩论家', group: '分析家', baziArchetype: '正印·Ne；官印相生（Te+Ne）',
     profile: '你嘴上赢了一圈，心里却在复盘哪句话说得不够漂亮。你的犀利是天赋，但那份"刚才要不要那样说"的后劲，只有你自己知道。',
     innerNeed: '知道吵架不等于关系破裂。',
     careTip: '睡前只复盘"说了什么"，不复盘"我怎么样"。',
   },
   'INFJ-A': {
-    cnName: '提倡者', group: '外交家', baziArchetype: '正印+食神（藏而不露）',
+    cnName: '提倡者', group: '外交家', baziArchetype: '偏印·Ni / 伤官·Fe；煞印相生、纯印格',
     profile: '你安静地理想主义，而且不轻易被世界晃动。你温柔，但有主心骨——知道自己是谁、往哪走。这份稳定让靠近你的人特别安心。',
     innerNeed: '被理解"我的坚持不是固执"。',
     careTip: '把你的洞察说出来一次，别总觉得"他们懂就懂"。',
   },
   'INFJ-T': {
-    cnName: '提倡者', group: '外交家', baziArchetype: '正印+食神（藏而不露）',
+    cnName: '提倡者', group: '外交家', baziArchetype: '偏印·Ni / 伤官·Fe；煞印相生、纯印格',
     profile: '你把别人的情绪照单全收，然后深夜里替所有人难过。你的敏感是天线，也是负担——不是每个信号都需要你处理。',
     innerNeed: '被允许关机。',
     careTip: '晚上十点后不看消息，给天线断电。',
   },
   'INFP-A': {
-    cnName: '调停者', group: '外交家', baziArchetype: '食神+正印（身弱）',
+    cnName: '调停者', group: '外交家', baziArchetype: '食神·Fi；禄格、纯印格',
     profile: '你的理想主义带根——风吹过，你摇，但不倒。你清楚自己要什么，温柔但有立场，这种"软而有骨"很难得。',
     innerNeed: '节奏被尊重。',
     careTip: '把底线写下来，防止温柔被消耗。',
   },
   'INFP-T': {
-    cnName: '调停者', group: '外交家', baziArchetype: '食神+正印（身弱）',
+    cnName: '调停者', group: '外交家', baziArchetype: '食神·Fi；禄格、纯印格',
     profile: '你心里常开一场审判会，被告和法官都是自己。世界越吵，你越往花园深处躲。你不需要变硬，你只需要知道：你的感受从来不是麻烦。',
     innerNeed: '被温柔以待的证明。',
     careTip: '每天对镜子说一句你常对朋友说的话——试着对自己也说。',
   },
   'ENFJ-A': {
-    cnName: '主人公', group: '外交家', baziArchetype: '正印生比劫（身强）',
+    cnName: '主人公', group: '外交家', baziArchetype: '伤官佩印（Fe+Ne）',
     profile: '你是人群里的火种，而且烧得稳——因为你心里有底：照顾别人不是消耗，是你的本钱。你的光很匀，照得到角落。',
     innerNeed: '付出被看见。',
     careTip: '接受别人的回请，让爱流动起来。',
   },
   'ENFJ-T': {
-    cnName: '主人公', group: '外交家', baziArchetype: '正印生比劫（身强）',
+    cnName: '主人公', group: '外交家', baziArchetype: '伤官佩印（Fe+Ne）',
     profile: '你点亮了所有人，却在没人的时候问自己"我真的做得够好吗"。你给出去的光多，留给自己的少——其实不用满电才配发光。',
     innerNeed: '有人替你张罗一次。',
     careTip: '这周主动说一次"我需要帮忙"。',
   },
   'ENFP-A': {
-    cnName: '竞选者', group: '外交家', baziArchetype: '食伤生财+比劫',
+    cnName: '竞选者', group: '外交家', baziArchetype: '正印·Ne；伤官佩印',
     profile: '你的热情有底盘——精力足，可能性再多你也能挑出想走的路。你浪得起，也收得住，朋友们跟着你总觉得日子有盼头。',
     innerNeed: '想法不被泼冷水。',
     careTip: '挑三个想法落地，其余的存进"以后见"清单。',
   },
   'ENFP-T': {
-    cnName: '竞选者', group: '外交家', baziArchetype: '食伤生财+比劫',
+    cnName: '竞选者', group: '外交家', baziArchetype: '正印·Ne；伤官佩印',
     profile: '你笑容满分，散场后却开始想"大家是不是觉得我吵""那个冷场是不是我的锅"。你的热闹是真的，敏感也是真的——两样都成立，都不丢人。',
     innerNeed: '低电量时也被接纳。',
     careTip: '交两个"可以不营业"的朋友，在他们面前允许自己安静。',
   },
   'ISTJ-A': {
-    cnName: '物流师', group: '守卫者', baziArchetype: '正官+正财',
+    cnName: '物流师', group: '守卫者', baziArchetype: '文档未直接映射（行业适配表见【七杀格（ISTJ/INTJ）】）',
     profile: '你的稳是刻在骨子里的，不用证明，也不用谁来背书。规则在你手里是工具，不是枷锁——你守规矩，是因为你信它值得。',
     innerNeed: '靠谱被记住。',
     careTip: '偶尔做件"没意义但开心"的事，人生不是全勤。',
   },
   'ISTJ-T': {
-    cnName: '物流师', group: '守卫者', baziArchetype: '正官+正财',
+    cnName: '物流师', group: '守卫者', baziArchetype: '文档未直接映射（行业适配表见【七杀格（ISTJ/INTJ）】）',
     profile: '你把每件事都做在前头，心里还是不踏实——总觉得漏了什么。你比大多数人可靠，但请把"万一"交还给概率，把今晚交给自己。',
     innerNeed: '一句"有你在，我们放心"。',
     careTip: '清单划完就合上，睡前不复查第二遍。',
   },
   'ISFJ-A': {
-    cnName: '守卫者', group: '守卫者', baziArchetype: '正印+正官',
+    cnName: '守卫者', group: '守卫者', baziArchetype: '偏财·Si；禄格、纯财格',
     profile: '你照顾人照顾得从容——不是讨好，是真心觉得这样舒服。你的好是匀速的，不喧哗，长流不断。',
     innerNeed: '被主动疼一次。',
     careTip: '每月留一天"被照顾日"，只接受不付出。',
   },
   'ISFJ-T': {
-    cnName: '守卫者', group: '守卫者', baziArchetype: '正印+正官',
+    cnName: '守卫者', group: '守卫者', baziArchetype: '偏财·Si；禄格、纯财格',
     profile: '你帮完所有人，回头担心自己是不是哪里做得不周全。你的体贴让人如沐春风，但别把别人的表情当成自己的考卷。',
     innerNeed: '知道"不完美也值得被爱"。',
     careTip: '下次想做"更多"的时候，先问自己"还剩多少"。',
   },
   'ESTJ-A': {
-    cnName: '总经理', group: '守卫者', baziArchetype: '正官格身强',
+    cnName: '总经理', group: '守卫者', baziArchetype: '正官·Te / 偏财·Si；财官相生、纯财格',
     profile: '你是天然的管理者，拍板利落、认账爽快。你的秩序感不是控制欲，是你确实能让一群人把事办成。',
     innerNeed: '直接被理解成负责。',
     careTip: '表扬比批评多一句，团队会更敢说话。',
   },
   'ESTJ-T': {
-    cnName: '总经理', group: '守卫者', baziArchetype: '正官格身强',
+    cnName: '总经理', group: '守卫者', baziArchetype: '正官·Te / 偏财·Si；财官相生、纯财格',
     profile: '你对自己要求得像个监工——事情办成了九分，那差的十分之一就在心里硌着。你已经很强了，允许自己偶尔"够用就好"。',
     innerNeed: '被肯定"你在，事就稳"。',
     careTip: '每天下班前写下三件办成的事，再走。',
   },
   'ESFJ-A': {
-    cnName: '执政官', group: '守卫者', baziArchetype: '比劫+食神',
+    cnName: '执政官', group: '守卫者', baziArchetype: '伤官·Fe；伤官生财、纯财格',
     profile: '你是聚会的灵魂，而且当得心甘情愿——张罗让你快乐，热闹让你充电。大家爱你是爱你这个人，不只是你的周到。',
     innerNeed: '有立场被接纳。',
     careTip: '试着说一次"这次我不张罗"，坐享其成的感觉试试。',
   },
   'ESFJ-T': {
-    cnName: '执政官', group: '守卫者', baziArchetype: '比劫+食神',
+    cnName: '执政官', group: '守卫者', baziArchetype: '伤官·Fe；伤官生财、纯财格',
     profile: '你是大家的定心丸，可你自己夜里会想"他们是不是只是需要我，不是喜欢我"。傻孩子，你先问问自己喜不喜欢他们——是喜欢的吧？他们也是。',
     innerNeed: '无条件被喜欢。',
     careTip: '发一条"我今天不太行"的消息试试，朋友比你想象的多。',
   },
   'ISTP-A': {
-    cnName: '鉴赏家', group: '探索者', baziArchetype: '偏财+七杀（巧而勇）',
+    cnName: '鉴赏家', group: '探索者', baziArchetype: '文档未覆盖（三阶精修版映射表无 ISTP）',
     profile: '你手稳、心静、话少——因为你不需要用声音证明什么。东西修好那一刻的踏实，就是你与世界相处的方式。',
     innerNeed: '被信任不用解释。',
     careTip: '主动分享一次"我今天搞定了什么"，你的骄傲值得被听见。',
   },
   'ISTP-T': {
-    cnName: '鉴赏家', group: '探索者', baziArchetype: '偏财+七杀（巧而勇）',
+    cnName: '鉴赏家', group: '探索者', baziArchetype: '文档未覆盖（三阶精修版映射表无 ISTP）',
     profile: '你不说话，是怕说错；你先做事，是因为事情比人好懂。但其实你已经做得够好了——开口说错话的天，塌不下来。',
     innerNeed: '说错话时也被接纳。',
     careTip: '每天说一句"废话"，练习不完美的表达。',
   },
   'ISFP-A': {
-    cnName: '探险家', group: '探索者', baziArchetype: '食神+偏财（从其秀气）',
+    cnName: '探险家', group: '探索者', baziArchetype: '食神·Fi；食神生财（Fi+Se）',
     profile: '你把日子过成自己的作品，不争不抢，因为清楚自己想要什么。你的"随和"下面是定力——风大的时候，你反而不动。',
     innerNeed: '审美被看见。',
     careTip: '把你的作品发出来一次，让世界排队。',
   },
   'ISFP-T': {
-    cnName: '探险家', group: '探索者', baziArchetype: '食神+偏财（从其秀气）',
+    cnName: '探险家', group: '探索者', baziArchetype: '食神·Fi；食神生财（Fi+Se）',
     profile: '你安静地让着所有人，心里却问"是不是我不够好"。不是的。你的细腻是你的深度，不是你的错。你已经很好了，真的。',
     innerNeed: '被肯定"你在就好"。',
     careTip: '每天记一件"我做得不错"的小事。',
   },
   'ESTP-A': {
-    cnName: '企业家', group: '探索者', baziArchetype: '偏财+比劫（身强）',
+    cnName: '企业家', group: '探索者', baziArchetype: '七杀·Ti / 正财·Se；伤官生财、羊刃格',
     profile: '你冲得快也扛得住，行动是你的母语。别人还在评估风险，你已经把风险变成了经验——这是你最大的复利。',
     innerNeed: '魄力不被说成冲动。',
     careTip: '留住一两个"劝住过你"的人，他们是你跑得远的刹车。',
   },
   'ESTP-T': {
-    cnName: '企业家', group: '探索者', baziArchetype: '偏财+比劫（身强）',
+    cnName: '企业家', group: '探索者', baziArchetype: '七杀·Ti / 正财·Se；伤官生财、羊刃格',
     profile: '你冲在前面，心里却在算"刚才那次是不是太莽了"。你的直觉本来就快人一步，偶尔失手也是学费，不是罪证。',
     innerNeed: '失败被归为尝试。',
     careTip: '每次冒险前写下"最坏结果我认"，落笔就翻篇。',
   },
   'ESFP-A': {
-    cnName: '表演者', group: '探索者', baziArchetype: '伤官+比劫',
+    cnName: '表演者', group: '探索者', baziArchetype: '正财·Se；食神生财（Fi+Se）',
     profile: '你天生自带舞台，快乐是真的，松弛也是真的——你心里有底：冷场了又怎样，我能暖回来。你的能量是大家的福利。',
     innerNeed: '被爱不是因为好笑。',
     careTip: '交一个能聊正经事的朋友，展示段子后面的你。',
   },
   'ESFP-T': {
-    cnName: '表演者', group: '探索者', baziArchetype: '伤官+比劫',
+    cnName: '表演者', group: '探索者', baziArchetype: '正财·Se；食神生财（Fi+Se）',
     profile: '你用笑话把气氛撑起来，回家路上却担心"今天是不是太吵了"。别把"大家都笑"当作及格线——你安静坐着，也值得被喜欢。',
     innerNeed: '安静时也被留下。',
     careTip: '允许自己有一次聚会不表演，就坐着，看看谁会坐到你旁边。',
@@ -235,49 +242,49 @@ export const MBTI_CORE32_PROFILES: Record<string, MbtiCoreProfile> = {
 
 export const MBTI_DIMENSION_COUNSELOR: Record<string, MbtiDimensionProfile> = {
   E: {
-    name: '外向（能量向外）', baziAnchor: '比劫透干有力、地支逢生',
+    name: '外向（能量向外）', baziAnchor: '外倾功能态度：Te=正官 / Ne=正印 / Se=正财 / Fe=伤官',
     profile: '人群对你来说不是消耗，是充电。你可能常常发现，跟人聊完天，自己反而更有劲儿了——说出来，你才真正想清楚。',
     examples: ['聚会散场时你是最后一个想走的那个', '心里有事必须找人说出来，越说越明白'],
     careTip: '给自己的热闹留一个"安静收尾"的仪式，能量会回得更稳。',
   },
   I: {
-    name: '内向（能量向内）', baziAnchor: '印重身藏、官杀收敛',
+    name: '内向（能量向内）', baziAnchor: '内倾功能态度：Ti=七杀 / Ni=偏印 / Si=偏财 / Fi=食神',
     profile: '你不是不爱说话，只是更习惯先在心里把话过一遍。独处对你来说不是孤僻，是必要的回血方式。',
     examples: ['聚会两小时很尽兴，但回家路上已经累到不想说话', '想事情喜欢先写下来自己捋'],
     careTip: '答应别人之前，先看一眼自己的能量余额——你不是冷漠，只是需要预算社交。',
   },
   S: {
-    name: '实感（信息·具体）', baziAnchor: '财星当令，务实重经验',
+    name: '实感（信息·具体）', baziAnchor: 'Se=正财（外倾感觉）/ Si=偏财（内倾感觉）',
     profile: '你相信的是"看得见、摸得着"的东西。不是你缺乏想象力，而是你更愿意先把手头的事情做扎实。',
     examples: ['经典搭配，味道稳，不会翻车', "做过功课才下手"],
     careTip: '你稳扎稳打的方式很珍贵，偶尔也允许自己"没做功课就试一次"。',
   },
   N: {
-    name: '直觉（信息·可能性）', baziAnchor: '食伤旺相，思维飞扬',
+    name: '直觉（信息·可能性）', baziAnchor: 'Ne=正印（外倾直觉）/ Ni=偏印（内倾直觉）',
     profile: '你眼睛里看到的往往不是"东西是什么"，而是"东西还能是什么"。你总能在别人觉得"就这样了"的地方看到"其实还可以那样"。',
     examples: ['做个沙拉都能想到新搭配', '喜欢琢磨"背后的道理"'],
     careTip: '灵感冒出来的时候随手记下来——你的好点子常常是来得太快没接住。',
   },
   T: {
-    name: '思考（决策·逻辑）', baziAnchor: '官杀/伤官强，逻辑决断',
+    name: '思考（决策·逻辑）', baziAnchor: 'Te=正官（外倾思维）/ Ti=七杀（内倾思维）',
     profile: '出事的时候，你的第一反应不是慌，而是拆解：原因是什么、责任在哪、下一步做什么。这种冷静在关键时刻特别靠得住。',
     examples: ['朋友倾诉，你第一句是"那你打算怎么解决"——你是真想帮他', '做决定前列利弊清单'],
     careTip: '下次有人找你倾诉，试试先说一句"这确实挺难受的"——你的分析能力会更被需要。',
   },
   F: {
-    name: '情感（决策·价值）', baziAnchor: '印星食神温和共生',
+    name: '情感（决策·价值）', baziAnchor: 'Fi=食神（内倾情感）/ Fe=伤官（外倾情感）',
     profile: '你做决定时心里都装着人。你比大多数人更早嗅到情绪的变化，也更愿意为关系多让一步。',
     examples: ['拒绝别人对你来说是最难的事', '群里气氛冷了你坐不住'],
     careTip: '照顾别人之前，先问自己一句"我现在舒服吗"——你的感受同样值得排在前面。',
   },
   J: {
-    name: '判断（生活·计划）', baziAnchor: '正官正印格局，重秩序',
+    name: '判断（生活·计划）', baziAnchor: '文档未单独映射（判断功能外显：Te=正官、Fe=伤官）',
     profile: '你生活里有"骨架"：计划、清单、时间表。事情闭环的那一刻，你才真正放松。这是你给自己搭的安全感。',
     examples: ['旅行前攻略精确到小时', '待办清单清零才舒服'],
     careTip: '每周留半天"计划外时间"，练习跟意外和平相处。',
   },
   P: {
-    name: '知觉（生活·灵活）', baziAnchor: '食神伤官格、四柱多合',
+    name: '知觉（生活·灵活）', baziAnchor: '文档未单独映射（感知功能外显：Se=正财、Ne=正印）',
     profile: '计划对你来说是参考答案，不是标准答案。你相信好东西常常是撞上的，你的适应力是真的强。',
     examples: ["重要决定能拖就拖，'再看看到时候的感觉'", '灵感来了立刻切换手头的事'],
     careTip: '给最重要的一两件事设一个"死线闹钟"——你缺的不是能力，是临门那一下的收口。',

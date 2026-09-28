@@ -15,18 +15,18 @@
       "code": "INTJ",
       "cn_name": "建筑师",
       "group": "分析家",
-      "bazi_archetype": "七杀+正印（杀印相生）",
+      "bazi_archetype": "偏印·Ni / 正官·Te；煞印相生（Ti+Ni）",
       "variants": [
         {
           "id": "INTJ-A",
-          "identity_bazi_anchor": "身强杀浅，印星化杀有力",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你心里的那张地图不但画得远，而且笃定能走到。标准严是你的风格，但你很少内耗——错了就改图，天经地义。你身上有种'谋定后动'的从容，身边的人会被这份笃定感染。",
           "inner_need": "被放手去做，而不是被反复验证。",
           "care_tip": "笃定很好，记得留一个愿意听你复盘的伙伴，防止地图太久没校准。"
         },
         {
           "id": "INTJ-T",
-          "identity_bazi_anchor": "身弱杀重，印轻难化",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你心里的地图画得远，也改得勤。你对自己要求严，常常图已经够好了还在改。那份不安其实是你在乎的证明——但图是拿来走的，不是拿来供的，八成就可以出发了。",
           "inner_need": "一句'你已经做得够好了'，而且要是真的。",
           "care_tip": "给自己定一条'完成线'：到达就庆祝，禁止无限返工。"
@@ -37,18 +37,18 @@
       "code": "INTP",
       "cn_name": "逻辑学家",
       "group": "分析家",
-      "bazi_archetype": "伤官配印",
+      "bazi_archetype": "七杀·Ti（逻辑分析家）",
       "variants": [
         {
           "id": "INTP-A",
-          "identity_bazi_anchor": "印旺身安，伤官吐秀",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "拆解世界对你来说是游戏，而且你是玩得起的玩家——错了就推倒重来，不伤面子。你的从容让理论走得更远：敢想，也敢搁置。",
           "inner_need": "思考不被打扰，错了不被嘲笑。",
           "care_tip": "偶尔把'算了不说了'改成'我想到一半'，别人会更懂你。"
         },
         {
           "id": "INTP-T",
-          "identity_bazi_anchor": "印轻身弱，思虑反克",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你享受拆解，但拆完总要回头怀疑一遍——那根'我是不是想错了'的弦绷得紧。其实你的严谨正是思考质量的一部分，只是别让怀疑变成停摆。",
           "inner_need": "一个不催你、但会在你怀疑时帮你看一眼的人。",
           "care_tip": "把怀疑写成清单逐条验证，别让它们在脑子里空转。"
@@ -59,18 +59,18 @@
       "code": "ENTJ",
       "cn_name": "指挥官",
       "group": "分析家",
-      "bazi_archetype": "七杀格身强",
+      "bazi_archetype": "官印相生（Te+Ne）/ 财官相生（Se+Te）/ 羊刃格",
       "variants": [
         {
           "id": "ENTJ-A",
-          "identity_bazi_anchor": "杀刃相济，日主得禄",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你天生站在开路的位置，而且你很清楚自己扛得住。决策快、认错也快，你的字典里没有'输不起'。这种底气是团队的定心丸。",
           "inner_need": "值得打的仗，和并肩的将才。",
           "care_tip": "赢惯了，偶尔也问问团队'我们有什么没看见的'。"
         },
         {
           "id": "ENTJ-T",
-          "identity_bazi_anchor": "杀重身劳，官杀攻心",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你依然是那个站出来开路的人，只是深夜里你会反复核对白天所有的决定。你比看起来更累——你的高标准是资产，但别把它当鞭子抽自己。",
           "inner_need": "有人告诉你：就算这条路走错了，你也还是那个能带大家再走一次的人。",
           "care_tip": "每天睡前写下一件'今天做对了的事'，只写一件。"
@@ -81,18 +81,18 @@
       "code": "ENTP",
       "cn_name": "辩论家",
       "group": "分析家",
-      "bazi_archetype": "伤官吐秀+比劫",
+      "bazi_archetype": "正印·Ne；官印相生（Te+Ne）",
       "variants": [
         {
           "id": "ENTP-A",
-          "identity_bazi_anchor": "身旺伤官，秀气流行",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你抬杠是真的开心，赢了不狂，输了服气，脑子转得明明白白。这种松弛感让你越辩越聪明，朋友们其实都爱跟你过招。",
           "inner_need": "观点交锋里不被记仇。",
           "care_tip": "留几个'不辩区'——比如家人面前，让脑子休息一下。"
         },
         {
           "id": "ENTP-T",
-          "identity_bazi_anchor": "伤官旺而身随，秀中带虑",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你嘴上赢了一圈，心里却在复盘哪句话说得不够漂亮。你的犀利是天赋，但那份'刚才要不要那样说'的后劲，只有你自己知道。",
           "inner_need": "知道吵架不等于关系破裂。",
           "care_tip": "睡前只复盘'说了什么'，不复盘'我怎么样'。"
@@ -103,18 +103,18 @@
       "code": "INFJ",
       "cn_name": "提倡者",
       "group": "外交家",
-      "bazi_archetype": "正印+食神（藏而不露）",
+      "bazi_archetype": "偏印·Ni / 伤官·Fe；煞印相生、纯印格",
       "variants": [
         {
           "id": "INFJ-A",
-          "identity_bazi_anchor": "印星得地，藏而有守",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你安静地理想主义，而且不轻易被世界晃动。你温柔，但有主心骨——知道自己是谁、往哪走。这份稳定让靠近你的人特别安心。",
           "inner_need": "被理解'我的坚持不是固执'。",
           "care_tip": "把你的洞察说出来一次，别总觉得'他们懂就懂'。"
         },
         {
           "id": "INFJ-T",
-          "identity_bazi_anchor": "印重身柔，感物太深",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你把别人的情绪照单全收，然后深夜里替所有人难过。你的敏感是天线，也是负担——不是每个信号都需要你处理。",
           "inner_need": "被允许关机。",
           "care_tip": "晚上十点后不看消息，给天线断电。"
@@ -125,18 +125,18 @@
       "code": "INFP",
       "cn_name": "调停者",
       "group": "外交家",
-      "bazi_archetype": "食神+正印（身弱）",
+      "bazi_archetype": "食神·Fi；禄格、纯印格",
       "variants": [
         {
           "id": "INFP-A",
-          "identity_bazi_anchor": "身弱有根，印比暗扶",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你的理想主义带根——风吹过，你摇，但不倒。你清楚自己要什么，温柔但有立场，这种'软而有骨'很难得。",
           "inner_need": "节奏被尊重。",
           "care_tip": "把底线写下来，防止温柔被消耗。"
         },
         {
           "id": "INFP-T",
-          "identity_bazi_anchor": "身弱官扰，自责内耗",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你心里常开一场审判会，被告和法官都是自己。世界越吵，你越往花园深处躲。你不需要变硬，你只需要知道：你的感受从来不是麻烦。",
           "inner_need": "被温柔以待的证明。",
           "care_tip": "每天对镜子说一句你常对朋友说的话——试着对自己也说。"
@@ -147,18 +147,18 @@
       "code": "ENFJ",
       "cn_name": "主人公",
       "group": "外交家",
-      "bazi_archetype": "正印生比劫（身强）",
+      "bazi_archetype": "伤官佩印（Fe+Ne）",
       "variants": [
         {
           "id": "ENFJ-A",
-          "identity_bazi_anchor": "印比两旺，光照他人",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你是人群里的火种，而且烧得稳——因为你心里有底：照顾别人不是消耗，是你的本钱。你的光很匀，照得到角落。",
           "inner_need": "付出被看见。",
           "care_tip": "接受别人的回请，让爱流动起来。"
         },
         {
           "id": "ENFJ-T",
-          "identity_bazi_anchor": "印旺泄身，予多自薄",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你点亮了所有人，却在没人的时候问自己'我真的做得够好吗'。你给出去的光多，留给自己的少——其实不用满电才配发光。",
           "inner_need": "有人替你张罗一次。",
           "care_tip": "这周主动说一次'我需要帮忙'。"
@@ -169,18 +169,18 @@
       "code": "ENFP",
       "cn_name": "竞选者",
       "group": "外交家",
-      "bazi_archetype": "食伤生财+比劫",
+      "bazi_archetype": "正印·Ne；伤官佩印",
       "variants": [
         {
           "id": "ENFP-A",
-          "identity_bazi_anchor": "身旺财通，食伤有发",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你的热情有底盘——精力足，可能性再多你也能挑出想走的路。你浪得起，也收得住，朋友们跟着你总觉得日子有盼头。",
           "inner_need": "想法不被泼冷水。",
           "care_tip": "挑三个想法落地，其余的存进'以后见'清单。"
         },
         {
           "id": "ENFP-T",
-          "identity_bazi_anchor": "食伤泻秀，身随境转",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你笑容满分，散场后却开始想'大家是不是觉得我吵''那个冷场是不是我的锅'。你的热闹是真的，敏感也是真的——两样都成立，都不丢人。",
           "inner_need": "低电量时也被接纳。",
           "care_tip": "交两个'可以不营业'的朋友，在他们面前允许自己安静。"
@@ -191,18 +191,18 @@
       "code": "ISTJ",
       "cn_name": "物流师",
       "group": "守卫者",
-      "bazi_archetype": "正官+正财",
+      "bazi_archetype": "文档未直接映射（行业适配表见【七杀格（ISTJ/INTJ）】）",
       "variants": [
         {
           "id": "ISTJ-A",
-          "identity_bazi_anchor": "官星坐实，身财相停",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你的稳是刻在骨子里的，不用证明，也不用谁来背书。规则在你手里是工具，不是枷锁——你守规矩，是因为你信它值得。",
           "inner_need": "靠谱被记住。",
           "care_tip": "偶尔做件'没意义但开心'的事，人生不是全勤。"
         },
         {
           "id": "ISTJ-T",
-          "identity_bazi_anchor": "官重身拘，慎而过虑",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你把每件事都做在前头，心里还是不踏实——总觉得漏了什么。你比大多数人可靠，但请把'万一'交还给概率，把今晚交给自己。",
           "inner_need": "一句'有你在，我们放心'。",
           "care_tip": "清单划完就合上，睡前不复查第二遍。"
@@ -213,18 +213,18 @@
       "code": "ISFJ",
       "cn_name": "守卫者",
       "group": "守卫者",
-      "bazi_archetype": "正印+正官",
+      "bazi_archetype": "偏财·Si；禄格、纯财格",
       "variants": [
         {
           "id": "ISFJ-A",
-          "identity_bazi_anchor": "印星安稳，暖而有力",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你照顾人照顾得从容——不是讨好，是真心觉得这样舒服。你的好是匀速的，不喧哗，长流不断。",
           "inner_need": "被主动疼一次。",
           "care_tip": "每月留一天'被照顾日'，只接受不付出。"
         },
         {
           "id": "ISFJ-T",
-          "identity_bazi_anchor": "印重身藏，忧人忧己",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你帮完所有人，回头担心自己是不是哪里做得不周全。你的体贴让人如沐春风，但别把别人的表情当成自己的考卷。",
           "inner_need": "知道'不完美也值得被爱'。",
           "care_tip": "下次想做'更多'的时候，先问自己'还剩多少'。"
@@ -235,18 +235,18 @@
       "code": "ESTJ",
       "cn_name": "总经理",
       "group": "守卫者",
-      "bazi_archetype": "正官格身强",
+      "bazi_archetype": "正官·Te / 偏财·Si；财官相生、纯财格",
       "variants": [
         {
           "id": "ESTJ-A",
-          "identity_bazi_anchor": "官星透干，日主坐禄",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你是天然的管理者，拍板利落、认账爽快。你的秩序感不是控制欲，是你确实能让一群人把事办成。",
           "inner_need": "直接被理解成负责。",
           "care_tip": "表扬比批评多一句，团队会更敢说话。"
         },
         {
           "id": "ESTJ-T",
-          "identity_bazi_anchor": "官星管身，责己过严",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你对自己要求得像个监工——事情办成了九分，那差的十分之一就在心里硌着。你已经很强了，允许自己偶尔'够用就好'。",
           "inner_need": "被肯定'你在，事就稳'。",
           "care_tip": "每天下班前写下三件办成的事，再走。"
@@ -257,18 +257,18 @@
       "code": "ESFJ",
       "cn_name": "执政官",
       "group": "守卫者",
-      "bazi_archetype": "比劫+食神",
+      "bazi_archetype": "伤官·Fe；伤官生财、纯财格",
       "variants": [
         {
           "id": "ESFJ-A",
-          "identity_bazi_anchor": "比劫帮身，食神乐生",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你是聚会的灵魂，而且当得心甘情愿——张罗让你快乐，热闹让你充电。大家爱你是爱你这个人，不只是你的周到。",
           "inner_need": "有立场被接纳。",
           "care_tip": "试着说一次'这次我不张罗'，坐享其成的感觉试试。"
         },
         {
           "id": "ESFJ-T",
-          "identity_bazi_anchor": "食神泻秀，身系人情",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你是大家的定心丸，可你自己夜里会想'他们是不是只是需要我，不是喜欢我'。傻孩子，你先问问自己喜不喜欢他们——是喜欢的吧？他们也是。",
           "inner_need": "无条件被喜欢。",
           "care_tip": "发一条'我今天不太行'的消息试试，朋友比你想象的多。"
@@ -279,18 +279,18 @@
       "code": "ISTP",
       "cn_name": "鉴赏家",
       "group": "探索者",
-      "bazi_archetype": "偏财+七杀（巧而勇）",
+      "bazi_archetype": "文档未覆盖（三阶精修版映射表无 ISTP）",
       "variants": [
         {
           "id": "ISTP-A",
-          "identity_bazi_anchor": "身旺任杀，巧而能断",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你手稳、心静、话少——因为你不需要用声音证明什么。东西修好那一刻的踏实，就是你与世界相处的方式。",
           "inner_need": "被信任不用解释。",
           "care_tip": "主动分享一次'我今天搞定了什么'，你的骄傲值得被听见。"
         },
         {
           "id": "ISTP-T",
-          "identity_bazi_anchor": "杀近身侧，讷言自守",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你不说话，是怕说错；你先做事，是因为事情比人好懂。但其实你已经做得够好了——开口说错话的天，塌不下来。",
           "inner_need": "说错话时也被接纳。",
           "care_tip": "每天说一句'废话'，练习不完美的表达。"
@@ -301,18 +301,18 @@
       "code": "ISFP",
       "cn_name": "探险家",
       "group": "探索者",
-      "bazi_archetype": "食神+偏财（从其秀气）",
+      "bazi_archetype": "食神·Fi；食神生财（Fi+Se）",
       "variants": [
         {
           "id": "ISFP-A",
-          "identity_bazi_anchor": "食神有气，秀而不争",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你把日子过成自己的作品，不争不抢，因为清楚自己想要什么。你的'随和'下面是定力——风大的时候，你反而不动。",
           "inner_need": "审美被看见。",
           "care_tip": "把你的作品发出来一次，让世界排队。"
         },
         {
           "id": "ISFP-T",
-          "identity_bazi_anchor": "秀气虽清，身弱易摇",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你安静地让着所有人，心里却问'是不是我不够好'。不是的。你的细腻是你的深度，不是你的错。你已经很好了，真的。",
           "inner_need": "被肯定'你在就好'。",
           "care_tip": "每天记一件'我做得不错'的小事。"
@@ -323,18 +323,18 @@
       "code": "ESTP",
       "cn_name": "企业家",
       "group": "探索者",
-      "bazi_archetype": "偏财+比劫（身强）",
+      "bazi_archetype": "七杀·Ti / 正财·Se；伤官生财、羊刃格",
       "variants": [
         {
           "id": "ESTP-A",
-          "identity_bazi_anchor": "身旺担财，动而有功",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你冲得快也扛得住，行动是你的母语。别人还在评估风险，你已经把风险变成了经验——这是你最大的复利。",
           "inner_need": "魄力不被说成冲动。",
           "care_tip": "留住一两个'劝住过你'的人，他们是你跑得远的刹车。"
         },
         {
           "id": "ESTP-T",
-          "identity_bazi_anchor": "财动身随，冲中有悔",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你冲在前面，心里却在算'刚才那次是不是太莽了'。你的直觉本来就快人一步，偶尔失手也是学费，不是罪证。",
           "inner_need": "失败被归为尝试。",
           "care_tip": "每次冒险前写下'最坏结果我认'，落笔就翻篇。"
@@ -345,18 +345,18 @@
       "code": "ESFP",
       "cn_name": "表演者",
       "group": "探索者",
-      "bazi_archetype": "伤官+比劫",
+      "bazi_archetype": "正财·Se；食神生财（Fi+Se）",
       "variants": [
         {
           "id": "ESFP-A",
-          "identity_bazi_anchor": "伤官吐秀，身旺不惧",
+          "identity_bazi_anchor": "身强（-A 表达层身份设计，映射文档未涉及）",
           "profile": "你天生自带舞台，快乐是真的，松弛也是真的——你心里有底：冷场了又怎样，我能暖回来。你的能量是大家的福利。",
           "inner_need": "被爱不是因为好笑。",
           "care_tip": "交一个能聊正经事的朋友，展示段子后面的你。"
         },
         {
           "id": "ESFP-T",
-          "identity_bazi_anchor": "伤官泻秀，散场自省",
+          "identity_bazi_anchor": "身弱（-T 表达层身份设计，映射文档未涉及）",
           "profile": "你用笑话把气氛撑起来，回家路上却担心'今天是不是太吵了'。别把'大家都笑'当作及格线——你安静坐着，也值得被喜欢。",
           "inner_need": "安静时也被留下。",
           "care_tip": "允许自己有一次聚会不表演，就坐着，看看谁会坐到你旁边。"
