@@ -127,11 +127,15 @@
    真实端到端验证（见上「部署后自测发现的缺陷与修复」）。上线后观察 `quota_ledger`
    增长与 402 比例即可；如遇异常，后台一键改回 `false` 即恢复放行。
 4. **P5-3 灰度**：`chart_verify_mode` 建议 `off → warn → enforce` 三步走，
-   观察日志中的 `CHART_MISMATCH_WARN` 比例；前端切换到 `/api/v1/app/chart` 后再上 `enforce`。
+   观察日志中的 `CHART_MISMATCH_WARN` 比例。**前端已于 2026-09-29 切到 `/api/v1/app/chart`**
+   （服务端优先 + 本地兜底，`sessionId` 透传至对话 → 对话走权威快照 `source=session/verified=true`），
+   即"前端切换到权威端点"这一前提已满足，可按 `off → warn` 推进。
 5. **P5-5**：`payment_notify_secret` 保持空（回调关闭）直到真实渠道接入并完成证书/域名准备。
 
 ## 剩余（需外部输入，非代码问题）
 
 - **P5-5 真实支付**：备案域名 + HTTPS + 商户资质 → 微信/支付宝 SDK、证书管理、对账报表。
 - **P5-6 前端与文案**：隐私政策页、用户协议页、注册/排盘入口的同意勾选。
-- **P1 待办**：LLM 网关（ADR-003）、数据保留 TTL、版本化迁移链、api_keys 加密存储。
+- **P1 剩余**：LLM 网关（ADR-003）、数据保留 TTL、版本化迁移链、api_keys 加密存储。
+- **多体系（ADR-011 阶段 1+）**：`sessions` 加 `system` 维度 → 星座接入（当前仅 `Proposed`）。
+- **增长域（ADR-013 复审项）**：cash/voucher 奖励形态、设备/IP 级防刷、多级分销。
