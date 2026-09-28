@@ -119,3 +119,29 @@ select {
   border-color: #D4A8A4;
   background: #F5EDEB;
 }
+
+/* ===== UI-8：章节 staggered 入场动画 =====
+ * 用法：<div class="chapter chapter-enter" style="animation-delay: 140ms">
+ * 通过逐级递增的 delay 形成命书逐章展开的节奏感
+ */
+@keyframes chapter-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chapter-enter {
+  animation: chapter-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 尊重系统「减少动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .chapter-enter {
+    animation: none;
+  }
+}

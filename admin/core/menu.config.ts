@@ -80,15 +80,13 @@ export const menuGroups: MenuGroup[] = [
         key: 'users',
         label: 'C端用户',
         icon: Users,
-        disabled: true,
-        disabledHint: '功能开发中，敬请期待',
+        badge: 'NEW',
       },
       {
         key: 'orders',
         label: '订单管理',
         icon: ShoppingCart,
-        disabled: true,
-        disabledHint: '功能开发中，敬请期待',
+        badge: 'NEW',
       },
 
     ],

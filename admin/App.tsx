@@ -15,21 +15,11 @@ import LLMPage from './modules/llm/LLMPage'
 import PromptEditor from './modules/prompts/PromptEditor'
 import GuardPanel from './modules/prompts/GuardPanel'
 import KnowledgeDictPage from './modules/knowledge-dict/KnowledgeDictPage'
+import UsersPage from './modules/users/UsersPage'
+import OrdersPage from './modules/orders/OrdersPage'
 import ConfigPanel from './components/ConfigPanel'
 import AuditLog from './components/AuditLog'
-import { Construction, RefreshCw } from 'lucide-react'
-
-function ConstructionPlaceholder() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20">
-      <div className="size-16 flex items-center justify-center rounded-full bg-[#1A1F2E] border border-white/[0.06] mb-4">
-        <Construction size={24} className="text-[#4A4540]" />
-      </div>
-      <p className="text-[#6B6459] text-base">功能开发中，敬请期待</p>
-      <p className="text-[#4A4540] text-sm mt-1">模块建设中，完成后将自动启用</p>
-    </div>
-  )
-}
+import { RefreshCw } from 'lucide-react'
 
 export default function App() {
   const auth = useAuth()
@@ -71,8 +61,8 @@ export default function App() {
         <Route path="/audit" element={<AuditLog apiHeaders={auth.apiHeaders} />} />
         <Route path="/llm" element={<LLMPage apiHeaders={auth.apiHeaders} />} />
         <Route path="/knowledge-dict" element={<KnowledgeDictPage />} />
-        <Route path="/users" element={<ConstructionPlaceholder />} />
-        <Route path="/orders" element={<ConstructionPlaceholder />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
       </Routes>
     </Layout>
   )

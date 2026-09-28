@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import OperationsOverview from './OperationsOverview'
 import {
   Server,
   Cpu,
@@ -360,6 +361,9 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
         />
       </div>
 
+      {/* ═══ 运营概览（Phase 4b M-8）═══ */}
+      <OperationsOverview />
+
       {/* ═══ 下半区：内存监控 + 最近活动 ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* 内存详情 + 系统信息 */}
@@ -521,7 +525,7 @@ export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
           <CardContent>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { emoji: '🗄️', label: '数据持久层', value: '8 张表', desc: 'SQLite + Drizzle ORM' },
+                { emoji: '🗄️', label: '数据持久层', value: '14 张表', desc: 'SQLite + Drizzle ORM' },
                 { emoji: '🔧', label: '工具系统', value: '5 大工具', desc: '节气/日历/经典/名人/搜索' },
                 { emoji: '🛡️', label: 'L3 防幻觉', value: '热编辑', desc: 'L1/L2/L3 三层护栏' },
                 { emoji: '🤖', label: 'Multi-Agent', value: '4 Agent', desc: 'Router→墨言/墨行/墨缘/墨白' },

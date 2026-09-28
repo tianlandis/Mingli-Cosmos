@@ -8,6 +8,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { BaZiResult, AnnotationResult } from '../engine/index'
 import type { ChatMessage } from '../server/lib/types'
+import { getUserToken } from '../lib/user-api'
 
 // 对外统一从本 Hook 暴露对话相关类型，避免消费方直接依赖 server 层
 export type { ChatMessage }
@@ -63,9 +64,14 @@ export function useAgentChat() {
     const endpoint = mode === 'multi' ? '/api/chat/route' : '/api/chat'
 
     try {
+      // 携带 C 端登录态，便于服务端在开启额度扣减时识别用户（Phase 4b M-6）
+      const token = getUserToken()
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           chart,
           annotation,

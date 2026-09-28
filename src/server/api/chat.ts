@@ -15,8 +15,9 @@ import { validateResponse } from '../lib/guardrail'
 import { detectPaipanAttempt, buildBlockSSE } from '../lib/anti-hallucination'
 import { createModel, loadConfig } from '../lib/llm'
 import { getEnabledTools } from '../modules/llm/tools-executor'
-import { getActiveApiKeys } from '../db/index'
+import { getActiveApiKeys, isDbReady, getConfig, consumeQuota } from '../db/index'
 import { orchestrate } from '../agents/orchestrate'
+import { extractBearerToken, verifyUserToken } from '../core/middleware/user-auth'
 
 /** 滑动窗口：最多保留最近 N 条消息 */
 const MAX_MESSAGES = 10
@@ -64,6 +65,43 @@ function loadActiveTools(): Record<string, ReturnType<typeof import('ai').tool>>
 
 export const chatRoute = new Hono()
 
+/**
+ * Phase 4b M-6 — 登录用户 AI 对话额度扣减
+ *
+ * 安全边界（保证不影响既有行为）：
+ *   1. 仅在 DB 已初始化时才读取配置（isDbReady），避免在测试中误建真实库文件
+ *   2. 默认关闭（quota_enforce_chat != 'true'），未登录 / 无 token 请求直接放行
+ *   3. 扣减失败（额度不足或账号停用）返回 402，由前端引导订阅
+ *
+ * @returns 需要中断请求时返回 Response，否则返回 null
+ */
+function consumeChatQuota(c: any): Response | null {
+  if (!isDbReady()) return null
+
+  let enabled = false
+  try {
+    enabled = getConfig('quota_enforce_chat')?.value === 'true'
+  } catch {
+    return null
+  }
+  if (!enabled) return null
+
+  const token = extractBearerToken(c)
+  if (!token) return null
+
+  const payload = verifyUserToken(token)
+  if (!payload) return null
+
+  if (!consumeQuota(payload.userId)) {
+    return c.json({
+      error: 'QUOTA_EXHAUSTED',
+      message: 'AI 深度解读额度已用完，请订阅套餐或联系客服',
+      code: 'QUOTA_EXHAUSTED',
+    }, 402)
+  }
+  return null
+}
+
 chatRoute.post('/api/chat', async (c) => {
   const body = await c.req.json() as ChatRequest
 
@@ -93,6 +131,10 @@ chatRoute.post('/api/chat', async (c) => {
       return buildBlockSSE(attempt.message)
     }
   }
+
+  // Phase 4b M-6：登录用户额度扣减（默认关闭，配置 quota_enforce_chat=true 开启）
+  const quotaReject = consumeChatQuota(c)
+  if (quotaReject) return quotaReject
 
   const systemPrompt = buildSystemPrompt(body.chart, body.annotation, body.reportSummary)
   const trimmedMessages = trimMessages(body.messages)

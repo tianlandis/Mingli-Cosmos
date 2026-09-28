@@ -22,6 +22,8 @@ export function seedDefaults() {
   setConfig('max_chat_messages', '10', '对话窗口大小', '滑动窗口最大消息数', 'number', 'general')
   setConfig('max_retries', '1', 'LLM 重试次数', '失败后最大重试次数', 'number', 'llm')
   setConfig('llm_timeout_ms', '30000', 'LLM 超时(ms)', '单次请求超时时间', 'number', 'llm')
+  // Phase 4b M-6：AI 对话额度扣减开关（默认关闭，开启后登录用户每次对话扣 1 次额度）
+  setConfig('quota_enforce_chat', 'false', 'AI 对话扣减额度', '开启后登录用户每次对话消耗 1 次额度，额度不足返回 402', 'boolean', 'general')
 
   console.log('[DB] seed: default configs written')
 }
