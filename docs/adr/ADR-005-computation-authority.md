@@ -1,6 +1,6 @@
 # ADR-005: 计算权威 SSOT —— 服务端算 还是 重算校验
 
-- **状态**: `Proposed` ⭐（**建议优先评审**）
+- **状态**: `Accepted` ✅（2026-09-28 实施，Phase 5 P5-3：阶段一闸门 + 阶段二权威端点同时落地）
 - **日期**: 2026-09-28
 - **决策者**: 田哥
 - **类别**: 🧱 骨架（数据流形态 / 完整性）
@@ -74,6 +74,33 @@
 
 - 需要**离线排盘**（PWA / 小程序离线）→ 需重新权衡客户端权威的边界；
 - 引擎算法升级导致 hash 口径变化 → hash 需带**引擎版本号**。
+
+## 实施记录（2026-09-28 · P5-3）
+
+**阶段一（重算校验闸门）+ 阶段二（服务端权威端点）已同时落地**，二者共用同一 `chartHash` 口径。
+
+| 组件 | 文件 | 说明 |
+|---|---|---|
+| 稳定指纹 | `src/server/lib/chart-hash.ts` | 键排序 + 浮点归一化 + `v1:<sha256>`；带 `ENGINE_VERSION` |
+| 权威端点 | `src/server/modules-public/chart/` | `POST /api/v1/app/chart`：生辰 → 服务端算 → 落 `sessions` → 返回 `sessionId` |
+| 数据源解析 | `src/server/lib/chart-source.ts` | `session` / `recomputed` / `client` 三分支统一裁决 |
+| 校验闸门 | `app_configs.chart_verify_mode` | `off`（默认）/ `warn` / `enforce` |
+| 请求接入 | `api/chat.ts`、`api/report.ts` | 支持 `sessionId` / `birth`；响应头 `X-Chart-Verified`、`X-Chart-Source` |
+
+**行为矩阵**
+
+| 请求携带 | 结果 |
+|---|---|
+| `sessionId`（存在） | 取库内权威数据，`verified=true` |
+| `sessionId`（不存在） | `404 SESSION_NOT_FOUND` |
+| `birth`（重算一致） | 用服务端重算结果，`verified=true` |
+| `birth`（重算不一致） | `off/warn` → 采用**服务端结果** + 告警；`enforce` → `409 CHART_MISMATCH` |
+| 仅 `chart`+`annotation` | `off/warn` → 放行但 `verified=false`；`enforce` → `409` |
+
+> 关键收益：即使 `off` 模式，一旦带 `birth`，**伪造 chart 也会被服务端重算结果覆盖**——
+> 完整性缺口在数据层面即被堵住。
+
+测试：`src/server/modules/__tests__/computation-authority.test.ts`
 
 ## 关联
 

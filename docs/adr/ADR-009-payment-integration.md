@@ -1,6 +1,6 @@
 # ADR-009: 支付接入与回调幂等
 
-- **状态**: `Proposed`
+- **状态**: `Accepted` 🔶（2026-09-28 幂等框架实施，Phase 5 P5-5；真实渠道待备案域名 + 商户资质）
 - **日期**: 2026-09-28
 - **决策者**: 田哥
 - **类别**: 🧱 骨架（计费闭环）
@@ -50,6 +50,26 @@
 
 - 引入订阅自动续费 → 需签约代扣能力；
 - 增加支付渠道（如 Stripe / PayPal）→ 抽象支付适配层。
+
+## 实施记录（2026-09-28 · P5-5 幂等框架）
+
+**不变量：同一订单只会发货一次**，且该不变量只有一个实现点。
+
+| 决策项 | 落点 |
+|---|---|
+| 结算单一入口 | `src/server/services/order-settlement.ts` → `settleOrderPaid()` |
+| 复用方 | 模拟支付 `POST /api/v1/app/billing/orders/:id/pay`、后台确认 `.../admin/orders/:id/confirm`、第三方回调 —— **三者共用同一函数** |
+| 回调端点 | `POST /api/v1/app/payment/notify/:channel`（签名校验 + 幂等结算） |
+| 验签顺序 | **先验签 → 再校验金额 → 后发货**（顺序不可颠倒） |
+| 签名口径 | `hex(hmac_sha256(rawBody, secret))`，头 `x-pay-signature`；密钥取 `app_configs.payment_notify_secret` > `PAYMENT_NOTIFY_SECRET` |
+| 默认安全 | **未配置密钥 → `503`**，绝不暴露「无签名即可发货」的公开端点 |
+| 幂等表现 | 订单已 `paid` → `alreadySettled=true`，回读已发放订阅，不重复加额度 |
+| 金额防篡改 | 回调金额 ≠ 订单金额 → `400 AMOUNT_MISMATCH` |
+| 渠道开关 | `GET /api/v1/app/payment/channels` |
+
+**待补（外部依赖）**：备案域名 + HTTPS + 商户资质 → 微信/支付宝真实 SDK 与证书管理、对账报表。
+
+测试：`src/server/modules/__tests__/payment-callback.test.ts`
 
 ## 关联
 

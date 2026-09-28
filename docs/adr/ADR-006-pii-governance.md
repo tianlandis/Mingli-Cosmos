@@ -1,6 +1,6 @@
 # ADR-006: 个人信息（生辰）数据治理与删除权
 
-- **状态**: `Proposed`
+- **状态**: `Accepted` 🔶（2026-09-28 后端底座实施，Phase 5 P5-6；前端同意入口与文案上线后转 ✅）
 - **日期**: 2026-09-28
 - **决策者**: 田哥
 - **类别**: 🔧 完善（合规）
@@ -50,6 +50,22 @@
 
 - 上线境外市场 → 需对齐 GDPR / 当地法；
 - 数据出域 / 使用第三方 LLM 处理 PII → 需评估跨境与委托处理合规。
+
+## 实施记录（2026-09-28 · P5-6 后端底座）
+
+| 决策项 | 落点 |
+|---|---|
+| 告知同意 | 新表 `consent_records`；`POST /api/v1/app/user/consent`（时间 + 版本 + 来源 IP/UA），`GET` 可查 |
+| 版本管理 | `app_configs.consent_privacy_version` / `consent_agreement_version` |
+| 可导出 | `GET /api/v1/app/user/data/export`（用户 / 同意 / 订阅 / 订单 / 额度台账 / 排盘 / 埋点） |
+| 可删除 | `DELETE /api/v1/app/user/data`（二次确认 `confirm:'DELETE'` + 密码校验） |
+| 删除语义 | 软删用户（`users.status='deleted'` + `deletedAt` + 清空手机/邮箱/昵称）→ **硬删**排盘快照（含生辰）→ 埋点匿名化（保统计）→ 全部会话失效 |
+| 审计 | `audit_logs` 记 `resource='user_data'`，**只留操作元数据，不留原始 PII** |
+| 埋点不落生辰 | `analytics_events.payload` 从未包含生辰；删除时进一步抹除 `userId/ip/ua` |
+
+**未完成（前端/文案侧）**：隐私政策页、用户协议页、注册/排盘入口的同意勾选（需产品与法务文案）。
+
+测试：`src/server/modules/__tests__/pii-compliance.test.ts`
 
 ## 关联
 

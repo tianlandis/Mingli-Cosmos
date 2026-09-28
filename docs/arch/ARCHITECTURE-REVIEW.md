@@ -339,18 +339,23 @@ P5 商业化闭环         P6 AI 深化              P7 规模化               
 
 ## 9. 行动清单（按优先级，可勾选）
 
+> 进度更新：2026-09-28 —— Phase 5 骨架 P5-1 ~ P5-6 已实施，详见 `../adr/README.md` 实施顺序表。
+
 ### P0 —— 阻塞商业化，必须做
 
-- [ ] **接入真实支付** + 回调幂等 + 对账（当前 `payMethod='mock'`）
-- [ ] **打开额度门禁**（`quota_enforce_chat=true`）并做**幂等扣减**
-- [ ] **计算权威收敛**（服务端 Chart 或 chartHash 校验），堵住 R-1
-- [ ] **数据库备份脚本 + 首次恢复演练**（`data/mingli.db` 当前无备份）
-- [ ] **PII 合规三件套**：隐私政策页 + 用户协议 + 数据导出/删除接口
+- [~] **接入真实支付** + 回调幂等 + 对账（当前 `payMethod='mock'`）
+      → 幂等结算单一入口 + 回调验签端点 **已就绪**（`services/order-settlement.ts`、`/api/v1/app/payment/notify/:channel`）；
+        真实渠道仍待**备案域名 + HTTPS + 商户资质**（ADR-009）
+- [x] **打开额度门禁**（`quota_enforce_chat=true`）并做**幂等扣减** — `quota_ledger` + 两阶段（ADR-004）
+- [x] **计算权威收敛**（服务端 Chart 或 chartHash 校验），堵住 R-1 — `POST /api/v1/app/chart` + `chart_verify_mode`（ADR-005）
+- [x] **数据库备份脚本 + 首次恢复演练**（`data/mingli.db` 当前无备份）— `scripts/backup-db.py` + cron（ADR-008）
+- [~] **PII 合规三件套**：隐私政策页 + 用户协议 + 数据导出/删除接口
+      → 后端**同意留痕 + 导出 + 删除**已就绪（ADR-006）；**政策/协议文案页与前端入口待补**
 
 ### P1 —— 上量前必做
 
 - [ ] **LLM 网关模块**：响应缓存 + token 成本核算 + AI 接口限流 + 供应商降级
-- [ ] **可观测性基线**：DB/LLM 上游探测进健康检查；admin/app 延迟分维度指标
+- [x] **可观测性基线**：DB/LLM 上游探测进健康检查；admin/app 延迟分维度指标 — `/api/health/deep` + `/api/metrics`（ADR-007）
 - [ ] **数据保留策略**：`sessions`/`analytics_events`/`audit_logs` TTL 与归档
 - [ ] **版本化迁移链**（替代纯 `IF NOT EXISTS`），支持改列/回滚
 - [ ] 核实并落实 **api_keys 加密存储**；密钥移出明文 `.env`（至少权限收敛）

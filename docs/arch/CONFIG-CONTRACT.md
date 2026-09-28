@@ -193,3 +193,23 @@ export async function createLLMClient() {
 - 管理后台必须**认证授权**（JWT + bcrypt），不可公开访问
 - 审计日志记录所有配置变更操作（谁、何时、改了什么）
 - `.env` 文件中的 API Key 依然有效作为冷备份/灾备方案
+
+---
+
+## 八、Phase 5 新增配置项（2026-09-28）
+
+> 读取口径：**数据库 `app_configs` 优先 → 环境变量兜底**（与本契约一致）。
+> `seedPhase5Configs()` 在启动时按 key **幂等补齐**，老库同样会获得这些项。
+
+| key | 类型 | 默认 | 说明 | 关联 ADR |
+|---|:--:|---|---|:--:|
+| `chart_verify_mode` | string | `off` | 排盘校验闸门：`off` / `warn` / `enforce` | 005 |
+| `quota_enforce_chat` | boolean | 生产 `true` / 其他 `false` | AI 对话是否扣减额度 | 004 |
+| `payment_notify_secret` | string | 空（回调关闭） | 支付回调 HMAC 签名密钥 | 009 |
+| `consent_privacy_version` | string | `v1.0` | 隐私政策版本号（同意留痕用） | 006 |
+| `consent_agreement_version` | string | `v1.0` | 用户协议版本号 | 006 |
+
+对应环境变量：`CHART_VERIFY_MODE`、`PAYMENT_NOTIFY_SECRET`、`HEALTH_LLM_PROBE`（见 `.env.example`）。
+
+**惰性读取铁律（血泪教训）**：一律在**函数内**读取 `process.env`，禁止模块顶层求值 ——
+否则求值可能早于 dotenv 注入，导致配置静默失效（2026-09-28 生产事故）。

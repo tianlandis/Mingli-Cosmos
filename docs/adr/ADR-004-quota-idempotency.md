@@ -1,6 +1,6 @@
 # ADR-004: 配额与计费的一致性 —— 幂等消费
 
-- **状态**: `Proposed`
+- **状态**: `Accepted` ✅（2026-09-28 实施，Phase 5 P5-4）
 - **日期**: 2026-09-28
 - **决策者**: 田哥
 - **类别**: 🧱 骨架（计费形态）
@@ -51,6 +51,29 @@
 
 - 引入订阅自动续费 / 周期计费 → ledger 需扩展周期维度；
 - 迁移 PostgreSQL 后 → 幂等键改由数据库唯一索引强制。
+
+## 实施记录（2026-09-28 · P5-4）
+
+| 决策项 | 落点 |
+|---|---|
+| 额度门禁转正 | `app_configs.quota_enforce_chat`；生产（`NODE_ENV=production`）种子默认 `true`，开发/测试默认 `false` |
+| 幂等键 | `quota_ledger.idempotency_key` **唯一约束**；`(userId, key)` 语义 |
+| 追加式台账 | 新表 `quota_ledger`（`delta / balanceAfter / reason / status / refKey`） |
+| 消费接口 | `reserveQuota()` / `commitQuota()` / `refundQuota()`（`src/server/db/repositories/quota.ts`） |
+| 一次调用一个键 | 客户端可传 `X-Idempotency-Key`（重试复用），否则服务端生成 |
+| 余额不足 | `402 QUOTA_EXHAUSTED` + `quotaRemaining` 结构化返回 |
+| 事务语义 | 余额与台账在**同一 SQLite 事务**内变更（`db.transaction`） |
+
+**已实现的不变量（有测试守）**
+- 同 key 二次提交 → 复用首次结果，**不重复扣**；
+- `refundQuota` **幂等**，且不会把 `quotaUsed` 退成负数；
+- 台账净额 ≡ `quotaUsed`（对账锚点）；
+- AI 流式失败 → 自动 `refund`（见 `api/chat.ts` SSE catch 分支）。
+
+测试：`src/server/modules/__tests__/quota-ledger.test.ts`
+
+> ⚠️ 灰度提示：生产开关**默认已成为 true**，但**已存在**的库仍保留原值（`false`）。
+> 上线前请在后台「系统配置」确认该开关，或直接改库：`quota_enforce_chat=true`。
 
 ## 关联
 

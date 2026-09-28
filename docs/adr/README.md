@@ -28,13 +28,15 @@
 | [001](./ADR-001-monolith-first.md) | 单体优先：为什么现在不拆微服务 | 🧱 骨架 | `Proposed` | 全局 |
 | [002](./ADR-002-sqlite-to-postgres-triggers.md) | SQLite → PostgreSQL 迁移触发条件 | 🧱 骨架 | `Proposed` | 数据扩展 |
 | [003](./ADR-003-llm-gateway.md) | 引入 LLM 网关（缓存/路由/核算/降级/限流） | 🔧 完善 | `Proposed` | AI 成本 |
-| [004](./ADR-004-quota-idempotency.md) | 配额与计费一致性：幂等消费 | 🧱 骨架 | `Proposed` | 计费闭环 |
-| [005](./ADR-005-computation-authority.md) | 计算权威 SSOT：服务端算 vs 重算校验 | 🧱 骨架 | `Proposed` ⭐ | R-1 完整性 |
-| [006](./ADR-006-pii-governance.md) | 个人信息（生辰）数据治理与删除权 | 🔧 完善 | `Proposed` | PII 合规 |
-| [007](./ADR-007-observability-baseline.md) | 可观测性基线：SLO / 指标 / 追踪 | 🔧 完善 | `Proposed` | 可运维性 |
+| [004](./ADR-004-quota-idempotency.md) | 配额与计费一致性：幂等消费 | 🧱 骨架 | `Accepted` ✅ | 计费闭环 |
+| [005](./ADR-005-computation-authority.md) | 计算权威 SSOT：服务端算 vs 重算校验 | 🧱 骨架 | `Accepted` ✅ ⭐ | R-1 完整性 |
+| [006](./ADR-006-pii-governance.md) | 个人信息（生辰）数据治理与删除权 | 🔧 完善 | `Accepted` 🔶 | PII 合规 |
+| [007](./ADR-007-observability-baseline.md) | 可观测性基线：SLO / 指标 / 追踪 | 🔧 完善 | `Accepted` ✅ | 可运维性 |
 | [008](./ADR-008-backup-and-dr.md) | 备份与灾难恢复策略 | 🧱 骨架 | `Accepted` ✅ | 数据健壮性 |
-| [009](./ADR-009-payment-integration.md) | 支付接入与回调幂等 | 🧱 骨架 | `Proposed` | 计费闭环 |
+| [009](./ADR-009-payment-integration.md) | 支付接入与回调幂等 | 🧱 骨架 | `Accepted` 🔶 | 计费闭环 |
 | [010](./ADR-010-api-versioning.md) | API 版本与弃用策略（`/api/admin` 退场） | 🔧 完善 | `Proposed` | 遗留兼容 |
+
+> 图例：`✅` 已实施并有测试守；`🔶` 核心/框架已落地，外部依赖（商户资质 / 法务文案 / 前端入口）待补。
 
 ---
 
@@ -77,11 +79,11 @@
 | 序 | 项目 | 对应 ADR | 风险 | 是否需前端改造 | 说明 |
 |:--:|---|:--:|:--:|:--:|---|
 | 1 | **备份脚本 + 恢复演练** | 008 | 🟢 极低 | 否 | 纯运维、纯新增，不碰请求路径；先止住"数据全丢"的沉默风险 **✅ 已完成** |
-| 2 | **健康检查分级 + traceId** | 007 | 🟢 低 | 否 | 纯新增 `/api/health/deep`，为后续改动装"仪表盘" |
-| 3 | **计算权威收敛（先上重算校验闸门）** | 005 | 🟡 中 | 否（阶段一） | 阶段一用 `chartHash` 校验，不动前端数据流；阶段二再切服务端权威 |
-| 4 | **额度门禁转正 + 幂等台账** | 004 | 🟡 中 | 否 | 新增 `quota_ledger` 表 + 事务化扣减；需灰度开 `quota_enforce_chat` |
-| 5 | **真实支付接入 + 回调幂等** | 009 | 🔴 高（外依赖） | 否 | 依赖**备案域名 + HTTPS + 商户资质**，需单独排期 |
-| 6 | **PII 合规底座** | 006 | 🟡 中 | 是（注册/排盘入口） | 隐私政策 + 协议 + 导出/删除接口 |
+| 2 | **健康检查分级 + traceId** | 007 | 🟢 低 | 否 | `/api/health/deep` + `/api/metrics` + `X-Trace-Id`；admin/app 分维度指标 **✅ 已完成** |
+| 3 | **计算权威收敛（重算校验闸门 + 权威端点）** | 005 | 🟡 中 | 否（兼容旧流） | `chartHash` + `POST /api/v1/app/chart` + `chart_verify_mode` 闸门 **✅ 已完成** |
+| 4 | **额度门禁转正 + 幂等台账** | 004 | 🟡 中 | 否 | `quota_ledger` + 事务化扣减 + 两阶段退款 **✅ 已完成** |
+| 5 | **真实支付接入 + 回调幂等** | 009 | 🔴 高（外依赖） | 否 | 幂等结算单一入口 + 回调验签端点 **🔶 框架已就绪**；真实渠道依赖**备案域名 + HTTPS + 商户资质** |
+| 6 | **PII 合规底座** | 006 | 🟡 中 | 是（注册/排盘入口） | 后端：同意留痕 + 导出 + 删除**🔶 已就绪**；隐私政策/协议文案与前端入口待补 |
 
 > 1~4 属于"可立即开工、不依赖外部资质"的骨架；5~6 依赖域名/资质/文案，需与产品侧协同。
 
