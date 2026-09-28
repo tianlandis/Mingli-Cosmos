@@ -38,17 +38,17 @@
 | `users` | 用户身份 | ✅ | C 端账户 |
 | `user_sessions` | 用户身份 | ✅ | C 端登录会话 |
 | `consent_records` | 用户身份 | ✅ | 告知同意留痕 |
-| `birth_profiles` | 用户身份 | ⧗ **待建** | 生辰档案（1 用户 N 档案） |
+| `birth_profiles` | 用户身份 | ✅ 已建 | 生辰档案（1 用户 N 档案） |
 | `sessions` | 命盘业务 | ✅ | 排盘结果（BaZiResult JSON）。**唯一胖表** |
 | `orders` | 交易财务 | ✅ | 订单 |
 | `subscriptions` | 交易财务 | ✅ | 订阅 |
 | `quota_ledger` | 交易财务 | ✅ | 额度幂等台账 |
 | `analytics_events` | 运营分析 | ✅ | 运营埋点 |
-| `llm_call_logs` | 运营分析 | ⧗ **待建** | AI 调用明细（token/延迟/成本） |
-| `referrals` | 增长 | ⧗ **待建** | 推介关系 |
-| `referral_rewards` | 增长 | ⧗ **待建** | 推介奖励发放 |
+| `obs_llm_call_logs` | 运营分析 | ✅ 已建 | AI 调用明细（token/延迟/成本） |
+| `growth_referrals` | 增长 | ✅ 已建 | 推介关系 |
+| `growth_referral_rewards` | 增长 | ✅ 已建 | 推介奖励发放 |
 
-合计：**现有 16 张**，待建 **5 张**。
+合计：**现有 20 张**，待建 **0 张**（ADR-012 规划的 5 张缺口表已全部落地；增长域决策见 ADR-013）。
 
 ---
 
@@ -151,7 +151,7 @@ export const growthReferralRewards = sqliteTable('growth_referral_rewards', {
 ```
 - 唯一约束：`growth_referrals(referrer_user_id, referee_user_id)` 唯一（防重复绑定）
 - **幂等**：`idempotency_key` 唯一，与 `quota_ledger` 完全同一范式，发放额度时的 `ledgerRef` 直接指向台账。
-- 本域是**新领域**，建议单独立 ADR 后再实施（涉及风控、防刷、税务口径）。
+- ✅ **已实施**（2026-09-29）：本域已按 **[ADR-013 推介奖励域](../adr/ADR-013-referral-rewards.md)** 落地。邀请码**无存储可逆编码**（不加列不加表）、绑定双唯一约束、发奖幂等挂支付单一入口。
 
 ---
 

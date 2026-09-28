@@ -28,6 +28,8 @@ interface Props {
   showChat: boolean
   onOpenChat: () => void
   onCloseChat: () => void
+  /** [P5-3] 服务端权威会话 id，透传给 AI 对话面板 */
+  sessionId?: string | null
 }
 
 function Placeholder({ text }: { text: string }) {
@@ -46,7 +48,7 @@ function Placeholder({ text }: { text: string }) {
  *   1. 面板全部保持挂载（用 hidden 切换），避免切走时丢失 ChatPanel 的会话状态；
  *   2. 完整键盘可达：← / → / Home / End 在 Tab 间移动焦点并激活（WCAG 2.1）。
  */
-export default function ResultTabs({ result, annotation, showChat, onOpenChat, onCloseChat }: Props) {
+export default function ResultTabs({ result, annotation, showChat, onOpenChat, onCloseChat, sessionId }: Props) {
   const [active, setActive] = useState<TabKey>('chart')
   const tabRefs = useRef<Partial<Record<TabKey, HTMLButtonElement | null>>>({})
 
@@ -161,7 +163,7 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
           {!annotation ? (
             <Placeholder text="数据准备中…" />
           ) : showChat ? (
-            <ChatPanel chart={result} annotation={annotation} onClose={onCloseChat} />
+            <ChatPanel chart={result} annotation={annotation} sessionId={sessionId} onClose={onCloseChat} />
           ) : (
             <button
               type="button"

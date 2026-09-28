@@ -16,7 +16,7 @@ import { useShell } from '../lib/shell'
 
 export default function PaipanPage() {
   const {
-    result, annotation, loading, error, calculate,
+    result, annotation, sessionId, loading, error, calculate,
     showChat, openChat, closeChat,
   } = useShell()
 
@@ -53,6 +53,7 @@ export default function PaipanPage() {
           <ResultTabs
             result={result}
             annotation={annotation}
+            sessionId={sessionId}
             showChat={showChat}
             onOpenChat={openChat}
             onCloseChat={closeChat}

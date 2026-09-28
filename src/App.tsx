@@ -22,7 +22,7 @@ import { track } from './lib/user-api'
 import type { PaipanInput, ShellContextValue } from './lib/shell'
 
 export default function App() {
-  const { result, annotation, loading, error, handleCalculate } = useBazi()
+  const { result, annotation, sessionId, loading, error, handleCalculate, loadChart } = useBazi()
   const { user, subscription, quotaRemaining, verifying, refresh, logout, login, register } = useUser()
   const [showChat, setShowChat] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
@@ -44,8 +44,9 @@ export default function App() {
     refreshUser: refresh,
     logout,
     openAuth: (mode = 'login') => { setAuthMode(mode); setAuthOpen(true) },
-    result, annotation, loading, error,
+    result, annotation, sessionId, loading, error,
     calculate,
+    loadChart,
     showChat,
     openChat: () => { setShowChat(true); track('chat') },
     closeChat: () => setShowChat(false),

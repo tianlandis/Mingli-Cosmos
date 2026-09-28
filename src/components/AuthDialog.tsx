@@ -18,6 +18,8 @@ interface AuthDialogProps {
     nickname?: string
     phone?: string
     email?: string
+    /** [ADR-013] 推介邀请码（选填） */
+    referralCode?: string
   }) => Promise<unknown>
 }
 
@@ -28,6 +30,7 @@ export default function AuthDialog({
   const [username, setUsername] = useState('')
   const [nickname, setNickname] = useState('')
   const [phone, setPhone] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -47,6 +50,7 @@ export default function AuthDialog({
           password,
           nickname: nickname.trim() || undefined,
           phone: phone.trim() || undefined,
+          referralCode: referralCode.trim() || undefined,
         })
       }
       onClose()
@@ -118,6 +122,14 @@ export default function AuthDialog({
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   placeholder="可用于登录"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="邀请码（选填）">
+                <input
+                  value={referralCode}
+                  onChange={e => setReferralCode(e.target.value)}
+                  placeholder="有好友邀请可填"
                   className={inputCls}
                 />
               </Field>

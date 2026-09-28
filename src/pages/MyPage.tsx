@@ -2,15 +2,17 @@
 // 我的 · 用户中心（路由 `/my`）
 // 文件：src/pages/MyPage.tsx
 //
-// 数据来源（全部为已有 C 端公开接口，本页零后端改动）：
+// 数据来源（全部为已有 C 端公开接口）：
 //   - /api/v1/app/user/me            账户 + 额度 + 订阅（经 useUser）
 //   - /api/v1/app/billing/orders     我的订单
+//   - /api/v1/app/user/charts        我的历史命盘（P1 新增）
 // 未登录时展示登录引导，点击复用外壳层的登录弹窗。
 // ============================================================
 
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, BadgeCheck, CircleUser, CreditCard, Loader2,
+  ArrowRight, BadgeCheck, CalendarDays, Check, CircleUser, Copy, CreditCard, Gift, History, Loader2,
   LogOut, Receipt, Wallet,
 } from 'lucide-react'
 import { userApi } from '../lib/user-api'
@@ -26,6 +28,26 @@ interface OrderItem {
   payMethod: string | null
   paidAt: string | null
   createdAt: string
+}
+
+interface ChartItem {
+  id: string
+  chartHash: string | null
+  engineVersion: string | null
+  createdAt: string | null
+  lastActive: string | null
+  birthDate: string | null
+  birthTime: string | null
+  gender: string | null
+}
+
+/** [ADR-013] 推介信息 */
+interface ReferralInfo {
+  code: string
+  rewardQuota: number
+  invited: number
+  qualified: number
+  rewarded: number
 }
 
 const VIP_LABEL: Record<string, string> = {
@@ -51,13 +73,28 @@ function fmtDate(iso: string | null): string {
 }
 
 export default function MyPage() {
-  const { user, subscription, quotaRemaining, verifying, openAuth, logout } = useShell()
+  const { user, subscription, quotaRemaining, verifying, openAuth, logout, loadChart } = useShell()
+  const navigate = useNavigate()
   // 订单：以 owner(user.id) 标记归属；null 表示尚未加载
   const [ordersState, setOrdersState] = useState<{
     owner: number
     items: OrderItem[]
     error: string | null
   } | null>(null)
+
+  // 历史命盘：同样以 owner 标记归属，避免串号
+  const [chartsState, setChartsState] = useState<{
+    owner: number
+    items: ChartItem[]
+    error: string | null
+  } | null>(null)
+
+  // [ADR-013] 推介信息
+  const [referralState, setReferralState] = useState<{
+    owner: number
+    info: ReferralInfo | null
+  } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   // 登录后拉取最近订单（仅在异步回调中落状态，避免 effect 内同步 setState）
   useEffect(() => {
@@ -72,6 +109,36 @@ export default function MyPage() {
             ? { owner, items: res.data?.items ?? [], error: null }
             : { owner, items: [], error: res.error?.message || '订单加载失败' },
         )
+      })
+    return () => { cancelled = true }
+  }, [user])
+
+  // 登录后拉取历史命盘
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    const owner = user.id
+    userApi.get<{ items: ChartItem[]; total: number }>('/api/v1/app/user/charts')
+      .then(res => {
+        if (cancelled) return
+        setChartsState(
+          res.success
+            ? { owner, items: res.data?.items ?? [], error: null }
+            : { owner, items: [], error: res.error?.message || '历史命盘加载失败' },
+        )
+      })
+    return () => { cancelled = true }
+  }, [user])
+
+  // 登录后拉取推介信息
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    const owner = user.id
+    userApi.get<ReferralInfo>('/api/v1/app/referral/me')
+      .then(res => {
+        if (cancelled) return
+        setReferralState({ owner, info: res.success ? (res.data ?? null) : null })
       })
     return () => { cancelled = true }
   }, [user])
@@ -112,6 +179,30 @@ export default function MyPage() {
   const ordersLoading = ordersState?.owner !== user.id
   const orders = ordersState?.owner === user.id ? ordersState.items : []
   const ordersError = ordersState?.owner === user.id ? ordersState.error : null
+
+  // 派生历史命盘视图状态
+  const chartsLoading = chartsState?.owner !== user.id
+  const charts = chartsState?.owner === user.id ? chartsState.items : []
+  const chartsError = chartsState?.owner === user.id ? chartsState.error : null
+
+  /** 载入某份历史命盘并跳回排盘页展示 */
+  const openChart = async (id: string) => {
+    await loadChart(id)
+    navigate('/')
+  }
+
+  // 派生推介信息
+  const referral = referralState?.owner === user.id ? referralState.info : null
+
+  /** 复制邀请码 */
+  const copyCode = async () => {
+    if (!referral) return
+    try {
+      await navigator.clipboard.writeText(referral.code)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch { /* 剪贴板不可用（非安全上下文），忽略 */ }
+  }
 
   const quotaTotal = user.quotaTotal
   const quotaUsed = user.quotaUsed
@@ -171,6 +262,103 @@ export default function MyPage() {
         >
           <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${usedPct}%` }} />
         </div>
+      </section>
+
+      {/* ── 历史命盘 ── */}
+      <section className="rounded-md border border-line-soft bg-white p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <History size={15} className="text-brand" aria-hidden="true" />
+          <span className="text-sm font-bold text-fg-primary tracking-wide">历史命盘</span>
+          {charts.length > 0 && (
+            <span className="ml-auto text-[11px] text-fg-tertiary tabular-nums">共 {charts.length} 份</span>
+          )}
+        </div>
+
+        {chartsLoading ? (
+          <div className="flex items-center justify-center gap-2 py-6 text-xs text-fg-secondary">
+            <Loader2 size={14} className="animate-spin text-brand" aria-hidden="true" />
+            加载中…
+          </div>
+        ) : chartsError ? (
+          <p className="py-6 text-center text-xs text-fg-secondary">{chartsError}</p>
+        ) : charts.length === 0 ? (
+          <p className="py-6 text-center text-xs text-fg-tertiary">
+            暂无历史命盘 · 登录状态下推演一次会自动留存
+          </p>
+        ) : (
+          <ul className="divide-y divide-line-soft list-none p-0 m-0">
+            {charts.map(c => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => { void openChart(c.id) }}
+                  className="w-full flex items-center justify-between gap-3 py-3 text-left hover:bg-surface-muted rounded-sm transition-colors"
+                >
+                  <div className="min-w-0 flex items-center gap-2.5">
+                    <CalendarDays size={15} className="text-fg-tertiary shrink-0" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-fg-primary truncate tabular-nums">
+                        {c.birthDate ?? '—'}{c.birthTime ? ` ${c.birthTime}` : ''}
+                      </p>
+                      <p className="text-[11px] text-fg-tertiary tabular-nums mt-0.5">
+                        {c.gender ? `${c.gender}命` : '—'} · 更新于 {fmtDate(c.lastActive || c.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight size={14} className="text-fg-tertiary shrink-0" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* ── 推荐有礼 ── */}
+      <section className="rounded-md border border-line-soft bg-white p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Gift size={15} className="text-brand" aria-hidden="true" />
+          <span className="text-sm font-bold text-fg-primary tracking-wide">推荐有礼</span>
+        </div>
+
+        {referral ? (
+          <>
+            <p className="text-xs text-fg-secondary leading-relaxed mb-3">
+              好友注册时填写你的邀请码，好友首次付费后你可得
+              <span className="text-brand font-bold"> {referral.rewardQuota} </span>次额度
+            </p>
+            <div className="flex items-stretch gap-2 mb-4">
+              <code className="flex-1 flex items-center justify-center px-3 py-2 rounded-sm bg-surface-sunken border border-line-strong text-sm font-bold tracking-[0.25em] text-fg-primary tabular-nums select-all">
+                {referral.code}
+              </code>
+              <button
+                type="button"
+                onClick={() => { void copyCode() }}
+                className="shrink-0 px-3 rounded-sm border border-line-strong text-xs text-fg-secondary hover:bg-surface-muted transition-colors inline-flex items-center gap-1.5"
+              >
+                {copied
+                  ? <Check size={13} className="text-semantic-positive" aria-hidden="true" />
+                  : <Copy size={13} aria-hidden="true" />}
+                {copied ? '已复制' : '复制'}
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[
+                { label: '已邀请', value: referral.invited },
+                { label: '已付费', value: referral.qualified },
+                { label: '已获奖', value: referral.rewarded },
+              ].map(s => (
+                <div key={s.label} className="rounded-sm bg-surface-sunken py-2.5">
+                  <p className="text-lg font-bold text-fg-primary tabular-nums" style={{ fontFamily: '"Noto Serif SC", serif' }}>
+                    {s.value}
+                  </p>
+                  <p className="text-[11px] text-fg-tertiary mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="py-3 text-center text-xs text-fg-tertiary">邀请信息加载中…</p>
+        )}
       </section>
 
       {/* ── 订阅卡 ── */}

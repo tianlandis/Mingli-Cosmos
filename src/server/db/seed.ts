@@ -82,6 +82,16 @@ export function seedPhase5Configs() {
   // P5-6 合规：协议版本号（变更时递增，用于同意记录留痕）
   ensure('consent_privacy_version', 'v1.0', '隐私政策版本', '隐私政策当前版本号', 'string', 'general')
   ensure('consent_agreement_version', 'v1.0', '用户协议版本', '用户协议当前版本号', 'string', 'general')
+
+  // [ADR-013] 推介奖励：被推介人首次付费后，给推介人发放的额度数（0 = 关闭）
+  ensure(
+    'referral_reward_quota',
+    '10',
+    '推介奖励额度',
+    '被推介人首次付费成功后，发放给推介人的额度次数（0 表示关闭奖励）',
+    'number',
+    'growth',
+  )
 }
 
 /**

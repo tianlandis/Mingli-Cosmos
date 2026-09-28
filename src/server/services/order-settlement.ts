@@ -21,6 +21,8 @@ import {
   getSubscriptionByOrder,
   grantQuota,
   updateUser,
+  // [ADR-013] 增长域：被推介人付费达标 → 发放推介奖励
+  onRefereePaid,
   type OrderRow,
   type SubscriptionRow,
 } from '../db'
@@ -166,6 +168,14 @@ export function settleOrderPaid(params: {
       subscription = toSubscriptionView(sub)
       quotaGranted = plan.quotaGrant ?? 0
     }
+  }
+
+  // [ADR-013] 推介达标：被推介人付费成功 → 为推介人发放奖励
+  //   幂等且**失败不影响结算**（推介是增长侧收益，不能污染支付主流程）
+  try {
+    onRefereePaid(order.userId)
+  } catch (e) {
+    console.error('[Referral] 达标处理异常（不影响结算）:', e)
   }
 
   return { ok: true, order: paid, subscription, alreadySettled: false, quotaGranted }

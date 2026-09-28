@@ -10,10 +10,12 @@ interface ChatPanelProps {
   chart: BaZiResult
   annotation: AnnotationResult
   reportSummary?: string
+  /** [P5-3] 服务端权威会话 id —— 传入后对话走权威快照（verified） */
+  sessionId?: string | null
   onClose?: () => void
 }
 
-export default function ChatPanel({ chart, annotation, reportSummary, onClose }: ChatPanelProps) {
+export default function ChatPanel({ chart, annotation, reportSummary, sessionId, onClose }: ChatPanelProps) {
   const {
     messages, streaming, loading, error,
     mode, activeAgent,
@@ -31,8 +33,8 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
     const text = input.trim()
     if (!text || loading) return
     setInput('')
-    sendMessage(text, chart, annotation, reportSummary)
-  }, [input, loading, sendMessage, chart, annotation, reportSummary])
+    sendMessage(text, chart, annotation, reportSummary, sessionId)
+  }, [input, loading, sendMessage, chart, annotation, reportSummary, sessionId])
 
   const handleSubmit = useCallback((e: FormEvent) => {
     e.preventDefault()

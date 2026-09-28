@@ -374,4 +374,43 @@ export function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_obs_llm_user ON obs_llm_call_logs(user_id);
     CREATE INDEX IF NOT EXISTS idx_obs_llm_status ON obs_llm_call_logs(status);
   `)
+
+  // ═══════════════════════════════════════
+  // [ADR-013] 增长域：推介关系 + 奖励发放
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS growth_referrals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      referrer_user_id INTEGER NOT NULL,
+      referee_user_id INTEGER NOT NULL,
+      code TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      qualified_at TEXT,
+      rewarded_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_growth_referrals_pair
+      ON growth_referrals(referrer_user_id, referee_user_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_growth_referrals_referee
+      ON growth_referrals(referee_user_id);
+    CREATE INDEX IF NOT EXISTS idx_growth_referrals_referrer
+      ON growth_referrals(referrer_user_id);
+
+    CREATE TABLE IF NOT EXISTS growth_referral_rewards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      referral_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      idempotency_key TEXT NOT NULL UNIQUE,
+      ledger_ref TEXT,
+      granted_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_growth_rewards_referral
+      ON growth_referral_rewards(referral_id);
+    CREATE INDEX IF NOT EXISTS idx_growth_rewards_user
+      ON growth_referral_rewards(user_id);
+  `)
 }

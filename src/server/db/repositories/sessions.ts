@@ -5,7 +5,7 @@
 
 import { getDb } from '../index'
 import { sessions } from '../schema'
-import { eq, sql } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
 
 type SessionRow = typeof sessions.$inferSelect
 type SessionInsert = typeof sessions.$inferInsert
@@ -76,6 +76,42 @@ export function listSessionsByUser(userId: number, limit = 200): SessionRow[] {
     .where(eq(sessions.userId, userId))
     .limit(limit)
     .all()
+}
+
+/**
+ * [P1] 列出某用户的命盘历史（轻量摘要，供「我的 · 历史命盘」）
+ * 只取列表所需列，避免把整份 chart/annotation JSON 拉回（单条约 10KB）。
+ * @param userId 归属用户
+ * @param limit  最大返回条数（默认 20）
+ */
+export function listChartSummariesByUser(userId: number, limit = 20): Array<{
+  id: string
+  chartHash: string | null
+  engineVersion: string | null
+  lastActive: string | null
+  createdAt: string | null
+  chart: string
+}> {
+  return getDb().select({
+    id: sessions.id,
+    chartHash: sessions.chartHash,
+    engineVersion: sessions.engineVersion,
+    lastActive: sessions.lastActive,
+    createdAt: sessions.createdAt,
+    chart: sessions.chart,
+  })
+    .from(sessions)
+    .where(eq(sessions.userId, userId))
+    .orderBy(desc(sessions.lastActive))
+    .limit(limit)
+    .all()
+}
+
+/** [P1] 取某用户自己的命盘快照（越权防护：非本人返回 undefined） */
+export function getChartSessionForUser(id: string, userId: number): SessionRow | undefined {
+  const row = getSession(id)
+  if (!row || row.userId !== userId) return undefined
+  return row
 }
 
 /** [P5-6 ADR-006] 删除某用户全部排盘快照（删除权 → 硬删 PII） */

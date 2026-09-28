@@ -37,6 +37,8 @@ import {
   listUserSessions,
   softDeleteUser,
   listSessionsByUser,
+  listChartSummariesByUser,
+  getChartSessionForUser,
   deleteSessionsByUser,
   listLedgerByUser,
   listSubscriptions,
@@ -51,6 +53,11 @@ import {
   // [ADR-012] 生辰档案（用户身份域 · 核心 PII）
   listBirthProfilesByUser,
   deleteBirthProfilesByUser,
+  // [ADR-013] 增长域：推介绑定
+  bindReferralByCode,
+  listReferralsByReferrer,
+  listRewardsByUser,
+  purgeReferralsForUser,
 } from '../../db'
 import { getActiveSubscription } from '../../db'
 import { trackEvent, type UserRow } from '../../db'
@@ -72,6 +79,8 @@ const registerSchema = z.object({
   nickname: z.string().max(32).optional(),
   phone: z.string().max(20).optional(),
   email: z.string().email('邮箱格式不正确').optional(),
+  /** [ADR-013] 推介邀请码（选填，注册后即绑定） */
+  referralCode: z.string().max(32).optional(),
 })
 
 const loginSchema = z.object({
@@ -150,7 +159,7 @@ route.post('/register', async (c) => {
     }, 400)
   }
 
-  const { username, password, nickname, phone, email } = parsed.data
+  const { username, password, nickname, phone, email, referralCode } = parsed.data
 
   // 唯一性校验（用户名 / 手机 / 邮箱三者均不可重复）
   if (getUserByUsername(username)) {
@@ -171,6 +180,16 @@ route.post('/register', async (c) => {
     nickname: nickname ?? username,
     registerIp: clientIp(c),
   })
+
+  // [ADR-013] 推介绑定：失败**不影响注册**（仅告警）
+  if (referralCode) {
+    try {
+      const bind = bindReferralByCode(user.id, referralCode)
+      if (!bind.ok) console.warn(`[Referral] 注册绑定未生效（ignored）：${bind.reason}`)
+    } catch (e) {
+      console.error('[Referral] 注册绑定异常（ignored）:', e)
+    }
+  }
 
   trackEvent({ event: 'register', userId: user.id, ip: clientIp(c) })
   const session = issueLogin(c, user)
@@ -342,6 +361,62 @@ route.get('/sessions', userAuthMiddleware, (c) => {
 })
 
 // ═══════════════════════════════════════
+// GET /charts — 我的历史命盘（近 20 条，轻量摘要）
+// 数据来源：sessions（服务端权威排盘落库，见 P5-3 ADR-005）
+// ═══════════════════════════════════════
+
+route.get('/charts', userAuthMiddleware, (c) => {
+  const current = c.get('currentUser')!
+  const rows = listChartSummariesByUser(current.userId, 20)
+  const items = rows.map(r => {
+    // 从权威 chart JSON 中抽取生辰摘要（列表仅需展示，不返回整份图表）
+    let birth: { birthDate?: string; birthTime?: string; gender?: string } = {}
+    try {
+      birth = JSON.parse(r.chart) as typeof birth
+    } catch { /* chart 异常时降级为无生辰信息，不影响列表 */ }
+    return {
+      id: r.id,
+      chartHash: r.chartHash,
+      engineVersion: r.engineVersion,
+      createdAt: r.createdAt,
+      lastActive: r.lastActive,
+      birthDate: birth.birthDate ?? null,
+      birthTime: birth.birthTime ?? null,
+      gender: birth.gender ?? null,
+    }
+  })
+  return c.json({ success: true, data: { items, total: items.length } })
+})
+
+// ═══════════════════════════════════════
+// GET /charts/:id — 载入某份历史命盘（权威快照，仅限本人）
+// ═══════════════════════════════════════
+
+route.get('/charts/:id', userAuthMiddleware, (c) => {
+  const current = c.get('currentUser')!
+  const id = c.req.param('id')
+  const row = id ? getChartSessionForUser(id, current.userId) : undefined
+  if (!row) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: '命盘不存在或无权访问' } }, 404)
+  }
+  let chart: unknown = null
+  let annotation: unknown = null
+  try { chart = JSON.parse(row.chart) } catch { /* 损坏时返回 null，由前端提示 */ }
+  try { annotation = JSON.parse(row.annotation) } catch { /* 同上 */ }
+  return c.json({
+    success: true,
+    data: {
+      id: row.id,
+      chartHash: row.chartHash,
+      engineVersion: row.engineVersion,
+      lastActive: row.lastActive,
+      chart,
+      annotation,
+    },
+  })
+})
+
+// ═══════════════════════════════════════
 // GET /status — 未登录也可调用，返回当前登录态（可选鉴权）
 // ═══════════════════════════════════════
 
@@ -476,6 +551,14 @@ route.get('/data/export', userAuthMiddleware, (c) => {
       events: listEventsByUser(user.id).map(e => ({
         event: e.event, payload: parse<unknown>(e.payload), createdAt: e.createdAt,
       })),
+      // [ADR-013] 增长域：我作为推介人的绑定关系 + 我收到的奖励
+      referrals: listReferralsByReferrer(user.id).map(r => ({
+        id: r.id, refereeUserId: r.refereeUserId, code: r.code, status: r.status,
+        qualifiedAt: r.qualifiedAt, rewardedAt: r.rewardedAt, createdAt: r.createdAt,
+      })),
+      referralRewards: listRewardsByUser(user.id).map(r => ({
+        id: r.id, type: r.type, amount: r.amount, status: r.status, grantedAt: r.grantedAt, createdAt: r.createdAt,
+      })),
     },
   })
 })
@@ -512,6 +595,8 @@ route.delete('/data', userAuthMiddleware, async (c) => {
   const purgedCharts = deleteSessionsByUser(user.id)
   // 1b) [ADR-012] 硬删 PII：生辰档案
   const purgedProfiles = deleteBirthProfilesByUser(user.id)
+  // 1c) [ADR-013] 清除与该用户相关的推介数据（作为推介人或被推介人）
+  const purgedReferrals = purgeReferralsForUser(user.id)
   // 2) 匿名化埋点（保留统计价值，抹除身份关联）
   const anonymizedEvents = anonymizeEventsByUser(user.id)
   // 3) 软删用户（状态置 deleted + 清空可识别字段）
@@ -524,7 +609,7 @@ route.delete('/data', userAuthMiddleware, async (c) => {
     action: 'delete',
     resource: 'user_data',
     resourceId: user.id,
-    detail: JSON.stringify({ purgedCharts, purgedProfiles, anonymizedEvents, revokedSessions, self: true }),
+    detail: JSON.stringify({ purgedCharts, purgedProfiles, purgedReferrals, anonymizedEvents, revokedSessions, self: true }),
     operator: `user:${user.id}`,
     ip: clientIp(c),
     createdAt: new Date().toISOString(),
@@ -536,6 +621,7 @@ route.delete('/data', userAuthMiddleware, async (c) => {
       deleted: true,
       purgedCharts,
       purgedProfiles,
+      purgedReferrals,
       anonymizedEvents,
       revokedSessions,
       message: '账号数据已删除，登录会话已失效',

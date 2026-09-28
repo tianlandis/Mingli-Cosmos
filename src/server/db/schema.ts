@@ -354,3 +354,41 @@ export const obsLlmCallLogs = sqliteTable('obs_llm_call_logs', {
   traceId: text('trace_id'),                       // 关联全局 X-Trace-Id
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 })
+
+// ═══════════════════════════════════════
+// [ADR-013] growth_referrals — 推介关系（增长域）
+//   一次绑定一行：谁（referrer）推介了谁（referee），用的哪个码。
+//   唯一约束 (referrer_user_id, referee_user_id) + 唯一索引 referee_user_id
+//   （一个被推介人只能归属一个推介人，防重复归因）。
+// ═══════════════════════════════════════
+
+export const growthReferrals = sqliteTable('growth_referrals', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  referrerUserId: integer('referrer_user_id').notNull(), // 推介人
+  refereeUserId: integer('referee_user_id').notNull(),   // 被推介人（新用户）
+  code: text('code'),                                    // 使用的邀请码
+  status: text('status').default('pending').notNull(),   // 'pending' | 'qualified' | 'rewarded' | 'void'
+  qualifiedAt: text('qualified_at'),                     // 达标时间（被推介人首次付费）
+  rewardedAt: text('rewarded_at'),                       // 奖励发放时间
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [ADR-013] growth_referral_rewards — 推介奖励发放（增长域）
+//   追加式台账；idempotency_key 唯一 —— 与 quota_ledger 同一幂等范式。
+//   注：发放额度走 users.quota_total 增量（与 grantQuota 同口径），
+//       不写入 quota_ledger（后者为**消费**台账，保证 sumLedgerDelta 不变量）。
+// ═══════════════════════════════════════
+
+export const growthReferralRewards = sqliteTable('growth_referral_rewards', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  referralId: integer('referral_id').notNull(),
+  userId: integer('user_id').notNull(),                  // 受益人（推介人）
+  type: text('type').notNull(),                          // 'quota' | 'cash' | 'vip'
+  amount: integer('amount').notNull(),
+  status: text('status').default('pending').notNull(),   // 'pending' | 'granted' | 'failed'
+  idempotencyKey: text('idempotency_key').notNull().unique(),
+  ledgerRef: text('ledger_ref'),                         // 预留：如将来接入 quota_ledger 时的引用
+  grantedAt: text('granted_at'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+})

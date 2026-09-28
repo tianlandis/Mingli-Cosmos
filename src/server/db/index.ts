@@ -120,3 +120,5 @@ export * from './repositories/consent'
 // [ADR-012] 数据域分层：生辰档案（用户身份域）/ AI 调用明细（运营分析域）
 export * from './repositories/birth-profiles'
 export * from './repositories/llm-call-logs'
+// [ADR-013] 增长域：推介关系 + 奖励发放
+export * from './repositories/referrals'

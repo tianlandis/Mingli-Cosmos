@@ -48,6 +48,7 @@ export function useAgentChat() {
     chart: BaZiResult,
     annotation: AnnotationResult,
     reportSummary?: string,
+    sessionId?: string | null,
   ) => {
     setError(null)
     setLoading(true)
@@ -77,6 +78,8 @@ export function useAgentChat() {
           annotation,
           messages: history,
           reportSummary,
+          // [P5-3] 权威会话 id：服务端据此取用权威快照，优先于客户端 chart
+          sessionId: sessionId ?? undefined,
         }),
         signal: abort.signal,
       })

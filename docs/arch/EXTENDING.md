@@ -260,29 +260,32 @@ knowledge_assets（category='zodiac'）
 
 ---
 
-## 5. 完整走一遍：新增"推介奖励"域
+## 5. 完整走一遍：新增"推介奖励"域（**已实施 · ADR-013**）
 
-以你关心的**客户推介奖励**为例，完整流程：
+以**客户推介奖励**为例，完整流程（下称的路径即仓库现状，可直接对照）：
 
-**① 数据域**：新增「增长域」，前缀 `growth_` → 先更新 `DATA-DOMAINS.md`（域清单是唯一约定入口）
+**① 数据域**：新增「增长域」，前缀 `growth_` → 更新 `DATA-DOMAINS.md`（域清单是唯一约定入口）
 
 **② 表**（2 张）：
-- `growth_referrals`（推介关系，`(referrer_user_id, referee_user_id)` 唯一防重复绑定）
+- `growth_referrals`（推介关系，`UNIQUE(referee_user_id)` + `UNIQUE(referrer_user_id, referee_user_id)` 防重复绑定）
 - `growth_referral_rewards`（奖励发放，`idempotency_key` 唯一防重复发放）
 
-**③ schema + migrate 双写** → ④ 仓储 `repositories/growth/` → ⑤ `db/index.ts` 导出
+**③ schema + migrate 双写** → ④ 仓储 `repositories/referrals.ts` → ⑤ `db/index.ts` 导出
 
-**⑥ 模块**：`modules-public/referral/index.ts` → `/api/v1/app/referral/*`
-- `POST /bind` 绑定推介关系
-- `GET  /my` 我的推介与奖励
+**⑥ 模块**：`modules-public/referral/index.ts` → `/api/v1/app/referral/*`（目录约定自动挂载，零注册）
+- `GET  /me` 我的邀请码与战绩
+- `POST /bind` 补绑邀请码
 
-**⑦ 前端**：`pages/ReferralPage.tsx` + 路由 `/referral` + 「我的」页加入口
+**⑦ 前端**：注册弹窗加「邀请码（选填）」字段；「我的」页加「推荐有礼」卡（邀请码复制 + 战绩）。
+> 注：本功能**没有**新开 `/referral` 路由页——单页信息量小，直接并入「我的」更省一次跳转。这是"按内容体量选载体"的取舍，不是遗漏。
 
-**⑧ 合规**：奖励若发额度 → 必须走 `quota_ledger`（幂等），`ledgerRef` 指向台账
+**⑧ 合规**：邀请关系含用户标识 → **已**接入 `data/export`（新增 `referrals`/`referralRewards`）与 `DELETE /user/data`（`purgeReferralsForUser`）。
 
-**⑨ 风险**：防刷（同 IP/设备）、税务口径、奖励上限 → **建议先立 ADR 再实施**
+**⑨ 加额度口径** ⚠️ **与"走 quota_ledger"相反**：`quota_ledger` 是**消费**台账，须保持 `sumLedgerDelta == -quotaUsed` 不变量；**发奖不得写入**。奖励权威记录是增长域自己的 `growth_referral_rewards`，加额度走 `users.quota_total += amount`（与既有 `grantQuota()` 同口径）。
 
-> 这个例子说明：**有了域约定和模块约定，"加一个领域"就是 9 步机械流程**，不需要重新设计架构。
+**⑩ 风控与决策**：防刷（自邀拦截 / 一次性绑定 / 奖励以真实付费为前提）、税务口径、奖励形态 → 已在 **[ADR-013](../adr/ADR-013-referral-rewards.md)** 定档。
+
+> 这个例子说明：**有了域约定和模块约定，"加一个领域"就是一条机械流程**，不需要重新设计架构。本领域已全程跑通，可当**活样板**参照。
 
 ---
 

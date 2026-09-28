@@ -57,6 +57,8 @@ export function useUser() {
     setVerifying(false)
   }, [])
 
+  // 挂载时校验登录态：refresh 内部按 token 有无落状态，属「订阅外部系统」的正当用法
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh() }, [refresh])
 
   const login = useCallback(async (account: string, password: string) => {
@@ -78,6 +80,8 @@ export function useUser() {
     nickname?: string
     phone?: string
     email?: string
+    /** [ADR-013] 推介邀请码（选填） */
+    referralCode?: string
   }) => {
     const res = await userApi.post<{ token: string; user: CurrentUser }>(
       '/api/v1/app/user/register',
