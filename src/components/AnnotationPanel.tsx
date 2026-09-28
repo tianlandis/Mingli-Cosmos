@@ -1,14 +1,12 @@
 import type { AnnotationResult } from '../engine/annotation'
+import { wxColor } from '../lib/wuxing'
 
 interface Props {
   annotation: AnnotationResult
 }
 
 export default function AnnotationPanel({ annotation }: Props) {
-  const { overview, strengthAnalysis, wuXingBalance, shiShenProfile, patternAnalysis, comprehensiveAdvice } = annotation
-
-  const scoreWidth = Math.max(5, Math.min(100, strengthAnalysis.score))
-  const scoreColor = scoreWidth > 60 ? '#B83A2E' : scoreWidth > 35 ? '#B8973E' : '#3D5A80'
+  const { overview, wuXingBalance, shiShenProfile, patternAnalysis, comprehensiveAdvice } = annotation
 
   return (
     <div className="space-y-6">
@@ -26,37 +24,8 @@ export default function AnnotationPanel({ annotation }: Props) {
         <p className="text-[#1C1914] text-sm leading-relaxed">{overview.summary}</p>
       </div>
 
-      {/* ── 日主强弱 + 格局分析 并排 ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 日主强弱 */}
-        <div className="ink-card">
-          <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">日主强弱</div>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-lg font-bold" style={{ color: scoreColor }}>
-              {strengthAnalysis.strength}
-            </span>
-            <span className="text-[#B0A898] text-xs">({strengthAnalysis.score}分)</span>
-          </div>
-          {/* 进度条 */}
-          <div className="w-full h-2 bg-[#E8E3D9] rounded-full mb-3 overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${scoreWidth}%`, backgroundColor: scoreColor }}
-            />
-          </div>
-          {/* 判断依据 */}
-          <ul className="space-y-1">
-            {strengthAnalysis.reasons.map((r, i) => (
-              <li key={i} className="text-[#6B6459] text-xs flex items-start gap-1.5">
-                <span className="text-[#B0A898] shrink-0 mt-0.5">·</span>
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* 格局分析 */}
-        <div className="ink-card">
+      {/* ── 格局分析（日主强弱见 L1 速读卡与上方详细强弱图，此处不再重复）── */}
+      <div className="ink-card">
           <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">格局分析</div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="ink-tag">{patternAnalysis.patternType}</span>
@@ -93,26 +62,22 @@ export default function AnnotationPanel({ annotation }: Props) {
             ))}
           </ul>
         </div>
-      </div>
 
       {/* ── 五行平衡 ── */}
       <div className="ink-card">
         <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">五行平衡</div>
         <div className="space-y-2">
           {wuXingBalance.map((item) => {
-            const wxColors: Record<string, string> = {
-              '木': '#4A7C3F', '火': '#B83A2E', '土': '#B8973E',
-              '金': '#C4A458', '水': '#3D5A80',
-            }
+            const color = wxColor(item.name)
             return (
               <div key={item.name} className="flex items-center gap-2">
-                <span className="text-xs w-6 shrink-0 font-bold" style={{ color: wxColors[item.name] }}>
+                <span className="text-xs w-6 shrink-0 font-bold" style={{ color }}>
                   {item.name}
                 </span>
                 <div className="flex-1 h-1.5 bg-[#E8E3D9] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
-                    style={{ width: `${Math.max(5, (item.count / 8) * 100)}%`, backgroundColor: wxColors[item.name] }}
+                    style={{ width: `${Math.max(5, (item.count / 8) * 100)}%`, backgroundColor: color }}
                   />
                 </div>
                 <span className="text-[#B0A898] text-xs w-4 text-right">{item.count}</span>

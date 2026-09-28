@@ -44,7 +44,7 @@ export default function ReportView({ report, loading, onClose }: ReportViewProps
       {report.sections.map(section => (
         <div key={section.id} className="mb-6">
           {section.id !== 'seal' && (
-            <h3 className="text-md font-bold text-[#5B5040] mb-2 tracking-wide serif border-l-2 border-[#B83A2E] pl-3">
+            <h3 className="text-base font-bold text-[#5B5040] mb-2 tracking-wide serif border-l-2 border-[#B83A2E] pl-3">
               {section.title}
             </h3>
           )}

@@ -2,14 +2,9 @@ import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import BirthForm from './components/BirthForm'
 import BaziChart from './components/BaziChart'
-import HiddenStems from './components/HiddenStems'
-import FiveElements from './components/FiveElements'
-import TenGods from './components/TenGods'
-import DayMasterStrength from './components/DayMasterStrength'
-import LuckTimeline from './components/LuckTimeline'
-import TopicTabs from './components/TopicTabs'
-import AnnotationPanel from './components/AnnotationPanel'
-import ChatPanel from './components/ChatPanel'
+import ElementBar from './components/ElementBar'
+import ResultSummary from './components/ResultSummary'
+import ResultTabs from './components/ResultTabs'
 import AuthDialog from './components/AuthDialog'
 import { useBazi } from './hooks/useBazi'
 import { useUser } from './hooks/useUser'
@@ -27,6 +22,7 @@ export default function App() {
 
   /** 排盘埋点：仅记录历法与性别维度，不采集出生时间等敏感信息 */
   const handleCalculateWithTrack = async (data: Parameters<typeof handleCalculate>[0]) => {
+    setShowChat(false) // 换命盘 = 换对话上下文
     await handleCalculate(data)
     track('paipan', { calendarType: data.calendarType, gender: data.gender })
   }
@@ -45,31 +41,31 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 md:px-8 lg:pr-24 py-6">
-        {/* 输入区 — 紧凑工具栏 */}
-        <div className="mb-8">
+        {/* 输入区 — 卡片式生辰录入（L 输入） */}
+        <div className="mb-5">
           <BirthForm onCalculate={handleCalculateWithTrack} />
         </div>
 
-        {/* Loading */}
+        {/* Loading — 紧凑内联条，避免与结果区争抢首屏 */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#B83A2E] border-t-transparent" />
-            <p className="text-[#6B6459] mt-3 text-sm">计算中...</p>
+          <div className="flex items-center justify-center gap-2 py-3 text-sm text-[#6B6459]">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#B83A2E] border-t-transparent" />
+            计算中…
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="bg-[#F5EDEB] border border-[#D4A8A4] rounded-sm p-4 text-[#9B2C22] text-sm text-center">
+          <div className="rounded-sm border border-[#D4A8A4] bg-[#F5EDEB] p-4 text-center text-sm text-[#9B2C22]">
             {error}
           </div>
         )}
 
-        {/* 结果 — 命书章节流式布局（UI-8：staggered 入场） */}
-        {result && !loading && (
-          <div className="animate-in fade-in duration-500">
-            {/* 命盘英雄区 */}
-            <div className="chapter chapter-enter" style={{ animationDelay: '0ms' }}>
+        {/* ═══ 结果区：L0 命盘 → L1 速读 → L2 详情 ═══ */}
+        {result && (
+          <div className="animate-in fade-in duration-500 space-y-4">
+            {/* L0 命盘卡 —— 只依赖 result，排盘后立即上屏，不等批注 */}
+            <section className="rounded-md border border-[#E4DED3] bg-white shadow-[0_1px_3px_rgba(28,25,20,0.05)] px-4 pt-3 pb-5 sm:px-6">
               <BaziChart
                 yearPillar={result.yearPillar}
                 monthPillar={result.monthPillar}
@@ -77,89 +73,45 @@ export default function App() {
                 hourPillar={result.hourPillar}
                 dayMaster={result.dayMaster}
               />
-            </div>
+              <ElementBar fiveElements={result.fiveElements} />
+            </section>
 
-            {/* 日主强弱 — UI-9 */}
-            {annotation?.strengthAnalysis && (
-              <div className="chapter chapter-enter" style={{ animationDelay: '70ms' }}>
-                <DayMasterStrength analysis={annotation.strengthAnalysis} dayMaster={result.dayMaster} />
-              </div>
-            )}
+            {/* L1 速读三卡 —— 日主强弱 / 格局 / 命局总览 */}
+            <ResultSummary annotation={annotation} dayMaster={result.dayMaster} />
 
-            {/* 藏干 */}
-            <div className="chapter chapter-enter" style={{ animationDelay: '140ms' }}>
-              <HiddenStems
-                yearPillar={result.yearPillar}
-                monthPillar={result.monthPillar}
-                dayPillar={result.dayPillar}
-                hourPillar={result.hourPillar}
-              />
-            </div>
-
-            {/* 五行 & 十神 并排 */}
-            <div className="chapter chapter-enter" style={{ animationDelay: '210ms' }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FiveElements fiveElements={result.fiveElements} />
-                <TenGods tenGods={result.tenGods} />
-              </div>
-            </div>
-
-            {/* 大运竖轴 — 时间线 */}
-            <div className="chapter chapter-enter" style={{ animationDelay: '280ms' }}>
-              <LuckTimeline
-                daYun={result.daYun}
-                currentDaYun={result.currentDaYun}
-                luckAnalysis={annotation?.luckAnalysis}
-              />
-            </div>
-
-            {/* 命盘批注 */}
-            {annotation && (
-              <div className="chapter chapter-enter" style={{ animationDelay: '350ms' }}>
-                <AnnotationPanel annotation={annotation} />
-              </div>
-            )}
-
-            {/* 专题 Tab */}
-            {annotation?.specialTopics && (
-              <div className="chapter chapter-enter" style={{ animationDelay: '420ms' }}>
-                <TopicTabs specialTopics={annotation.specialTopics} />
-              </div>
-            )}
-
-            {/* A 模式入口 + 对话面板 */}
-            {annotation && (
-              <div className="chapter chapter-enter" style={{ animationDelay: '490ms' }}>
-                {!showChat ? (
-                  <button
-                    type="button"
-                    onClick={openChat}
-                    className="w-full py-3 px-4 rounded-sm border border-dashed border-[#B83A2E] bg-[#FDF8F5] text-[#B83A2E] text-sm font-bold tracking-wider hover:bg-[#F9F0EB] transition-colors"
-                  >
-                    🧘 向墨白提问命理问题
-                  </button>
-                ) : (
-                  <ChatPanel
-                    chart={result}
-                    annotation={annotation}
-                    onClose={() => setShowChat(false)}
-                  />
-                )}
-              </div>
-            )}
+            {/* L2 详情 Tab —— 命盘细节 / 命理解读 / 大运流年 / 专题 / AI 问答 */}
+            <ResultTabs
+              result={result}
+              annotation={annotation}
+              showChat={showChat}
+              onOpenChat={openChat}
+              onCloseChat={() => setShowChat(false)}
+            />
           </div>
         )}
 
-        {/* 空状态 */}
+        {/* 空状态 — 首屏能力引导（有边界、有结构） */}
         {!result && !loading && !error && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4 opacity-30">☯</div>
-            <p className="text-[#B0A898] text-sm tracking-wider">请输入出生信息，点击「排盘」查看命盘</p>
+          <div className="rounded-md border border-dashed border-[#DDD6C8] bg-white/40 px-5 py-8 text-center">
+            <div className="text-4xl mb-3 opacity-25 select-none">☯</div>
+            <p className="text-[#8A8172] text-sm tracking-[0.15em] mb-4">
+              填写上方生辰，即刻推演命盘
+            </p>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {['四柱八字', '五行强弱', '十神', '大运流年', '命盘批注', 'AI 问答'].map(t => (
+                <span
+                  key={t}
+                  className="px-2.5 py-1 rounded-full border border-[#E4DED3] bg-white/70 text-[11px] text-[#8A8172] tracking-wider"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </main>
 
-      <footer className="text-center py-4 text-[#B0A898] text-xs border-t border-[#D8D2C8] tracking-wider">
+      <footer className="text-center py-4 text-xs text-[#B0A898] border-t border-[#D8D2C8] tracking-wider">
         八字排盘 · 四柱八字命理工具 · 仅供参考
       </footer>
 

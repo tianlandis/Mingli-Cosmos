@@ -32,7 +32,7 @@ export default function TopicTabs({ specialTopics }: Props) {
       <h3 className="chapter-title">专题批注</h3>
 
       {/* Tab 标签栏 */}
-      <div className="flex border-b border-[#D8D2C8] mb-4 overflow-x-auto -mx-1 px-1">
+      <div role="tablist" aria-label="专题分类" className="flex border-b border-[#D8D2C8] mb-4 overflow-x-auto -mx-1 px-1">
         {TAB_CONFIG.map((tab) => {
           const isActive = active === tab.key
           const itemCount = specialTopics[tab.key]?.length ?? 0
@@ -40,6 +40,8 @@ export default function TopicTabs({ specialTopics }: Props) {
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => setActive(tab.key)}
               disabled={itemCount === 0}
               className={`relative shrink-0 px-4 py-2.5 text-sm font-medium tracking-wider transition-colors whitespace-nowrap
