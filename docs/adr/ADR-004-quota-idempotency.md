@@ -68,12 +68,20 @@
 - 同 key 二次提交 → 复用首次结果，**不重复扣**；
 - `refundQuota` **幂等**，且不会把 `quotaUsed` 退成负数；
 - 台账净额 ≡ `quotaUsed`（对账锚点）；
-- AI 流式失败 → 自动 `refund`（见 `api/chat.ts` SSE catch 分支）。
+- **失败不计费**：只有真正产出文本才 `commit`。上游失败来自两条路径——
+  ① 构造期同步抛错（`createModel/streamText`），② **流内 `{type:'error'}` chunk**
+  （402/429/5xx 在 AI SDK v6 中即此形态）。任一发生或零输出 → `refund` + SSE 回传
+  `LLM_STREAM_FAILED`，**绝不 commit**（见 `api/chat.ts`）。
 
-测试：`src/server/modules/__tests__/quota-ledger.test.ts`
+测试：`src/server/modules/__tests__/quota-ledger.test.ts`、
+`src/server/modules/__tests__/chat-billing-safety.test.ts`（mock `streamText` 复现 error chunk）
 
-> ⚠️ 灰度提示：生产开关**默认已成为 true**，但**已存在**的库仍保留原值（`false`）。
-> 上线前请在后台「系统配置」确认该开关，或直接改库：`quota_enforce_chat=true`。
+> ✅ 生产状态（2026-09-28）：`quota_enforce_chat=true` 已转正。「失败不计费」经回归测试 +
+> 真实端到端（真实上游 402 → 额度未动、台账 `refunded`）验证通过。
+> 如需回退：后台「系统配置」改为 `false` 即恢复放行，无需发版。
+>
+> ⚠️ 已知外部依赖：当前 LLM provider 为 `local` 且无可用 Key（深度健康检查 `llm=skipped`），
+> 对话会返回 `LLM_STREAM_FAILED`（**不扣费**）。接入有效 Key 后即可正常产出。
 
 ## 关联
 
