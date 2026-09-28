@@ -184,8 +184,38 @@ chatRoute.post('/api/chat', async (c) => {
 
   const systemPrompt = buildSystemPrompt(chart, annotation, body.reportSummary)
   const trimmedMessages = trimMessages(body.messages)
-  const model = createModel(loadConfig())
   const tools = loadActiveTools()
+
+  // [P5-4] LLM 初始化失败必须**退回额度**，否则用户为一次失败的调用买单
+  let result: ReturnType<typeof streamText>
+  try {
+    result = streamText({
+      model: createModel(loadConfig()),
+      system: systemPrompt,
+      messages: trimmedMessages,
+      tools: Object.keys(tools).length > 0 ? tools : undefined,
+      maxSteps: MAX_TOOL_STEPS,
+      onFinish: ({ text }: { text: string }) => {
+        if (text) {
+          const guard = validateResponse(text)
+          if (!guard.passed) {
+            console.warn('[Guardrail]', guard.reason)
+          }
+          console.log(`[Chat] 生成完成 (${text.length} 字符)`)
+        }
+      },
+    } as any)
+  } catch (e) {
+    console.error('[Chat] LLM 初始化失败:', e)
+    if (quota.key) {
+      const r = refundQuota(quota.key)
+      if (r.refunded) console.warn(`[Chat] 初始化失败，额度已退回 ${r.amount}（key=${quota.key}）`)
+    }
+    return c.json({
+      error: 'LLM_INIT_FAILED',
+      message: 'AI 服务暂时不可用，请稍后重试',
+    }, 502)
+  }
 
   console.log(`\n[Chat] ═══ 新对话 ═══`)
   console.log(`[Chat] 日主: ${chart.dayMaster} | 消息: ${trimmedMessages.length} | 来源: ${resolved.data.source} verified=${resolved.data.verified}`)
@@ -195,27 +225,12 @@ chatRoute.post('/api/chat', async (c) => {
     console.log(`[Chat] 用户: ${preview}${lastUserMsg.content.length > 80 ? '...' : ''}`)
   }
 
-  const result = streamText({
-    model,
-    system: systemPrompt,
-    messages: trimmedMessages,
-    tools: Object.keys(tools).length > 0 ? tools : undefined,
-    maxSteps: MAX_TOOL_STEPS,
-    onFinish: ({ text }: { text: string }) => {
-      if (text) {
-        const guard = validateResponse(text)
-        if (!guard.passed) {
-          console.warn('[Guardrail]', guard.reason)
-        }
-        console.log(`[Chat] 生成完成 (${text.length} 字符)`)
-      }
-    },
-  } as any)
-
   // AI SDK v6 fullStream：处理 text-delta / tool-call / tool-result / step-start 等所有 chunk 类型
   const encoder = new TextEncoder()
   let toolCallCount = 0
   let fullText = ''
+  // [P5-4] 记录流内错误（如上游 402/429/5xx），用于"失败不计费"判定
+  let streamError: { message?: string } | null = null
 
   const sseStream = new ReadableStream({
     async start(controller) {
@@ -287,6 +302,17 @@ chatRoute.post('/api/chat', async (c) => {
               break
             }
 
+            case 'error': {
+              // [P5-4] 上游错误（402 余额不足 / 429 限流 / 5xx）以 error chunk 形式流入，
+              //        必须显式捕获，否则会被静默吞掉并误判为"成功计费"
+              const ec = chunk as any
+              streamError = ec.error instanceof Error
+                ? { message: ec.error.message }
+                : { message: typeof ec.error === 'string' ? ec.error : 'AI 上游返回错误' }
+              console.error('[Chat] 流内错误:', streamError.message)
+              break
+            }
+
             default:
               console.log(`[Chat DEBUG] unknown chunk type: ${chunk.type}, keys:`, Object.keys(chunk).join(', '))
               break
@@ -332,6 +358,28 @@ chatRoute.post('/api/chat', async (c) => {
               ),
             )
           }
+        }
+
+        // [P5-4] 失败不计费：流内错误或零输出 → 退额度 + 回传错误事件（不 commit）
+        if (streamError || !fullText) {
+          const reason = streamError?.message || 'AI 未产出任何内容'
+          console.warn(`[Chat] 生成失败，退回额度：${reason}`)
+          if (quota.key) {
+            const r = refundQuota(quota.key)
+            if (r.refunded) console.warn(`[Chat] 额度已退回 ${r.amount}（key=${quota.key}）`)
+          }
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: 'error',
+                code: 'LLM_STREAM_FAILED',
+                message: 'AI 服务暂时不可用，请稍后重试（本次未扣除额度）',
+              })}\n\n`,
+            ),
+          )
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+          return
         }
 
         controller.enqueue(encoder.encode('data: [DONE]\n\n'))

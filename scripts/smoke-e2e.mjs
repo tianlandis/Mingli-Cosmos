@@ -45,9 +45,17 @@ async function api(method, path, { token, body, admin } = {}) {
   return { status: res.status, json, headers: res.headers }
 }
 
-/** 需要读取文本响应（/api/metrics）时用 */
-async function rawText(path) {
-  const res = await fetch(BASE + path)
+/** 需要读取文本响应（/api/metrics、SSE /api/chat）时用 */
+async function rawText(path, { token, body, idempotencyKey } = {}) {
+  const headers = {}
+  if (body) headers['Content-Type'] = 'application/json'
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey
+  const res = await fetch(BASE + path, {
+    method: body ? 'POST' : 'GET',
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
   return { status: res.status, text: await res.text(), headers: res.headers }
 }
 
@@ -215,6 +223,27 @@ async function main() {
 
   const channels = await api('GET', '/api/v1/app/payment/channels')
   ok('支付渠道端点 → 200', channels.status === 200, `status=${channels.status}`)
+
+  // 计费安全（P5-4）：上游不可用时对话必须失败但**不计费**
+  const quotaBefore = await api('GET', '/api/v1/app/user/quota', { token: loginToken })
+  const usedBefore = quotaBefore.json?.data?.quotaUsed ?? 0
+  const chatStream = await rawText('/api/chat', {
+    token: loginToken,
+    body: { sessionId, messages: [{ role: 'user', content: '你好' }] },
+    idempotencyKey: `smoke-chat-${suffix}`,
+  })
+  const streamOk = chatStream.text.includes('text-delta')
+  const streamFail = chatStream.text.includes('LLM_STREAM_FAILED')
+  ok('对话返回 text-delta 或失败事件（SSE 通道正常）', streamOk || streamFail,
+    `ok=${streamOk} fail=${streamFail} body=${chatStream.text.slice(0, 90)}`)
+  if (streamFail) {
+    const quotaAfter = await api('GET', '/api/v1/app/user/quota', { token: loginToken })
+    ok('失败不计费：额度未被消耗',
+      (quotaAfter.json?.data?.quotaUsed ?? -1) === usedBefore,
+      `before=${usedBefore} after=${quotaAfter.json?.data?.quotaUsed}`)
+  } else {
+    ok('（上游可用）对话成功 → 跳过失败计费断言', true)
+  }
 
   // ── 汇总 ─────────────────────────────────────
   console.log('\n────────────────────────────')
