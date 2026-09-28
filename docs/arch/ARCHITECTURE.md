@@ -211,3 +211,4 @@ AnnotationResult
 > 📎 **算法权威源**: `arch/ALGORITHM-AUTHORITY.md`（Python MCP 为最高权威）
 > 📎 **技术栈锁定**: `arch/STACK.md`
 > 📎 **代码规范**: `arch/CODE-STYLE.md`
+> 📎 **架构决策记录**: `docs/adr/`（"为什么这么设计"的唯一权威，改架构前先读）

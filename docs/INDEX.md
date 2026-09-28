@@ -40,6 +40,8 @@
 | 了解风险合规要求 | `plan/05-risk-compliance.md` | 计划 |
 | 了解 UI/UX 设计规范 | `design/UI-UX.md` | 设计 |
 | 开发 Phase 2 AI Agent | `design/PHASE2_AI_AGENT_DESIGN.md` | 设计 |
+| 了解"为什么这么设计"/架构决策 | `adr/README.md` | 决策 |
+| 了解架构评审与长期规划 | `arch/ARCHITECTURE-REVIEW.md` | 架构 |
 
 ---
 
@@ -64,6 +66,19 @@ docs/
 │   ├── CONFIG-CONTRACT.md            ← 🆕 动态双轨配置契约（DB→.env fallback）
 │   ├── STACK.md                      ← 技术栈锁定·配色·限制规则
 │   └── CODE-STYLE.md                 ← 代码规范·命名约定·调用约定
+│
+├── adr/                              ← 🏛️ 决策层（Architecture Decision Records）
+│   ├── README.md                     ← ADR 索引·状态·评审节奏（先骨架后完善）
+│   ├── ADR-001-monolith-first.md     ← 单体优先：现在不拆微服务 + 三条拆分缝
+│   ├── ADR-002-sqlite-to-postgres-triggers.md ← SQLite→PG 迁移触发条件（T1~T5）
+│   ├── ADR-003-llm-gateway.md        ← LLM 网关：缓存/路由/核算/降级/限流
+│   ├── ADR-004-quota-idempotency.md  ← 额度幂等消费 + 追加式台账
+│   ├── ADR-005-computation-authority.md ← ⭐ 计算权威 SSOT（服务端权威/重算校验）
+│   ├── ADR-006-pii-governance.md     ← 生辰 PII 治理：同意/导出/删除
+│   ├── ADR-007-observability-baseline.md ← 可观测性基线：SLO/指标/追踪
+│   ├── ADR-008-backup-and-dr.md      ← 备份 + 恢复演练 + 版本化迁移链
+│   ├── ADR-009-payment-integration.md ← 真实支付 + 回调幂等
+│   └── ADR-010-api-versioning.md     ← API 版本与弃用策略（/api/admin 退场）
 │
 ├── contracts/                        ← 🔒 契约层（核心←→外围的接口"宪法"）
 │   └── engine-api.md                 ← 引擎对外稳定API·红线·集成模式
