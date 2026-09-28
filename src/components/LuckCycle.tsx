@@ -13,7 +13,7 @@ export default function LuckCycle({ daYun, currentDaYun, currentYear }: Props) {
     <div>
       <h3 className="chapter-title">
         大运流年
-        <span className="text-xs text-[#B0A898] ml-3 font-normal tracking-wider">
+        <span className="text-xs text-fg-tertiary ml-3 font-normal tracking-wider">
           流年 {currentYear.ganZhi}
         </span>
       </h3>
@@ -39,22 +39,22 @@ export default function LuckCycle({ daYun, currentDaYun, currentYear }: Props) {
               key={i}
               className={`flex-shrink-0 w-28 rounded-sm p-3 text-center transition-all ${
                 isActive
-                  ? 'bg-[#F5EDEB] ring-2 ring-[#B83A2E]'
+                  ? 'bg-[#F5EDEB] ring-2 ring-brand'
                   : 'ink-card'
               }`}
             >
-              <div className="text-xs text-[#B0A898]">{dy.startAge}岁起</div>
+              <div className="text-xs text-fg-tertiary">{dy.startAge}岁起</div>
               <div
-                className={`text-lg font-bold mt-1 ${isActive ? 'text-[#9B2C22]' : 'text-[#1C1914]'}`}
+                className={`text-lg font-bold mt-1 ${isActive ? 'text-brand-strong' : 'text-fg-primary'}`}
                 style={{ fontFamily: '"Noto Serif SC", serif' }}
               >
                 {dy.ganZhi}
               </div>
-              <div className="text-xs text-[#B0A898] mt-1">
+              <div className="text-xs text-fg-tertiary mt-1">
                 {dy.startYear}-{dy.endYear}
               </div>
               {isActive && (
-                <div className="text-xs text-[#B83A2E] mt-1 font-bold">● 当前</div>
+                <div className="text-xs text-brand mt-1 font-bold">● 当前</div>
               )}
             </div>
           )

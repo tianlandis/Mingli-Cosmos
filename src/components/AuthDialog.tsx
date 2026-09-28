@@ -61,22 +61,22 @@ export default function AuthDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* 遮罩 */}
       <div
-        className="absolute inset-0 bg-[#1C1914]/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-fg-primary/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-sm bg-[#FDFBF7] border border-[#D8D2C8] rounded-sm shadow-[0_12px_40px_rgba(28,25,20,0.18)]">
+      <div className="relative w-full max-w-sm bg-[#FDFBF7] border border-line-strong rounded-sm shadow-[0_12px_40px_rgba(28,25,20,0.18)]">
         {/* 头部 */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#E8E2D8]">
           <div className="flex items-center gap-2">
             {mode === 'login'
-              ? <LogIn size={15} className="text-[#B83A2E]" />
-              : <UserPlus size={15} className="text-[#B83A2E]" />}
-            <span className="text-sm font-bold tracking-[0.08em] text-[#1C1914]">
+              ? <LogIn size={15} className="text-brand" />
+              : <UserPlus size={15} className="text-brand" />}
+            <span className="text-sm font-bold tracking-[0.08em] text-fg-primary">
               {mode === 'login' ? '登录' : '注册账号'}
             </span>
           </div>
-          <button onClick={onClose} className="text-[#B0A898] hover:text-[#1C1914] transition-colors">
+          <button onClick={onClose} className="text-fg-tertiary hover:text-fg-primary transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -138,7 +138,7 @@ export default function AuthDialog({
           </Field>
 
           {error && (
-            <p className="text-xs text-[#9B2C22] bg-[#F5EDEB] border border-[#D4A8A4] rounded-sm px-3 py-2">
+            <p className="text-xs text-brand-strong bg-[#F5EDEB] border border-[#D4A8A4] rounded-sm px-3 py-2">
               {error}
             </p>
           )}
@@ -146,7 +146,7 @@ export default function AuthDialog({
           <button
             type="submit"
             disabled={busy}
-            className="w-full py-2.5 rounded-sm bg-[#B83A2E] hover:bg-[#9B2C22] disabled:opacity-60 text-white text-sm font-bold tracking-[0.08em] transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-sm bg-brand hover:bg-brand-strong disabled:opacity-60 text-white text-sm font-bold tracking-[0.08em] transition-colors flex items-center justify-center gap-2"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             {mode === 'login' ? '登录' : '注册并登录'}
@@ -157,7 +157,7 @@ export default function AuthDialog({
             <button
               type="button"
               onClick={() => { setError(null); onModeChange(mode === 'login' ? 'register' : 'login') }}
-              className="ml-1 text-[#B83A2E] hover:underline font-medium"
+              className="ml-1 text-brand hover:underline font-medium"
             >
               {mode === 'login' ? '立即注册' : '去登录'}
             </button>
@@ -169,13 +169,13 @@ export default function AuthDialog({
 }
 
 const inputCls =
-  'w-full px-3 py-2 rounded-sm border border-[#D8D2C8] bg-white text-sm text-[#1C1914] ' +
-  'placeholder:text-[#B0A898] focus:outline-none focus:border-[#B83A2E] transition-colors'
+  'w-full px-3 py-2 rounded-sm border border-line-strong bg-white text-sm text-fg-primary ' +
+  'placeholder:text-fg-tertiary focus:outline-none focus:border-brand transition-colors'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[11px] text-[#6B6459] mb-1 tracking-wide">{label}</label>
+      <label className="block text-[11px] text-fg-secondary mb-1 tracking-wide">{label}</label>
       {children}
     </div>
   )

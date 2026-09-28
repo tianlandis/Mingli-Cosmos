@@ -49,16 +49,16 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
   const hasContent = messages.length > 0 || streaming
 
   return (
-    <div className="flex flex-col h-[62vh] min-h-[360px] sm:h-[500px] bg-white border border-[#D8D2C8] rounded-sm overflow-hidden">
+    <div className="flex flex-col h-[62vh] min-h-[360px] sm:h-[500px] bg-white border border-line-strong rounded-sm overflow-hidden">
       {/* 标题栏 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#D8D2C8] bg-[#FAF7F2] shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-line-strong bg-[#FAF7F2] shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-lg">{mode === 'multi' ? '🔮' : '🧘'}</span>
           <span className="text-sm font-bold text-[#5B5040] tracking-wider truncate">
             {mode === 'multi' ? '墨白 · 多Agent调度' : '墨白 · 命理问答'}
           </span>
           {loading && (
-            <div className="inline-block animate-spin rounded-full h-3 w-3 border border-[#B83A2E] border-t-transparent shrink-0" />
+            <div className="inline-block animate-spin rounded-full h-3 w-3 border border-brand border-t-transparent shrink-0" />
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -68,7 +68,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
             onClick={toggleMode}
             className={`text-[11px] sm:text-[10px] px-2.5 py-1.5 sm:px-2 sm:py-1 rounded-sm font-medium transition-colors ${
               mode === 'multi'
-                ? 'bg-[#B83A2E] text-white'
+                ? 'bg-brand text-white'
                 : 'bg-[#E8E3D8] text-[#8B7A5E] hover:bg-[#DDD6C8]'
             }`}
             title={mode === 'direct' ? '切换到多Agent智能调度模式' : '切换到单Agent直接对话模式'}
@@ -78,7 +78,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
           <button
             type="button"
             onClick={reset}
-            className="text-xs text-[#B0A898] hover:text-[#8B3A2B] px-2 py-1.5 rounded-sm hover:bg-[#EFEAE2] transition-colors"
+            className="text-xs text-fg-tertiary hover:text-[#8B3A2B] px-2 py-1.5 rounded-sm hover:bg-[#EFEAE2] transition-colors"
           >
             新对话
           </button>
@@ -86,7 +86,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
             <button
               type="button"
               onClick={onClose}
-              className="text-xs text-[#B0A898] hover:text-[#8B3A2B] px-2 py-1.5 rounded-sm hover:bg-[#EFEAE2] transition-colors"
+              className="text-xs text-fg-tertiary hover:text-[#8B3A2B] px-2 py-1.5 rounded-sm hover:bg-[#EFEAE2] transition-colors"
             >
               关闭
             </button>
@@ -104,7 +104,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
         {!hasContent && (
           <div className="text-center py-12">
             <div className="text-4xl mb-3 opacity-20">☯</div>
-            <p className="text-[#B0A898] text-xs tracking-wider leading-relaxed">
+            <p className="text-fg-tertiary text-xs tracking-wider leading-relaxed">
               {mode === 'multi' ? (
                 <>
                   开启 Multi-Agent 智能调度
@@ -131,14 +131,14 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
         )}
 
         {error && (
-          <div className="bg-[#FDF2F0] border border-[#F5C6CB] rounded-sm p-3 text-xs text-[#9B2C22]">
+          <div className="bg-[#FDF2F0] border border-[#F5C6CB] rounded-sm p-3 text-xs text-brand-strong">
             {error}
           </div>
         )}
       </div>
 
       {/* 输入区 */}
-      <form onSubmit={handleSubmit} className="shrink-0 border-t border-[#D8D2C8] p-3 bg-[#FAF7F2] safe-bottom">
+      <form onSubmit={handleSubmit} className="shrink-0 border-t border-line-strong p-3 bg-[#FAF7F2] safe-bottom">
         <div className="flex gap-2">
           <textarea
             value={input}
@@ -151,14 +151,14 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
                 : '输入你的命理问题...'
             }
             rows={1}
-            className="flex-1 resize-none rounded-sm border border-[#D8D2C8] px-3 py-2.5 sm:py-2 text-sm bg-white placeholder:text-[#B0A898] focus:outline-none focus:border-[#B83A2E] transition-colors"
+            className="flex-1 resize-none rounded-sm border border-line-strong px-3 py-2.5 sm:py-2 text-sm bg-white placeholder:text-fg-tertiary focus:outline-none focus:border-brand transition-colors"
             disabled={loading}
           />
           {loading ? (
             <button
               type="button"
               onClick={stop}
-              className="px-4 py-2 rounded-sm bg-[#B0A898] text-white text-sm font-bold hover:bg-[#8B8070] transition-colors"
+              className="px-4 py-2 rounded-sm bg-fg-tertiary text-white text-sm font-bold hover:bg-[#8B8070] transition-colors"
             >
               停止
             </button>
@@ -166,13 +166,13 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
             <button
               type="submit"
               disabled={!input.trim()}
-              className="px-4 py-2 rounded-sm bg-[#B83A2E] text-white text-sm font-bold hover:bg-[#9B2C22] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 rounded-sm bg-brand text-white text-sm font-bold hover:bg-brand-strong disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               发送
             </button>
           )}
         </div>
-        <p className="text-[11px] sm:text-[10px] text-[#B0A898] mt-1.5 text-center">
+        <p className="text-[11px] sm:text-[10px] text-fg-tertiary mt-1.5 text-center">
           墨白基于命盘数据作答 · 仅供参考，不构成人生建议
         </p>
       </form>
@@ -208,7 +208,7 @@ function Bubble({ message, streaming = false }: { message: StreamingMessage | Ch
       <div
         className={`max-w-[85%] rounded-sm px-3.5 py-2.5 text-sm leading-relaxed ${
           isUser
-            ? 'bg-[#B83A2E] text-white'
+            ? 'bg-brand text-white'
             : 'bg-[#F5F0E8] text-[#4A4035]'
         } ${streaming ? 'animate-pulse' : ''}`}
       >

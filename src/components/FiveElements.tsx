@@ -27,7 +27,7 @@ export default function FiveElements({ fiveElements }: Props) {
                   style={{ width: `${pct}%`, backgroundColor: color }}
                 />
               </div>
-              <span className="w-4 text-right text-xs font-medium text-[#6B6459]">{count}</span>
+              <span className="w-4 text-right text-xs font-medium text-fg-secondary">{count}</span>
             </div>
           )
         })}

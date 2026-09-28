@@ -20,7 +20,7 @@ export default function ElementBar({ fiveElements }: Props) {
         const color = wxColor(wx)
         return (
           <div key={wx} className="text-center">
-            <div className="h-1.5 rounded-full bg-[#EDE8DF] overflow-hidden mb-2">
+            <div className="h-1.5 rounded-full bg-surface-sunken overflow-hidden mb-2">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${Math.max(pct, 4)}%`, backgroundColor: color }}
@@ -28,7 +28,7 @@ export default function ElementBar({ fiveElements }: Props) {
             </div>
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-xs font-bold" style={{ color }}>{wx}</span>
-              <span className="text-[11px] text-[#B0A898] tabular-nums">{count}</span>
+              <span className="text-[11px] text-fg-tertiary tabular-nums">{count}</span>
             </div>
           </div>
         )

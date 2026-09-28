@@ -33,7 +33,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBF7F0] flex flex-col">
+    <div className="min-h-screen bg-surface-page flex flex-col">
       <Header
         user={user}
         onLoginClick={() => { setAuthMode('login'); setAuthOpen(true) }}
@@ -48,15 +48,15 @@ export default function App() {
 
         {/* Loading — 紧凑内联条，避免与结果区争抢首屏 */}
         {loading && (
-          <div className="flex items-center justify-center gap-2 py-3 text-sm text-[#6B6459]">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#B83A2E] border-t-transparent" />
+          <div className="flex items-center justify-center gap-2 py-3 text-sm text-fg-secondary">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
             计算中…
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="rounded-sm border border-[#D4A8A4] bg-[#F5EDEB] p-4 text-center text-sm text-[#9B2C22]">
+          <div className="rounded-sm border border-[#D4A8A4] bg-[#F5EDEB] p-4 text-center text-sm text-brand-strong">
             {error}
           </div>
         )}
@@ -65,7 +65,7 @@ export default function App() {
         {result && (
           <div className="animate-in fade-in duration-500 space-y-4">
             {/* L0 命盘卡 —— 只依赖 result，排盘后立即上屏，不等批注 */}
-            <section className="rounded-md border border-[#E4DED3] bg-white shadow-[0_1px_3px_rgba(28,25,20,0.05)] px-4 pt-3 pb-5 sm:px-6">
+            <section className="rounded-md border border-line-soft bg-white shadow-[0_1px_3px_rgba(28,25,20,0.05)] px-4 pt-3 pb-5 sm:px-6">
               <BaziChart
                 yearPillar={result.yearPillar}
                 monthPillar={result.monthPillar}
@@ -101,7 +101,7 @@ export default function App() {
               {['四柱八字', '五行强弱', '十神', '大运流年', '命盘批注', 'AI 问答'].map(t => (
                 <span
                   key={t}
-                  className="px-2.5 py-1 rounded-full border border-[#E4DED3] bg-white/70 text-[11px] text-[#8A8172] tracking-wider"
+                  className="px-2.5 py-1 rounded-full border border-line-soft bg-white/70 text-[11px] text-[#8A8172] tracking-wider"
                 >
                   {t}
                 </span>
@@ -111,7 +111,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="text-center py-4 text-xs text-[#B0A898] border-t border-[#D8D2C8] tracking-wider safe-bottom">
+      <footer className="text-center py-4 text-xs text-fg-tertiary border-t border-line-strong tracking-wider safe-bottom">
         八字排盘 · 四柱八字命理工具 · 仅供参考
       </footer>
 

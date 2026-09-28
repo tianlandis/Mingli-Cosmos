@@ -26,10 +26,10 @@ const BANDS: Array<{ label: string; min: number; max: number }> = [
 
 /** 分数 → 颜色（弱偏冷、中和居中、强偏朱砂） */
 function scoreColor(score: number): string {
-  if (score < 28) return '#3D5A80'    // 弱：靛青
-  if (score < 48) return '#6B6459'    // 中和偏弱：墨灰
-  if (score < 60) return '#B8973E'    // 中和偏强：土金
-  return '#B83A2E'                    // 强：朱砂
+  if (score < 28) return 'var(--semantic-info)'       // 弱：靛青
+  if (score < 48) return 'var(--text-secondary)'      // 中和偏弱：墨灰
+  if (score < 60) return 'var(--semantic-attention)'  // 中和偏强：土金
+  return 'var(--brand)'                               // 强：朱砂
 }
 
 export default function DayMasterStrength({ analysis, dayMaster }: Props) {
@@ -88,7 +88,7 @@ export default function DayMasterStrength({ analysis, dayMaster }: Props) {
                   className="absolute -translate-x-1/2 text-[9px] whitespace-nowrap"
                   style={{
                     left: `${mid}%`,
-                    color: score >= b.min && score < b.max ? color : '#B0A898',
+                    color: score >= b.min && score < b.max ? color : 'var(--text-tertiary)',
                     fontWeight: score >= b.min && score < b.max ? 700 : 400,
                   }}
                 >
@@ -115,12 +115,12 @@ export default function DayMasterStrength({ analysis, dayMaster }: Props) {
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${Math.max(6, (Math.abs(i.value) / maxComponent) * 100)}%`,
-                  backgroundColor: i.label === '克泄耗' ? '#8A8172' : '#B8973E',
+                  backgroundColor: i.label === '克泄耗' ? '#8A8172' : 'var(--semantic-attention)',
                 }}
               />
             </div>
             <p className="text-[10px] text-[#8A8172] mt-1">{i.label}</p>
-            <p className="text-xs font-medium text-[#1C1914] tabular-nums">
+            <p className="text-xs font-medium text-fg-primary tabular-nums">
               {Math.round(i.value)}
             </p>
           </div>
@@ -132,7 +132,7 @@ export default function DayMasterStrength({ analysis, dayMaster }: Props) {
         <div className="mt-3">
           <button
             onClick={() => setShowReasons(v => !v)}
-            className="flex items-center gap-1 text-[11px] text-[#6B6459] hover:text-[#B83A2E] transition-colors"
+            className="flex items-center gap-1 text-[11px] text-fg-secondary hover:text-brand transition-colors"
           >
             {showReasons ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             判断依据（{reasons.length} 条）
@@ -140,8 +140,8 @@ export default function DayMasterStrength({ analysis, dayMaster }: Props) {
           {showReasons && (
             <ul className="mt-2 space-y-1">
               {reasons.map((r, i) => (
-                <li key={i} className="text-xs text-[#6B6459] leading-relaxed flex gap-1.5">
-                  <span className="text-[#B0A898]">·</span>
+                <li key={i} className="text-xs text-fg-secondary leading-relaxed flex gap-1.5">
+                  <span className="text-fg-tertiary">·</span>
                   <span>{r}</span>
                 </li>
               ))}

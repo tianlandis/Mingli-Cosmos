@@ -21,13 +21,13 @@ export default function BaziChart({ yearPillar, monthPillar, dayPillar, hourPill
           const isDay = i === 2
           return (
             <div key={i} className="text-center">
-              <div className="text-xs text-[#B0A898] mb-2 tracking-wider">{PILLAR_LABELS[i]}</div>
+              <div className="text-xs text-fg-tertiary mb-2 tracking-wider">{PILLAR_LABELS[i]}</div>
               {/* 天干 */}
               <div
                 className={
                   isDay
                     ? 'seal-stamp text-3xl md:text-4xl mx-auto mb-1.5 w-14 h-14 md:w-16 md:h-16'
-                    : 'text-3xl md:text-4xl font-bold text-[#1C1914] mb-1.5'
+                    : 'text-3xl md:text-4xl font-bold text-fg-primary mb-1.5'
                 }
                 style={isDay ? undefined : { fontFamily: '"Noto Serif SC", serif' }}
               >
@@ -41,7 +41,7 @@ export default function BaziChart({ yearPillar, monthPillar, dayPillar, hourPill
                 {p.branch}
               </div>
               {/* 五行标签 */}
-              <div className="text-xs text-[#B0A898] mt-1 tracking-wider">
+              <div className="text-xs text-fg-tertiary mt-1 tracking-wider">
                 {p.stemWuXing}{p.branchWuXing}
               </div>
             </div>
@@ -50,8 +50,8 @@ export default function BaziChart({ yearPillar, monthPillar, dayPillar, hourPill
       </div>
 
       {/* 命盘署名 */}
-      <div className="text-center text-xs text-[#B0A898] tracking-widest mt-4">
-        日主 <span className="text-[#B83A2E] font-bold text-sm" style={{ fontFamily: '"Noto Serif SC", serif' }}>{dayMaster}</span>
+      <div className="text-center text-xs text-fg-tertiary tracking-widest mt-4">
+        日主 <span className="text-brand font-bold text-sm" style={{ fontFamily: '"Noto Serif SC", serif' }}>{dayMaster}</span>
         <span className="mx-1.5 opacity-30">|</span>
         四柱八字命盘
       </div>

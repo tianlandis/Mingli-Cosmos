@@ -15,8 +15,8 @@ export default function ReportView({ report, loading, onClose }: ReportViewProps
     return (
       <div className="chapter animate-pulse">
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#B83A2E] border-t-transparent" />
-          <p className="text-[#6B6459] mt-3 text-sm">命书生成中...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+          <p className="text-fg-secondary mt-3 text-sm">命书生成中...</p>
         </div>
       </div>
     )
@@ -25,7 +25,7 @@ export default function ReportView({ report, loading, onClose }: ReportViewProps
   return (
     <div className="chapter animate-in fade-in duration-700">
       {/* 标题栏 */}
-      <div className="flex items-center justify-between mb-6 border-b border-[#D8D2C8] pb-3">
+      <div className="flex items-center justify-between mb-6 border-b border-line-strong pb-3">
         <h2 className="text-lg font-bold text-[#8B3A2B] tracking-wider serif">
           📜 数字命书
         </h2>
@@ -33,7 +33,7 @@ export default function ReportView({ report, loading, onClose }: ReportViewProps
           <button
             type="button"
             onClick={onClose}
-            className="text-[#B0A898] hover:text-[#8B3A2B] transition-colors text-sm"
+            className="text-fg-tertiary hover:text-[#8B3A2B] transition-colors text-sm"
           >
             关闭
           </button>
@@ -44,7 +44,7 @@ export default function ReportView({ report, loading, onClose }: ReportViewProps
       {report.sections.map(section => (
         <div key={section.id} className="mb-6">
           {section.id !== 'seal' && (
-            <h3 className="text-base font-bold text-[#5B5040] mb-2 tracking-wide serif border-l-2 border-[#B83A2E] pl-3">
+            <h3 className="text-base font-bold text-[#5B5040] mb-2 tracking-wide serif border-l-2 border-brand pl-3">
               {section.title}
             </h3>
           )}
@@ -69,11 +69,11 @@ function renderMarkdown(md: string): string {
     // 粗体
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold">$1</strong>')
     // 引用
-    .replace(/^> (.+)$/gm, '<blockquote class="border-l-2 border-[#D8D2C8] pl-3 italic text-[#8B8070] my-2">$1</blockquote>')
+    .replace(/^> (.+)$/gm, '<blockquote class="border-l-2 border-line-strong pl-3 italic text-[#8B8070] my-2">$1</blockquote>')
     // 列表
     .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-[#4A4035]">$1</li>')
     // 分割线
-    .replace(/^---$/gm, '<hr class="border-[#D8D2C8] my-4" />')
+    .replace(/^---$/gm, '<hr class="border-line-strong my-4" />')
     // 表格
     .replace(/<li/g, '<ul><li')
     .replace(/<\/li>/g, '</li></ul>')

@@ -32,7 +32,7 @@ export default function TopicTabs({ specialTopics }: Props) {
       <h3 className="chapter-title">专题批注</h3>
 
       {/* Tab 标签栏 */}
-      <div role="tablist" aria-label="专题分类" className="flex border-b border-[#D8D2C8] mb-4 overflow-x-auto -mx-1 px-1">
+      <div role="tablist" aria-label="专题分类" className="flex border-b border-line-strong mb-4 overflow-x-auto -mx-1 px-1">
         {TAB_CONFIG.map((tab) => {
           const isActive = active === tab.key
           const itemCount = specialTopics[tab.key]?.length ?? 0
@@ -46,10 +46,10 @@ export default function TopicTabs({ specialTopics }: Props) {
               disabled={itemCount === 0}
               className={`relative shrink-0 px-4 py-2.5 text-sm font-medium tracking-wider transition-colors whitespace-nowrap
                 ${isActive
-                  ? 'text-[#B83A2E]'
+                  ? 'text-brand'
                   : itemCount === 0
-                    ? 'text-[#D8D2C8] cursor-not-allowed'
-                    : 'text-[#B0A898] hover:text-[#6B6459]'
+                    ? 'text-line-strong cursor-not-allowed'
+                    : 'text-fg-tertiary hover:text-fg-secondary'
                 }
               `}
             >
@@ -58,7 +58,7 @@ export default function TopicTabs({ specialTopics }: Props) {
               {itemCount > 0 && (
                 <span
                   className={`ml-1.5 text-xs ${
-                    isActive ? 'text-[#B83A2E]' : 'text-[#C4B8A8]'
+                    isActive ? 'text-brand' : 'text-neutral-300'
                   }`}
                 >
                   {itemCount}
@@ -66,7 +66,7 @@ export default function TopicTabs({ specialTopics }: Props) {
               )}
               {/* 下划线 */}
               {isActive && (
-                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#B83A2E] rounded-full" />
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-brand rounded-full" />
               )}
             </button>
           )
@@ -76,7 +76,7 @@ export default function TopicTabs({ specialTopics }: Props) {
       {/* Tab 内容区 */}
       <div className="ink-card min-h-[120px]">
         {activeItems.length === 0 ? (
-          <p className="text-[#C4B8A8] text-sm py-4 text-center italic">
+          <p className="text-neutral-300 text-sm py-4 text-center italic">
             暂无{TAB_CONFIG.find((t) => t.key === active)?.label}专题分析
           </p>
         ) : (
@@ -84,9 +84,9 @@ export default function TopicTabs({ specialTopics }: Props) {
             {activeItems.map((tip, i) => (
               <li
                 key={i}
-                className="text-[#6B6459] text-sm leading-relaxed flex items-start gap-2"
+                className="text-fg-secondary text-sm leading-relaxed flex items-start gap-2"
               >
-                <span className="text-[#C4B8A8] shrink-0 mt-0.5 font-bold">·</span>
+                <span className="text-neutral-300 shrink-0 mt-0.5 font-bold">·</span>
                 <span>{tip}</span>
               </li>
             ))}

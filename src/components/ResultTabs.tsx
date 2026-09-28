@@ -28,7 +28,7 @@ interface Props {
 }
 
 function Placeholder({ text }: { text: string }) {
-  return <p className="py-8 text-center text-sm italic text-[#C4B8A8]">{text}</p>
+  return <p className="py-8 text-center text-sm italic text-neutral-300">{text}</p>
 }
 
 /**
@@ -42,7 +42,7 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
     key === 'reading' ? '批注生成中…' : key === 'topics' ? '暂无专题分析' : '数据准备中…'
 
   return (
-    <section className="rounded-md border border-[#E4DED3] bg-white">
+    <section className="rounded-md border border-line-soft bg-white">
       {/* 移动端：标签栏吸顶，长内容滚动时无需回顶部即可切 Tab */}
       <div
         role="tablist"
@@ -61,12 +61,12 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
               aria-controls={`panel-${t.key}`}
               onClick={() => setActive(t.key)}
               className={`relative shrink-0 px-4 py-3.5 sm:py-3 text-sm tracking-wider whitespace-nowrap transition-colors ${
-                selected ? 'text-[#B83A2E] font-medium' : 'text-[#B0A898] hover:text-[#6B6459]'
+                selected ? 'text-brand font-medium' : 'text-fg-tertiary hover:text-fg-secondary'
               }`}
             >
               {t.label}
               {selected && (
-                <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-[#B83A2E]" />
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-brand" />
               )}
             </button>
           )
@@ -119,7 +119,7 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
             <button
               type="button"
               onClick={onOpenChat}
-              className="w-full rounded-sm border border-dashed border-[#B83A2E] bg-[#FDF8F5] py-3 px-4 text-sm font-bold tracking-wider text-[#B83A2E] transition-colors hover:bg-[#F9F0EB]"
+              className="w-full rounded-sm border border-dashed border-brand bg-[#FDF8F5] py-3 px-4 text-sm font-bold tracking-wider text-brand transition-colors hover:bg-[#F9F0EB]"
             >
               向墨白提问命理问题
             </button>

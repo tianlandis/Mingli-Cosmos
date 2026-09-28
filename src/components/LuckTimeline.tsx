@@ -27,9 +27,9 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
 
   // ── 辅助渲染函数 ──
   const qualityColor = (q: string | undefined) => {
-    if (q === '佳') return 'text-[#4A7C3F] bg-[#E8F0E4]'
-    if (q === '不佳') return 'text-[#B83A2E] bg-[#F5EDEB]'
-    return 'text-[#B0A898] bg-[#EDE8DF]'
+    if (q === '佳') return 'text-semantic-positive bg-accent-green-soft'
+    if (q === '不佳') return 'text-brand bg-[#F5EDEB]'
+    return 'text-fg-tertiary bg-surface-sunken'
   }
 
   const qualityLabel = (q: string | undefined) => {
@@ -43,7 +43,7 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
     <div>
       <h3 className="chapter-title">
         大运竖轴
-        <span className="text-xs text-[#B0A898] ml-3 font-normal tracking-wider">
+        <span className="text-xs text-fg-tertiary ml-3 font-normal tracking-wider">
           {direction} · 共 {merged.length} 步
         </span>
       </h3>
@@ -52,16 +52,16 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
       {luckAnalysis?.currentYear && (
         <div className="mb-5 bg-[#FEF9F0] border border-[#E0D8C0] rounded-sm px-4 py-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[#B8973E] text-xs font-bold tracking-wider">当前流年</span>
+            <span className="text-semantic-attention text-xs font-bold tracking-wider">当前流年</span>
             <span
-              className="text-[#8A6D20] text-sm font-bold"
+              className="text-gold-600 text-sm font-bold"
               style={{ fontFamily: '"Noto Serif SC", serif' }}
             >
               {luckAnalysis.currentYear.ganZhi}
             </span>
           </div>
           {luckAnalysis.currentYear.interpretation && (
-            <p className="text-[#6B6459] text-xs leading-relaxed">
+            <p className="text-fg-secondary text-xs leading-relaxed">
               {luckAnalysis.currentYear.interpretation}
             </p>
           )}
@@ -80,7 +80,7 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
       {/* ── 竖向时间轴 ── */}
       <div className="relative">
         {merged.length === 0 && (
-          <p className="text-[#B0A898] text-sm py-4 text-center">暂无大运数据</p>
+          <p className="text-fg-tertiary text-sm py-4 text-center">暂无大运数据</p>
         )}
 
         {merged.map((dy, i) => {
@@ -98,7 +98,7 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
                 {/* 连接线 */}
                 {i > 0 && (
                   <div
-                    className={`absolute top-0 -translate-y-1/2 w-0.5 h-3 ${isActive ? 'bg-[#B83A2E]' : 'bg-[#D8D2C8]'}`}
+                    className={`absolute top-0 -translate-y-1/2 w-0.5 h-3 ${isActive ? 'bg-brand' : 'bg-line-strong'}`}
                     style={{ left: '50%', transform: 'translateX(-50%)' }}
                   />
                 )}
@@ -106,19 +106,19 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
                 <div
                   className={`relative z-10 mt-3 w-3 h-3 rounded-full border-2 ${
                     isActive
-                      ? 'bg-[#B83A2E] border-[#B83A2E] ring-2 ring-[#B83A2E]/20'
-                      : 'border-[#C4B8A8] bg-[#FBF7F0]'
+                      ? 'bg-brand border-brand ring-2 ring-brand/20'
+                      : 'border-neutral-300 bg-surface-page'
                   }`}
                 />
                 {/* 年龄文字 */}
                 <span
-                  className={`mt-1 text-xs font-bold ${isActive ? 'text-[#9B2C22]' : 'text-[#B0A898]'}`}
+                  className={`mt-1 text-xs font-bold ${isActive ? 'text-brand-strong' : 'text-fg-tertiary'}`}
                 >
                   {dy.startAge}岁
                 </span>
                 {/* 竖轴线到下一个节点 */}
                 {i < merged.length - 1 && (
-                  <div className="flex-1 w-0.5 bg-[#D8D2C8] min-h-[28px]" />
+                  <div className="flex-1 w-0.5 bg-line-strong min-h-[28px]" />
                 )}
               </div>
 
@@ -127,24 +127,24 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
                 className={`flex-1 ml-2.5 sm:ml-3 mb-3 rounded-sm px-3.5 py-3 sm:px-4 transition-colors ${
                   isActive
                     ? 'bg-[#FDF5F3] border border-[#D4A8A4]'
-                    : 'bg-[#F5F2EB] border border-transparent'
+                    : 'bg-surface-muted border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3 mb-1 flex-wrap">
                   {/* 干支 */}
                   <span
-                    className={`text-base font-bold ${isActive ? 'text-[#9B2C22]' : 'text-[#1C1914]'}`}
+                    className={`text-base font-bold ${isActive ? 'text-brand-strong' : 'text-fg-primary'}`}
                     style={{ fontFamily: '"Noto Serif SC", serif' }}
                   >
                     {dy.ganZhi}
                   </span>
                   {/* 年份范围 */}
-                  <span className="text-[#B0A898] text-xs">
+                  <span className="text-fg-tertiary text-xs">
                     {dy.startYear} – {dy.endYear}年 · {dy.startAge}–{dy.endAge}岁
                   </span>
                   {/* 当前大运标签 */}
                   {isActive && (
-                    <span className="text-xs font-bold text-[#B83A2E] bg-[#B83A2E]/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
                       ● 当前大运
                     </span>
                   )}
@@ -161,11 +161,11 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
                 {/* 解读文字 */}
                 {((dy as typeof dy & { annotation?: DaYunAnalysisItem }).annotation
                   ?.interpretation) ? (
-                  <p className="text-[#6B6459] text-xs leading-relaxed mt-1.5">
+                  <p className="text-fg-secondary text-xs leading-relaxed mt-1.5">
                     {(dy as typeof dy & { annotation?: DaYunAnalysisItem }).annotation!.interpretation}
                   </p>
                 ) : (
-                  <p className="text-[#C4B8A8] text-xs italic mt-1.5">暂无解读</p>
+                  <p className="text-neutral-300 text-xs italic mt-1.5">暂无解读</p>
                 )}
               </div>
             </div>
@@ -175,8 +175,8 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
 
       {/* ── 人生关键节点 ── */}
       {luckAnalysis?.milestones && luckAnalysis.milestones.length > 0 && (
-        <div className="mt-6 pt-5 border-t border-[#D8D2C8]">
-          <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">
+        <div className="mt-6 pt-5 border-t border-line-strong">
+          <div className="text-brand text-xs font-bold mb-3 tracking-wider">
             人生关键节点
           </div>
           <div className="flex flex-wrap gap-2">
@@ -185,10 +185,10 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
                 key={i}
                 className="bg-white/50 border border-[#E0DBD0] rounded-sm px-3 py-2"
               >
-                <div className="text-[#1C1914] text-xs font-bold">
+                <div className="text-fg-primary text-xs font-bold">
                   {m.age}岁 ({m.year}年)
                 </div>
-                <div className="text-[#B0A898] text-xs mt-0.5">{m.event}</div>
+                <div className="text-fg-tertiary text-xs mt-0.5">{m.event}</div>
               </div>
             ))}
           </div>

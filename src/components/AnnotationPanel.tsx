@@ -12,51 +12,51 @@ export default function AnnotationPanel({ annotation }: Props) {
     <div className="space-y-6">
       {/* 标题 */}
       <div className="text-center mb-2">
-        <h2 className="text-lg font-bold text-[#1C1914] tracking-[0.15em]" style={{ fontFamily: '"Noto Serif SC", serif' }}>
+        <h2 className="text-lg font-bold text-fg-primary tracking-[0.15em]" style={{ fontFamily: '"Noto Serif SC", serif' }}>
           命盘批注
         </h2>
-        <p className="text-[#B0A898] text-xs mt-1 tracking-wider">规则引擎 · 结构化解读</p>
+        <p className="text-fg-tertiary text-xs mt-1 tracking-wider">规则引擎 · 结构化解读</p>
       </div>
 
       {/* ── 命局总览 ── */}
       <div className="ink-card border-[#D4A8A4]">
-        <div className="text-[#B83A2E] text-xs font-bold mb-2 tracking-wider">命局总览</div>
-        <p className="text-[#1C1914] text-sm leading-relaxed">{overview.summary}</p>
+        <div className="text-brand text-xs font-bold mb-2 tracking-wider">命局总览</div>
+        <p className="text-fg-primary text-sm leading-relaxed">{overview.summary}</p>
       </div>
 
       {/* ── 格局分析（日主强弱见 L1 速读卡与上方详细强弱图，此处不再重复）── */}
       <div className="ink-card">
-          <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">格局分析</div>
+          <div className="text-brand text-xs font-bold mb-3 tracking-wider">格局分析</div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="ink-tag">{patternAnalysis.patternType}</span>
-            <span className="text-[#1C1914] font-bold text-sm" style={{ fontFamily: '"Noto Serif SC", serif' }}>
+            <span className="text-fg-primary font-bold text-sm" style={{ fontFamily: '"Noto Serif SC", serif' }}>
               {patternAnalysis.patternName}
             </span>
             <span className={`text-xs ${
-              patternAnalysis.quality === '上等' ? 'text-[#B83A2E]' :
-              patternAnalysis.quality === '中等' ? 'text-[#6B6459]' : 'text-[#B0A898]'
+              patternAnalysis.quality === '上等' ? 'text-brand' :
+              patternAnalysis.quality === '中等' ? 'text-fg-secondary' : 'text-fg-tertiary'
             }`}>
               {patternAnalysis.quality}
             </span>
             <span className={`text-xs px-1.5 py-0.5 rounded-sm ${
-              patternAnalysis.jiXiong === '吉' ? 'bg-[#E8F0E4] text-[#4A7C3F]' :
-              patternAnalysis.jiXiong === '凶' ? 'bg-[#F5EDEB] text-[#B83A2E]' :
-              'bg-[#EDE8DF] text-[#B0A898]'
+              patternAnalysis.jiXiong === '吉' ? 'bg-accent-green-soft text-semantic-positive' :
+              patternAnalysis.jiXiong === '凶' ? 'bg-[#F5EDEB] text-brand' :
+              'bg-surface-sunken text-fg-tertiary'
             }`}>{patternAnalysis.jiXiong}</span>
           </div>
           {patternAnalysis.combination.name && (
-            <div className="text-[#6B6459] text-xs mb-2">
+            <div className="text-fg-secondary text-xs mb-2">
               格局组合：
-              <span className="text-[#B83A2E] font-bold">{patternAnalysis.combination.name}</span>
-              {patternAnalysis.combination.isPure && <span className="text-[#B0A898] ml-1">（纯格）</span>}
+              <span className="text-brand font-bold">{patternAnalysis.combination.name}</span>
+              {patternAnalysis.combination.isPure && <span className="text-fg-tertiary ml-1">（纯格）</span>}
             </div>
           )}
-          <div className="text-[#B0A898] text-xs mb-2">{patternAnalysis.method}</div>
-          <p className="text-[#6B6459] text-xs leading-relaxed mb-2">{patternAnalysis.description}</p>
+          <div className="text-fg-tertiary text-xs mb-2">{patternAnalysis.method}</div>
+          <p className="text-fg-secondary text-xs leading-relaxed mb-2">{patternAnalysis.description}</p>
           <ul className="space-y-0.5">
             {patternAnalysis.conditions.map((c, i) => (
-              <li key={i} className="text-[#B0A898] text-xs flex items-start gap-1.5">
-                <span className="text-[#C4B8A8] shrink-0 mt-0.5">◦</span>
+              <li key={i} className="text-fg-tertiary text-xs flex items-start gap-1.5">
+                <span className="text-neutral-300 shrink-0 mt-0.5">◦</span>
                 {c}
               </li>
             ))}
@@ -65,7 +65,7 @@ export default function AnnotationPanel({ annotation }: Props) {
 
       {/* ── 五行平衡 ── */}
       <div className="ink-card">
-        <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">五行平衡</div>
+        <div className="text-brand text-xs font-bold mb-3 tracking-wider">五行平衡</div>
         <div className="space-y-2">
           {wuXingBalance.map((item) => {
             const color = wxColor(item.name)
@@ -80,19 +80,19 @@ export default function AnnotationPanel({ annotation }: Props) {
                     style={{ width: `${Math.max(5, (item.count / 8) * 100)}%`, backgroundColor: color }}
                   />
                 </div>
-                <span className="text-[#B0A898] text-xs w-4 text-right">{item.count}</span>
+                <span className="text-fg-tertiary text-xs w-4 text-right">{item.count}</span>
                 <span className={`text-xs ${
-                  item.level === '偏旺' ? 'text-[#B83A2E]' :
-                  item.level === '偏弱' ? 'text-[#3D5A80]' : 'text-[#B0A898]'
+                  item.level === '偏旺' ? 'text-brand' :
+                  item.level === '偏弱' ? 'text-semantic-info' : 'text-fg-tertiary'
                 }`}>{item.level}</span>
               </div>
             )
           })}
         </div>
         {wuXingBalance.filter(it => it.advice).length > 0 && (
-          <div className="mt-3 pt-3 border-t border-[#D8D2C8]">
+          <div className="mt-3 pt-3 border-t border-line-strong">
             {wuXingBalance.filter(it => it.advice).map((it, i) => (
-              <p key={i} className="text-[#6B6459] text-xs mb-1">{it.advice}</p>
+              <p key={i} className="text-fg-secondary text-xs mb-1">{it.advice}</p>
             ))}
           </div>
         )}
@@ -100,13 +100,13 @@ export default function AnnotationPanel({ annotation }: Props) {
 
       {/* ── 十神概况 ── */}
       <div className="ink-card">
-        <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">十神配置</div>
+        <div className="text-brand text-xs font-bold mb-3 tracking-wider">十神配置</div>
         <div className="flex flex-wrap gap-2">
           {shiShenProfile.map((item) => (
             <div key={item.name} className="ink-tag flex items-center gap-1.5 px-2 py-1">
-              <span className="text-[#1C1914] text-xs font-medium">{item.name}</span>
-              <span className="bg-[#B83A2E]/10 text-[#9B2C22] text-xs px-1.5 py-0.5 rounded-full font-bold">{item.count}</span>
-              <span className="text-[#B0A898] text-xs">{item.positions.join('、')}</span>
+              <span className="text-fg-primary text-xs font-medium">{item.name}</span>
+              <span className="bg-brand/10 text-brand-strong text-xs px-1.5 py-0.5 rounded-full font-bold">{item.count}</span>
+              <span className="text-fg-tertiary text-xs">{item.positions.join('、')}</span>
             </div>
           ))}
         </div>
@@ -123,19 +123,19 @@ export default function AnnotationPanel({ annotation }: Props) {
                 <span className="text-[#5A3068] text-base font-bold">
                   {patternAnalysis.mbti.typicalTypes.join(' / ')}
                 </span>
-                <span className="text-[#B0A898] text-xs">（{patternAnalysis.mbti.cognitiveFunctions}）</span>
+                <span className="text-fg-tertiary text-xs">（{patternAnalysis.mbti.cognitiveFunctions}）</span>
               </div>
               {patternAnalysis.mbti.traits && (
-                <p className="text-[#6B6459] text-xs mb-2">{patternAnalysis.mbti.traits}</p>
+                <p className="text-fg-secondary text-xs mb-2">{patternAnalysis.mbti.traits}</p>
               )}
               {patternAnalysis.mbti.portrait && (
-                <p className="text-[#B0A898] text-xs leading-relaxed mb-2 italic">"{patternAnalysis.mbti.portrait}"</p>
+                <p className="text-fg-tertiary text-xs leading-relaxed mb-2 italic">"{patternAnalysis.mbti.portrait}"</p>
               )}
               {patternAnalysis.mbti.industrySuggestions.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-[#D8D2C8]">
+                <div className="mt-2 pt-2 border-t border-line-strong">
                   <div className="text-[#7B4A8F]/70 text-xs font-bold mb-1 tracking-wider">行业适配</div>
                   {patternAnalysis.mbti.industrySuggestions.map((s, i) => (
-                    <p key={i} className="text-[#6B6459] text-xs">· {s}</p>
+                    <p key={i} className="text-fg-secondary text-xs">· {s}</p>
                   ))}
                 </div>
               )}
@@ -145,29 +145,29 @@ export default function AnnotationPanel({ annotation }: Props) {
           {/* 破格风险 */}
           {patternAnalysis.poGeRisks.length > 0 && (
             <div className="ink-card border-[#D4A8A4]">
-              <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">格局风险</div>
+              <div className="text-brand text-xs font-bold mb-3 tracking-wider">格局风险</div>
               <div className="space-y-3">
                 {patternAnalysis.poGeRisks.map((risk, i) => (
                   <div key={i} className="bg-[#F5EDEB] border border-[#D4A8A4] rounded-sm p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[#9B2C22] text-sm font-bold">{risk.type}</span>
+                      <span className="text-brand-strong text-sm font-bold">{risk.type}</span>
                       <span className={`text-xs px-1.5 py-0.5 rounded-sm ${
-                        risk.severity === '高' ? 'bg-[#B83A2E]/10 text-[#9B2C22]' :
-                        risk.severity === '中' ? 'bg-[#B8973E]/10 text-[#8A6D20]' :
-                        'bg-[#EDE8DF] text-[#B0A898]'
+                        risk.severity === '高' ? 'bg-brand/10 text-brand-strong' :
+                        risk.severity === '中' ? 'bg-semantic-attention/10 text-gold-600' :
+                        'bg-surface-sunken text-fg-tertiary'
                       }`}>{risk.severity}风险</span>
                     </div>
-                    <p className="text-[#6B6459] text-xs mb-1">{risk.description}</p>
-                    <p className="text-[#6B6459] text-xs mb-1">💡 {risk.suggestion}</p>
+                    <p className="text-fg-secondary text-xs mb-1">{risk.description}</p>
+                    <p className="text-fg-secondary text-xs mb-1">💡 {risk.suggestion}</p>
                     <p className="text-[#7B4A8F]/80 text-xs">🧠 MBTI补益：{risk.mbtiAdjust}</p>
                   </div>
                 ))}
               </div>
               {patternAnalysis.mbti.energyAdjustments.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-[#D8D2C8]">
-                  <div className="text-[#B8973E] text-xs font-bold mb-1 tracking-wider">能量调整策略</div>
+                <div className="mt-3 pt-3 border-t border-line-strong">
+                  <div className="text-semantic-attention text-xs font-bold mb-1 tracking-wider">能量调整策略</div>
                   {patternAnalysis.mbti.energyAdjustments.map((adj, i) => (
-                    <p key={i} className="text-[#6B6459] text-xs">· {adj}</p>
+                    <p key={i} className="text-fg-secondary text-xs">· {adj}</p>
                   ))}
                 </div>
               )}
@@ -177,20 +177,20 @@ export default function AnnotationPanel({ annotation }: Props) {
       )}
 
       {/* ── 综合建议 ── */}
-      <div className="ink-card border-[#B8973E]/40">
-        <div className="text-[#B83A2E] text-xs font-bold mb-3 tracking-wider">综合建议</div>
+      <div className="ink-card border-semantic-attention/40">
+        <div className="text-brand text-xs font-bold mb-3 tracking-wider">综合建议</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {comprehensiveAdvice.map((adv, i) => (
             <div key={i} className="flex items-start gap-2 bg-white/50 rounded-sm p-2.5">
-              <span className="text-[#B83A2E] text-xs shrink-0 mt-0.5 font-bold">{i + 1}.</span>
-              <span className="text-[#1C1914] text-xs">{adv}</span>
+              <span className="text-brand text-xs shrink-0 mt-0.5 font-bold">{i + 1}.</span>
+              <span className="text-fg-primary text-xs">{adv}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* 脚注 */}
-      <div className="text-center text-[#C4B8A8] text-xs py-2 tracking-wider">
+      <div className="text-center text-neutral-300 text-xs py-2 tracking-wider">
         以上批注由规则引擎基于命理规则自动生成，仅供参考
       </div>
     </div>

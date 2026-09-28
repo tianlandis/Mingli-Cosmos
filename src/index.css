@@ -79,6 +79,12 @@
   --accent-green-soft: #E8F0E4;
   --gold-600: #8A6D20;
 
+  /* 语义状态色 —— 与五行色同值但槽位独立（改五行显示不应连带改状态标记）
+   * positive：吉 / 佳 ｜ info：偏弱 / 中性 ｜ attention：提示 / 强调 / 中等风险 */
+  --semantic-positive: #4A7C3F;
+  --semantic-info: #3D5A80;
+  --semantic-attention: #B8973E;
+
   /* 语义层：组件只认这些 */
   --surface-page: var(--paper-100);
   --surface-raised: #FFFFFF;
@@ -99,13 +105,16 @@
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-muted: var(--surface-muted);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-tertiary: var(--text-tertiary);
+  --color-fg-primary: var(--text-primary);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-tertiary: var(--text-tertiary);
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
-  --color-border-soft: var(--border-soft);
-  --color-border-strong: var(--border-strong);
+  --color-line-soft: var(--border-soft);
+  --color-line-strong: var(--border-strong);
+  --color-semantic-positive: var(--semantic-positive);
+  --color-semantic-info: var(--semantic-info);
+  --color-semantic-attention: var(--semantic-attention);
   --color-wx-wood: var(--wx-wood);
   --color-wx-fire: var(--wx-fire);
   --color-wx-earth: var(--wx-earth);
