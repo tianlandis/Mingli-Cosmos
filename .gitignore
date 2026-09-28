@@ -53,6 +53,12 @@ docs/contracts/engine-api.md
 *.temp
 .tmp/data/
 
+# ── 运行时数据库（SQLite，生产由 docker-compose 挂载 ./data 卷） ──
+data/
+*.db
+*.db-wal
+*.db-shm
+
 # ── SQLite 运行时文件 ──
 *.db-shm
 *.db-wal

@@ -4,6 +4,63 @@
 
 ---
 
+## 2026-09-28 — Phase 4b 运营中台 M-6/M-7/M-8 + 设计轨 S1 全闭环 ✅
+
+> 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**308/308**（14 文件）｜ `vite build` 通过
+> 提交：`d33eef3`（后端）、`e1a856b`（前端 + S1）
+
+### M-6 C 端用户体系
+
+| 落点 | 内容 |
+|------|------|
+| 数据层 | 新增 `users` / `user_sessions` 表 + `repositories/users.ts`（CRUD、原子扣减额度、会话管理） |
+| 认证 | 新增 `core/middleware/user-auth.ts`：与 admin 完全隔离的密钥、会话表、JWT（7 天） |
+| C 端 API | `/api/v1/app/user/*`：register / login / logout / me / quota / profile / sessions / status |
+| 后台 API | `/api/v1/admin/users/*`：列表搜索、统计、详情、改状态、调额度、重置密码、删除 |
+| 前端 | `admin/modules/users/UsersPage.tsx`；C 端 `AuthDialog` + `useUser` + Header 登录态 |
+
+- 停用账号或重置密码 → 强制该用户所有会话下线
+- 额度扣减用 SQL 条件更新（`quota_used < quota_total`）避免并发超卖
+- AI 对话可选扣额度：配置项 `quota_enforce_chat`（默认 `false`，开启后不足返回 402）
+
+### M-7 订单与订阅
+
+| 落点 | 内容 |
+|------|------|
+| 数据层 | 新增 `plans` / `orders` / `subscriptions` 表 + `repositories/billing.ts` |
+| C 端 API | `/api/v1/app/billing/*`：套餐列表、下单、模拟支付、我的订单、我的订阅 |
+| 后台 API | `/api/v1/admin/orders/*`：订单列表与统计、套餐 CRUD、离线确认收款、退款回收权益、维护任务 |
+| 前端 | `admin/modules/orders/OrdersPage.tsx`（订单 Tab + 套餐 Tab） |
+
+- 支付后自动激活/顺延订阅、发放额度、提升等级；退款撤销订阅并回收额度、无其它订阅时降级 free
+- 默认种子套餐：体验包 ¥9.9 / 月度 ¥39 / 年度 ¥299（按 code 幂等）
+
+### M-8 运营数据看板
+
+- 新增 `analytics_events` 表 + 事件白名单（9 类），`POST /api/v1/app/track` 支持匿名上报
+- 后台 `/api/v1/admin/analytics/overview|series|events` 聚合（用户/活跃/排盘/对话/收入/订阅/趋势）
+- `admin/modules/dashboard/OperationsOverview.tsx`：指标卡 + 纯 SVG 趋势图 + 事件分布（60s 刷新，无第三方图表依赖）
+
+### 设计轨 S1
+
+- **UI-8**：新增 `.chapter-enter` 交错入场动画（0→490ms 逐级 delay），尊重 `prefers-reduced-motion`
+- **UI-9**：新增 `DayMasterStrength.tsx` 日主强弱进度条（0-100 刻度 + 7 档等级 + 五维分量 + 判断依据折叠）
+
+### 部署链路修复（本次发现的真隐患）
+
+1. `Dockerfile` 基础镜像 `node:22-alpine` → **`node:26-alpine`**（better-sqlite3 ABI 147，Node 22 启动即崩）
+2. `docker-compose.yml` 缺数据卷 → 新增 `./data:/app/data`、`./logs:/app/logs`（否则容器重建丢失全部用户与订单）
+3. 新增 `docs/deploy/VPS-LAUNCH-CHECKLIST.md`（D-4~D-6 上线手册）
+
+### 新增文件（14 个）
+
+- 后端：`modules-public/{user,billing,track}/index.ts`、`modules/{users,orders,analytics}/index.ts`
+- 数据层：`repositories/{users,billing,analytics}.ts`、`core/middleware/user-auth.ts`
+- 前端：`admin/modules/users/UsersPage.tsx`、`admin/modules/orders/OrdersPage.tsx`、`admin/modules/dashboard/OperationsOverview.tsx`
+- C 端：`src/lib/user-api.ts`、`src/hooks/useUser.ts`、`src/components/AuthDialog.tsx`、`src/components/DayMasterStrength.tsx`
+
+---
+
 ## 2026-09-28 — Phase 4a 打磨收尾 R1~R6 全闭环 ✅
 
 > 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**252/252** ｜ `vite build` 通过

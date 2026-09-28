@@ -2,6 +2,54 @@
 
 ---
 
+## 未发布 — Phase 4b 运营中台 + 设计轨 S1 (2026-09-28)
+
+> **主题**：从「内部工具」推进到「可运营的产品」——C 端账号、订单订阅、运营看板三件套落地
+>
+> **规模**：新增 6 张表（8 → 14）、14 个新文件、测试 252 → **308**
+
+### 👤 M-6 C 端用户体系
+
+- 新增 `users` / `user_sessions` 表；C 端 JWT 与后台完全隔离（独立密钥 `USER_JWT_SECRET`、独立会话表、7 天有效期）
+- C 端 API `/api/v1/app/user/*`：注册（用户名/手机/邮箱唯一性校验）、登录（账号/手机/邮箱任一）、登出、me、quota、profile、sessions、status
+- 后台 API `/api/v1/admin/users/*`：列表搜索、统计、详情、启停、调额度（delta / setTotal）、重置密码、删除
+- 安全设计：停用账号或重置密码强制所有会话下线；额度扣减走 SQL 条件更新避免并发超卖；响应永不外泄 `passwordHash`
+- AI 对话可选扣额度：配置 `quota_enforce_chat`（默认 `false`，DB 未初始化时自动跳过，保证既有行为不变）
+
+### 💰 M-7 订单与订阅
+
+- 新增 `plans` / `orders` / `subscriptions` 表
+- C 端 `/api/v1/app/billing/*`：套餐列表、下单、模拟支付、我的订单、我的订阅
+- 后台 `/api/v1/admin/orders/*`：订单列表与统计、套餐 CRUD、离线确认收款、退款回收权益、清理超时订单/过期订阅
+- 权益逻辑：支付后激活或**在原到期时间上顺延**订阅、发放额度、提升等级；退款撤销订阅并回收额度，无其它有效订阅时降级 free
+- 默认种子套餐：体验包 ¥9.9 / 月度 ¥39 / 年度 ¥299（按 code 幂等）
+
+### 📊 M-8 运营数据看板
+
+- 新增 `analytics_events` 表 + 9 类事件白名单（拒绝任意事件名污染看板）
+- `POST /api/v1/app/track` 支持匿名上报（`keepalive` 保证跳转时送达）；C 端已接入 page_view / paipan / chat
+- 后台 `/api/v1/admin/analytics/overview|series|events`
+- 仪表盘新增「运营概览」：指标卡 + 纯 SVG 趋势图 + 事件分布（60s 刷新，零第三方图表依赖）
+
+### 🎨 设计轨 S1
+
+- **UI-8**：`.chapter-enter` 交错入场动画，命书章节 0→490ms 逐级展开，自动尊重 `prefers-reduced-motion`
+- **UI-9**：`DayMasterStrength` 日主强弱进度条（0-100 刻度 + 7 档等级标签 + 五维分量 + 判断依据折叠）
+
+### 🐳 部署链路修复
+
+- `Dockerfile`：基础镜像 `node:22-alpine` → **`node:26-alpine`**（better-sqlite3 ABI 147，Node 22 启动即崩）
+- `docker-compose.yml`：新增 `./data:/app/data` + `./logs:/app/logs` 卷（原配置下容器重建会丢失全部用户与订单数据）
+- 新增 `docs/deploy/VPS-LAUNCH-CHECKLIST.md`：D-4~D-6 上线操作手册（含证书、构建、C 端 API 冒烟、SSE 验收、回滚）
+
+### ✅ 验证
+
+- `tsc -b --noEmit` → 零错误（含 `admin/` 与全部新模块）
+- `vitest run`（Node 26）→ **308 passed / 0 failed**（14 个文件，新增 56 项）
+- `vite build` → 通过（含 C 端 + 管理后台双入口）
+
+---
+
 ## 未发布 — 工程基线修复（v4.1.0 后复工）(2026-09-28)
 
 > **主题**：恢复"真实可验证"的工程基线 —— 类型检查、测试、构建三线全绿

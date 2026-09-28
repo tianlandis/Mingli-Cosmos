@@ -3,8 +3,9 @@
 # 目标：极致轻量生产镜像（仅保留 dist/ + 运行时依赖）
 # ============================================================
 
+# ⚠️ Node 版本必须为 26：better-sqlite3 按 ABI 147 编译，Node 22 会在启动阶段崩溃
 # ═══ Stage 1: 构建阶段 ═══
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -20,7 +21,7 @@ COPY public/ ./public/
 RUN npm run build
 
 # ═══ Stage 2: 生产运行阶段 ═══
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 
 WORKDIR /app
 
@@ -38,6 +39,9 @@ COPY --from=builder /app/dist ./dist
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json ./
 COPY src/server/ ./src/server/
 COPY src/engine/ ./src/engine/
+
+# SQLite 数据目录（docker-compose 会挂载 ./data 卷持久化用户/订单/订阅数据）
+RUN mkdir -p /app/data /app/logs
 
 # 容器内暴露 3001 端口
 EXPOSE 3001

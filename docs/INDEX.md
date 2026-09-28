@@ -80,6 +80,9 @@ docs/
 │   ├── UI-UX.md                      ← 配色·字体·布局·组件·页面流
 │   └── PHASE2_AI_AGENT_DESIGN.md     ← Phase 2 AI Agent 架构（B→A→C 路径）
 │
+├── deploy/                           ← 🚀 部署层（上线操作手册）
+│   └── VPS-LAUNCH-CHECKLIST.md       ← 🆕 域名/SSL + VPS 部署 + 公网 SSE 验收
+│
 ├── tasks/                            ← 📌 执行层（任务状态机）
 │   ├── TODO.md                       ← 当前 Sprint Backlog（优先读取）
 │   └── DONE.md                       ← 已完成记录
@@ -118,6 +121,7 @@ docs/
 
 | 文件 | 用途 |
 |------|------|
-| `../Dockerfile` | 多阶段构建，生成极简生产镜像 |
-| `../docker-compose.yml` | 一键编排：端口 + 卷挂载 + 自动重启 |
+| **`deploy/VPS-LAUNCH-CHECKLIST.md`** | **🆕 D-4~D-6 上线操作手册（拿到 VPS 后按此执行）** |
+| `../Dockerfile` | 多阶段构建（Node 26 基础镜像），生成极简生产镜像 |
+| `../docker-compose.yml` | 一键编排：端口 + `.env` + `data/` 数据卷 + 自动重启 |
 | `../nginx.conf` | SSE 流式代理优化（防卡顿配置） |
