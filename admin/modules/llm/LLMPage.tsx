@@ -13,8 +13,6 @@ import {
   XCircle,
   Circle,
   Wrench,
-  Globe,
-  Monitor,
   Keyboard,
   RefreshCw,
   Thermometer,
@@ -34,11 +32,9 @@ import {
   Download,
   Star,
   Signal,
-  ArrowUpRight,
 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -236,7 +232,6 @@ const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
 function TuningPanel({
   provider,
   onSave,
-  saving,
   apiHeaders,
 }: {
   provider: Provider
@@ -461,7 +456,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
   const [editTarget, setEditTarget] = useState<Provider | null>(null)
 
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [saving] = useState(false)
   const [migrating, setMigrating] = useState(false)
   const [migrateMsg, setMigrateMsg] = useState('')
   const [pings, setPings] = useState<Record<number, { status: string; latency: number | null }>>({})

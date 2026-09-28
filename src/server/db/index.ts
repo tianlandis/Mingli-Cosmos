@@ -53,6 +53,14 @@ export function initDb() {
   console.log(`[DB] initialized: ${process.env.DB_PATH || 'data/mingli.db'}`)
 }
 
+/**
+ * 数据库是否已完成初始化（连接 + 迁移）
+ * 供「DB 可选增强」型逻辑判断：未初始化时走纯代码回退，避免误建真实库文件
+ */
+export function isDbReady(): boolean {
+  return _db !== null
+}
+
 /** 关闭数据库连接 */
 export function closeDb() {
   if (_sqlite) {

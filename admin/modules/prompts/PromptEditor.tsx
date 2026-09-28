@@ -3,7 +3,7 @@
 // 文件：admin/modules/prompts/PromptEditor.tsx
 // ============================================================
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Lock,
   Save,
@@ -15,13 +15,10 @@ import {
   FileText,
   CheckCircle2,
   X,
-  XCircle,
   RefreshCw,
   PenLine,
   GitBranch,
-  Send,
   Loader2,
-  Bot,
   Thermometer,
   Gauge,
   Hash,
@@ -46,6 +43,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { api } from '../../lib/api'
+import DebugPanel from './DebugPanel'
 
 // ═══════════════════════════════════════
 // CodeMirror 6 imports
@@ -250,168 +248,52 @@ function useCodeMirror(
 }
 
 // ═══════════════════════════════════════
-// DebugPanel — 实时 LLM 调试沙盒（右栏）
+// 行级 Diff（R6：回滚前看清楚改了什么）
 // ═══════════════════════════════════════
-function DebugPanel({
-  promptContent,
-  temperature,
-  topP,
-  maxTokens,
-}: {
-  promptContent: string
-  temperature: number
-  topP: number
-  maxTokens: number
-}) {
-  const [input, setInput] = useState('')
-  const [response, setResponse] = useState('')
-  const [running, setRunning] = useState(false)
-  const [error, setError] = useState('')
-  const [debugHistory, setDebugHistory] = useState<{ role: string; content: string }[]>([])
+interface DiffLine { type: 'same' | 'add' | 'del'; text: string }
 
-  const handleDebug = async () => {
-    if (!input.trim() || running) return
-    setRunning(true)
-    setError('')
-    setResponse('')
+function diffLines(before: string, after: string): DiffLine[] {
+  const A = before.split('\n')
+  const B = after.split('\n')
+  const m = A.length
+  const n = B.length
 
-    try {
-      const res = await api.post<{
-        output: string
-        model: string
-        provider: string
-        usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null
-      }>('/api/v1/admin/prompts/debug', {
-        prompt: promptContent,
-        userInput: input,
-        temperature,
-        topP,
-        maxTokens,
-      })
-
-      if (res.success && res.data) {
-        setResponse(res.data.output ?? '(空响应)')
-        setDebugHistory(prev => [
-          ...prev,
-          { role: 'user', content: input },
-          { role: 'assistant', content: res.data!.output ?? '(空响应)' },
-        ])
-        setInput('')
-      } else {
-        setError(res.error?.message ?? '调试请求失败')
-      }
-    } catch {
-      setError('网络异常，请确认后端已启用')
-    } finally {
-      setRunning(false)
+  // LCS 表（Prompt 通常百行量级，O(m·n) 可接受）
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])
     }
   }
 
+  const out: DiffLine[] = []
+  let i = 0
+  let j = 0
+  while (i < m && j < n) {
+    if (A[i] === B[j]) { out.push({ type: 'same', text: A[i] }); i++; j++ }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push({ type: 'del', text: A[i] }); i++ }
+    else { out.push({ type: 'add', text: B[j] }); j++ }
+  }
+  while (i < m) { out.push({ type: 'del', text: A[i] }); i++ }
+  while (j < n) { out.push({ type: 'add', text: B[j] }); j++ }
+  return out
+}
+
+// ═══════════════════════════════════════
+// HelpTip — 自解释问号提示（R2：零文档可用）
+// ═══════════════════════════════════════
+function HelpTip({ text, className }: { text: string; className?: string }) {
   return (
-    <div className="flex flex-col h-full bg-[#1A2332]">
-      {/* ── 标题栏 ── */}
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06] shrink-0">
-        <div className="size-1.5 rounded-full bg-emerald-500" />
-        <span className="text-xs font-semibold text-[#EDE8DF] tracking-wider">实时沙盒</span>
-        <span className="text-[10px] text-[#6B6459] ml-auto font-mono">Debug</span>
-      </div>
-
-      {/* ── Prompt 预览 ── */}
-      <div className="px-5 py-3 border-b border-white/[0.04] shrink-0 space-y-2">
-        <Label className="text-[11px] text-[#6B6459] uppercase tracking-wider">当前 Prompt</Label>
-        <blockquote className="text-xs text-[#6B6459] font-mono leading-relaxed line-clamp-3 bg-[#0A1118] rounded-md p-2.5 border border-white/[0.04]">
-          {promptContent || '未选择模板'}
-        </blockquote>
-        <div className="flex items-center gap-3 text-[11px] text-[#6B6459] font-mono">
-          <span className="inline-flex items-center gap-1">
-            <Thermometer size={10} /> T={temperature.toFixed(2)}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Gauge size={10} /> P={topP.toFixed(2)}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Hash size={10} /> Max={maxTokens}
-          </span>
-        </div>
-      </div>
-
-      {/* ── 对话历史 ── */}
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="px-5 py-4 space-y-3">
-          {debugHistory.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Bot size={22} className="text-[#6B6459]" />
-              <p className="text-xs text-[#6B6459] text-center max-w-48">
-                {promptContent ? '输入测试消息开始调试' : '请先选择模板'}
-              </p>
-            </div>
-          )}
-          {debugHistory.map((msg, i) => (
-            <div
-              key={i}
-              className={cn(
-                'rounded-lg px-3.5 py-3 text-xs leading-relaxed',
-                msg.role === 'user'
-                  ? 'bg-[#C04030]/5 border border-[#C04030]/10'
-                  : 'bg-white/[0.03] border border-white/[0.06]',
-              )}
-            >
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className={cn(
-                  'text-[11px] font-semibold tracking-wider',
-                  msg.role === 'user' ? 'text-[#C04030]' : 'text-emerald-500',
-                )}>
-                  {msg.role === 'user' ? 'YOU' : 'LLM'}
-                </span>
-              </div>
-              <p className="text-[#A09888] font-mono whitespace-pre-wrap">{msg.content.slice(0, 800)}</p>
-            </div>
-          ))}
-          {error && (
-            <div className="rounded-lg px-3.5 py-3 bg-[#C04030]/5 border border-[#C04030]/10">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <XCircle size={11} className="text-red-400" />
-                <span className="text-[11px] font-semibold text-red-400 tracking-wider">ERROR</span>
-              </div>
-              <p className="text-xs text-red-400">{error}</p>
-            </div>
-          )}
-          {response && debugHistory.length === 0 && (
-            <div className="rounded-lg px-3.5 py-3 bg-white/[0.03] border border-white/[0.06]">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[11px] font-semibold text-emerald-500 tracking-wider">LLM</span>
-              </div>
-              <p className="text-xs text-[#A09888] font-mono whitespace-pre-wrap">{response.slice(0, 800)}</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* ── 输入区 ── */}
-      <div className="shrink-0 px-5 py-4 border-t border-white/[0.06] bg-[#0A1118]/80">
-        <div className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="输入模拟用户消息…"
-            rows={2}
-            className="flex-1 min-h-0 text-xs font-mono resize-none bg-[#1A2332] border-white/[0.08]"
-            onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleDebug() }}
-          />
-          <Button
-            size="icon"
-            onClick={handleDebug}
-            disabled={!input.trim() || running}
-            className="shrink-0 self-end"
-          >
-            {running ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-          </Button>
-        </div>
-        <p className="text-[10px] text-[#6B6459] mt-2 text-right">
-          Ctrl+Enter 发送
-        </p>
-      </div>
-    </div>
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle size={10} className={cn('text-[#6B6459] shrink-0 cursor-help', className)} />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-72">
+          <p className="text-xs leading-relaxed">{text}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -500,6 +382,7 @@ export default function PromptEditor() {
 
   const [rollbackTarget, setRollbackTarget] = useState<VersionRow | null>(null)
   const [rollbackLoading, setRollbackLoading] = useState(false)
+  const [diffMode, setDiffMode] = useState(false)
 
   const [temperature, setTemperature] = useState(0.7)
   const [topP, setTopP] = useState(0.9)
@@ -644,11 +527,23 @@ export default function PromptEditor() {
       load()
       loadVersions()
       setRollbackTarget(null)
+      setDiffMode(false)
     } else {
       flashStatus('err', res.error?.message ?? '回滚失败')
     }
     setRollbackLoading(false)
   }, [selected, selectPrompt, load, loadVersions])
+
+  // ── 回滚对比：当前版本 vs 目标版本（行级 diff）──
+  const diffResult = useMemo(() => {
+    if (!rollbackTarget || !selected) return null
+    const lines = diffLines(selected.content, rollbackTarget.content)
+    return {
+      lines,
+      added: lines.filter(l => l.type === 'add').length,
+      removed: lines.filter(l => l.type === 'del').length,
+    }
+  }, [rollbackTarget, selected])
 
   useCodeMirror(editorRef, editableContent, handleEditorChange)
 
@@ -862,6 +757,7 @@ export default function PromptEditor() {
                         <Badge variant="outline" className="text-[10px] font-mono text-[#6B6459] shrink-0">
                           {selected.name} · v{selected.version}
                         </Badge>
+                        <HelpTip text={`左侧为模板标识（${selected.name}），是代码调用的唯一键名，创建后不可修改；v${selected.version} 为当前版本号，每次保存自动生成新版本快照。`} />
                         {selected.isBuiltin === 1 && (
                           <Badge variant="secondary" className="text-[10px] shrink-0">内置</Badge>
                         )}
@@ -871,6 +767,7 @@ export default function PromptEditor() {
                         <div className="flex items-center gap-1.5">
                           <Label className="text-[11px] text-[#6B6459]">启用</Label>
                           <Switch checked={editIsActive} onCheckedChange={v => { setEditIsActive(v); setDirty(true) }} />
+                          <HelpTip text="停用后该模板不会进入运行时 System Prompt；模板仍保留在左侧列表中（标记「停用」），可随时重新启用。" />
                         </div>
                         <Button
                           onClick={handleSave}
@@ -905,6 +802,7 @@ export default function PromptEditor() {
                         placeholder="用途说明…"
                         className="flex-1 h-7 text-xs bg-[#0A1118] border-white/[0.08] focus-visible:border-[#B8964A]"
                       />
+                      <HelpTip text="用途说明仅用于团队协作标注，不会发送给 AI，也不影响运行时行为。" />
                     </div>
                   </div>
 
@@ -996,6 +894,7 @@ export default function PromptEditor() {
                       <div className="flex items-center gap-2">
                         <Lock size={10} className="text-[#B8964A]" />
                         <span className="text-[11px] font-medium text-[#EDE8DF]">系统身份锁定区</span>
+                        <HelpTip text="系统级角色设定、核心原则与输出结构。此段由系统锁定，保存时自动拼接在您编辑的内容之前；编辑器中不可修改，如需调整请前往「L3 护栏」面板。" />
                       </div>
                       <span className="text-[10px] text-[#6B6459]">保存时自动拼接</span>
                     </div>
@@ -1037,7 +936,7 @@ export default function PromptEditor() {
         {/* ═══ 右栏 col-span-4 (~33%)：实时沙盒 ═══ */}
         <div className="col-span-4 h-full border-l border-white/[0.06]">
           <DebugPanel
-            promptContent={selected ? joinContent(lockedPrefix, editableContent) : ''}
+            editorContent={selected ? joinContent(lockedPrefix, editableContent) : ''}
             temperature={temperature}
             topP={topP}
             maxTokens={maxTokens}
@@ -1087,17 +986,70 @@ export default function PromptEditor() {
               )}
 
               <div className="px-5 pt-3 flex-1 min-h-0 flex flex-col">
-                <Label className="text-[11px] text-[#6B6459] uppercase tracking-wider flex items-center gap-1.5 mb-2 shrink-0">
-                  <Code2 size={10} />
-                  完整 Prompt 内容（只读）
-                </Label>
+                <div className="flex items-center justify-between mb-2 shrink-0">
+                  <Label className="text-[11px] text-[#6B6459] uppercase tracking-wider flex items-center gap-1.5">
+                    <Code2 size={10} />
+                    {diffMode ? '与当前版本对比' : '完整 Prompt 内容（只读）'}
+                  </Label>
+                  <div className="flex items-center gap-1 p-0.5 rounded-md bg-[#0A1118] border border-white/[0.06]">
+                    {([{ k: false, t: '完整内容' }, { k: true, t: '版本对比' }]).map(opt => (
+                      <button
+                        key={String(opt.k)}
+                        onClick={() => setDiffMode(opt.k)}
+                        className={cn(
+                          'px-2 py-1 rounded text-[10px] transition-colors',
+                          diffMode === opt.k ? 'bg-[#B8964A]/15 text-[#B8964A]' : 'text-[#6B6459] hover:text-[#A09888]',
+                        )}
+                      >
+                        {opt.t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {diffMode && diffResult && (
+                  <div className="shrink-0 mb-2 flex items-center gap-3 text-[11px] font-mono">
+                    <span className="text-emerald-500">+{diffResult.added} 行</span>
+                    <span className="text-[#C04030]">-{diffResult.removed} 行</span>
+                    <span className="text-[#6B6459]">左：当前版本 → 右：v{rollbackTarget.version}</span>
+                  </div>
+                )}
+
                 <div className="flex-1 min-h-0 mb-4 rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-                  <Textarea
-                    readOnly
-                    value={rollbackTarget.content}
-                    className="w-full h-full min-h-[240px] resize-none border-0 bg-transparent text-xs font-mono text-[#A09888] leading-relaxed focus-visible:ring-0"
-                    style={{ caretColor: 'transparent' }}
-                  />
+                  {diffMode && diffResult ? (
+                    <ScrollArea className="h-full">
+                      <div className="p-3 font-mono text-[11px] leading-relaxed">
+                        {diffResult.lines.slice(0, 400).map((line, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              'px-2 py-0.5 whitespace-pre-wrap break-all',
+                              line.type === 'add' && 'bg-emerald-500/10 text-emerald-400',
+                              line.type === 'del' && 'bg-[#C04030]/10 text-[#D06050]',
+                              line.type === 'same' && 'text-[#6B6459]',
+                            )}
+                          >
+                            <span className="select-none opacity-50 mr-2">
+                              {line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' '}
+                            </span>
+                            {line.text || ' '}
+                          </div>
+                        ))}
+                        {diffResult.lines.length > 400 && (
+                          <p className="text-[10px] text-[#6B6459] px-2 py-1">
+                            仅显示前 400 行差异（共 {diffResult.lines.length} 行）
+                          </p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <Textarea
+                      readOnly
+                      value={rollbackTarget.content}
+                      className="w-full h-full min-h-[240px] resize-none border-0 bg-transparent text-xs font-mono text-[#A09888] leading-relaxed focus-visible:ring-0"
+                      style={{ caretColor: 'transparent' }}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1337,7 +1289,9 @@ function LeftPanel({
                         <Badge variant="secondary" className="text-[9px] py-0">内置</Badge>
                       )}
                       {p.isActive !== 1 && (
-                        <Badge variant="outline" className="text-[9px] py-0 text-[#6B6459]">停用</Badge>
+                        <Badge variant="outline" className="text-[9px] py-0 text-[#6B6459]" title="已停用：不会进入运行时 Prompt，可在编辑区重新启用">
+                          停用
+                        </Badge>
                       )}
                     </div>
                   </button>
@@ -1368,6 +1322,7 @@ function LeftPanel({
             <span className="text-xs uppercase tracking-wider text-[#6B6459] font-medium">
               版本历史
             </span>
+            <HelpTip text="每次保存自动生成一份快照。点击任一版本可预览完整内容并回滚——回滚前会自动存档当前版本，因此回滚本身也可再次回滚。" />
           </div>
           {versionsLoading && <RefreshCw size={10} className="animate-spin text-[#6B6459]" />}
         </div>

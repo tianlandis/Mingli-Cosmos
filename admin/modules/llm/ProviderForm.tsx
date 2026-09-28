@@ -5,7 +5,7 @@
 // ============================================================
 
 import { useState, useEffect } from 'react'
-import { X, Key, Globe, Cpu, Thermometer, Hash, HelpCircle, Sparkles, Download, RotateCw, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react'
+import { X, Key, Globe, Cpu, Thermometer, Hash, HelpCircle, Sparkles, Download, RotateCw, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'

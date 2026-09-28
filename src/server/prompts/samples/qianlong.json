@@ -1,0 +1,69 @@
+{
+  "chart": {
+    "birthDate": "1711-09-25",
+    "birthTime": "00:00",
+    "gender": "男",
+    "yearPillar": { "stem": "辛", "branch": "卯", "stemWuXing": "金", "branchWuXing": "木", "hiddenStems": ["乙"], "ganZhi": "辛卯" },
+    "monthPillar": { "stem": "丁", "branch": "酉", "stemWuXing": "火", "branchWuXing": "金", "hiddenStems": ["辛"], "ganZhi": "丁酉" },
+    "dayPillar": { "stem": "庚", "branch": "午", "stemWuXing": "金", "branchWuXing": "火", "hiddenStems": ["丁"], "ganZhi": "庚午" },
+    "hourPillar": { "stem": "丙", "branch": "子", "stemWuXing": "火", "branchWuXing": "水", "hiddenStems": ["癸"], "ganZhi": "丙子" },
+    "dayMaster": "庚",
+    "fiveElements": { "金": 4, "木": 1, "水": 1, "火": 3, "土": 0 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "丙", "branch": "午", "ganZhi": "丙午" },
+    "qiYunDays": 5,
+    "daYunForward": true
+  },
+  "annotation": {
+    "overview": { "summary": "庚金得令于酉月，官杀混杂身强，帝王之格", "dayMaster": "庚金", "strength": "强", "pattern": "正官格", "mbti": "ENTJ", "combination": "官杀混杂" },
+    "strengthAnalysis": { "strength": "强", "score": 78, "confidence": 0.85, "reasons": ["月令酉金正旺", "地支得午火锻造"], "classicReference": ["《渊海子平》"], "components": { "yueLing": 60, "diZhiGen": 10, "tianGanBiJie": 5, "shengFu": 75, "keXieHao": 25 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏旺", "count": 4, "advice": "金旺需火炼或水泄" },
+      { "name": "木", "level": "偏弱", "count": 1, "advice": "财星弱，大运逢木则发" },
+      { "name": "水", "level": "偏弱", "count": 1, "advice": "食伤弱，表达能力需加强" },
+      { "name": "火", "level": "中和", "count": 3, "advice": "官杀适度，为用神" },
+      { "name": "土", "level": "偏弱", "count": 0, "advice": "印星弱，学识靠后天" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 2, "positions": ["年干", "日干"] },
+      { "name": "劫财", "count": 1, "positions": ["日支藏"] },
+      { "name": "正官", "count": 2, "positions": ["月干", "时干"] },
+      { "name": "伤官", "count": 1, "positions": ["时支藏"] },
+      { "name": "正财", "count": 0, "positions": [] },
+      { "name": "偏财", "count": 0, "positions": [] },
+      { "name": "正印", "count": 0, "positions": [] },
+      { "name": "偏印", "count": 0, "positions": [] },
+      { "name": "食神", "count": 0, "positions": [] },
+      { "name": "偏官", "count": 1, "positions": ["年支藏"] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "正官格", "confidence": 0.82,
+      "conditions": ["月令酉金透辛金", "月令正官得位"], "quality": "上等",
+      "description": "庚金生于酉月，正官当令，官星有力",
+      "alternatives": [], "classicReference": ["《三命通会》卷六"], "method": "月令取格", "sourceStem": "辛", "shiShen": "正官",
+      "jiXiong": "吉", "jiXiongDesc": "正官格为正格中的上格", "combination": { "name": "官杀混杂", "dominantPattern": "正官格", "keyCombination": "官杀混杂但官清", "keyStem": "丙", "keyPosition": "时干", "isPure": false },
+      "poGeRisks": [], "mbti": { "cognitiveFunctions": "Te-Ni-Se-Fi", "typicalTypes": ["ENTJ", "ESTJ"], "traits": "杀伐果断，掌控全局", "portrait": "天生领袖型人格，擅长大局谋划", "industrySuggestions": ["政治", "管理", "军事"], "energyAdjustments": ["忌刚愎自用", "需注重民心"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "戊申", "startAge": 5, "endAge": 14, "interpretation": "印星大运，学业有成", "quality": "佳" },
+        { "ganZhi": "己酉", "startAge": 15, "endAge": 24, "interpretation": "印星化官，得长辈提携", "quality": "佳" },
+        { "ganZhi": "庚戌", "startAge": 25, "endAge": 34, "interpretation": "比肩助身，事业腾飞", "quality": "佳" },
+        { "ganZhi": "辛亥", "startAge": 35, "endAge": 44, "interpretation": "伤官见官，多事之秋", "quality": "平" },
+        { "ganZhi": "壬子", "startAge": 45, "endAge": 54, "interpretation": "食神生财，国运昌隆", "quality": "佳" }
+      ],
+      "currentYear": { "ganZhi": "丙午", "interpretation": "官杀旺年，注意权力斗争", "focus": ["事业", "健康"] },
+      "milestones": [{ "age": 25, "year": 1736, "ganZhi": "丙辰", "event": "登基", "reason": "丙火七杀，庚戌大运助身" }]
+    },
+    "branchRelations": { "summary": ["月柱酉冲日支午", "时支子冲日支午"], "items": ["酉午相破", "子午相冲"], "kongWang": [], "heJu": [], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "将星", "type": "吉", "description": "日支午为火局将星", "pillar": "日柱", "classicRef": "《三命通会》" },
+      { "name": "文昌", "type": "吉", "description": "日干庚见年支卯", "pillar": "年柱", "classicRef": "《星平会海》" }
+    ] },
+    "specialTopics": { "personality": ["刚毅威猛", "有领导力"], "career": ["政军领袖", "管理高层"], "wealth": ["大运逢财运则富"], "marriage": ["正官格婚姻顺遂"], "health": ["注意火旺克金"], "children": ["子女有贵气"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["修德", "纳谏"]
+  }
+}

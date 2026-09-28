@@ -14,6 +14,7 @@ import {
   listPromptVersions, getPromptVersion, createPromptVersion, getLatestVersion,
   getConfig, setConfig, listApiKeys,
 } from '../../db'
+import { listSamples, renderRuntimePrompt } from '../../prompts/samples'
 
 // ═══════════════════════════════════════
 // Zod 验证 Schema
@@ -34,16 +35,36 @@ const promptBodySchema = z.object({
 // 工具函数：自动创建版本快照
 // ═══════════════════════════════════════
 
-function snapshotVersion(promptId: number, oldContent: string, changeNote?: string) {
-  const nextVersion = getLatestVersion(promptId) + 1
+/**
+ * 归档「当前内容」并计算新版本号
+ *
+ * 版本语义（R6 修正）：
+ *   - prompt_templates.version = 当前生效版本号
+ *   - prompt_versions.version  = 该内容对应的历史版本号
+ *   - 保存/回滚前先把当前内容存档，再推进版本号，杜绝「当前版本与快照版本撞号」
+ *
+ * @returns 新版本号（调用方写入 prompt_templates.version）
+ */
+function archiveAndBump(
+  promptId: number,
+  current: { version: number; content: string },
+  changeNote?: string,
+): number {
+  const currentVersion = current.version || 1
+  const latest = getLatestVersion(promptId)
+  const alreadyArchived = Boolean(getPromptVersion(promptId, currentVersion))
+
+  // 当前版本号若已被占用（例如回滚后再次编辑），顺延到最新快照之后
+  const snapshotVersion = alreadyArchived ? latest + 1 : currentVersion
   createPromptVersion({
     promptId,
-    version: nextVersion,
-    content: oldContent,
+    version: snapshotVersion,
+    content: current.content,
     changeNote: changeNote ?? null,
     createdBy: 'admin',
   } as any)
-  return nextVersion
+
+  return Math.max(currentVersion, latest) + 1
 }
 
 // ═══════════════════════════════════════
@@ -66,24 +87,8 @@ route.get('/', (c) => {
 // 存储：app_configs key='anti_hallucination_rules' (JSON)
 // ═══════════════════════════════════════
 
-const L1_RULE_NAMES = [
-  'corePositioning', 'toolAuthorization',
-  'rule0_noPaipan', 'rule1_dataLock', 'rule2_noAbsolute',
-  'rule3_safety', 'rule4_style', 'rule5_topicBoundary',
-] as const
-
-type L1RuleName = typeof L1_RULE_NAMES[number]
-
-interface GuardRuleItem {
-  name: L1RuleName
-  label: string
-  content: string
-}
-
-interface GuardsPayload {
-  l1Rules: GuardRuleItem[]
-  l1RejectMessage: string
-}
+// 规则白名单以 anti-hallucination.ts 为唯一权威来源（R4：消除两份清单漂移）
+import { L1_RULE_NAMES, type GuardsPayload } from '../../lib/anti-hallucination'
 
 const guardsBodySchema = z.object({
   l1Rules: z.array(z.object({
@@ -152,6 +157,66 @@ route.put('/guards', async (c) => {
     message: '护栏规则已保存，将在下一轮对话中自动生效',
     updatedAt: result.updatedAt,
   })
+})
+
+// ═══════════════════════════════════════
+// Phase 4a-R3 — 调试闭环补充端点（必须在 /:id 之前注册）
+// GET  /prompts/samples — 调试样例命例清单
+// POST /prompts/render  — 渲染「运行时真实 System Prompt」供沙盒调试
+// 闭环：沙盒调试 → 保存模板 → 用真实运行时 Prompt 复验
+// ═══════════════════════════════════════
+
+route.get('/samples', (c) => {
+  return c.json({ success: true, data: listSamples() })
+})
+
+const renderBodySchema = z.object({
+  sampleId: z.string().min(1, 'sampleId 不能为空'),
+})
+
+route.post('/render', async (c) => {
+  let body: unknown
+  try { body = await c.req.json() } catch {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: '请求体格式错误' } }, 400)
+  }
+
+  const parsed = renderBodySchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message },
+    }, 400)
+  }
+
+  try {
+    const systemPrompt = renderRuntimePrompt(parsed.data.sampleId)
+    const meta = listSamples().find(s => s.id === parsed.data.sampleId)
+
+    logAudit(c, {
+      action: 'debug',
+      resource: 'prompt_render',
+      detail: JSON.stringify({ sampleId: parsed.data.sampleId, length: systemPrompt.length }),
+    })
+
+    return c.json({
+      success: true,
+      data: {
+        sampleId: parsed.data.sampleId,
+        label: meta?.label ?? parsed.data.sampleId,
+        systemPrompt,
+        length: systemPrompt.length,
+      },
+    })
+  } catch (e: any) {
+    const isMissing = String(e?.message ?? '').startsWith('SAMPLE_NOT_FOUND')
+    return c.json({
+      success: false,
+      error: {
+        code: isMissing ? 'NOT_FOUND' : 'RENDER_ERROR',
+        message: isMissing ? '样例不存在' : `渲染失败: ${e?.message}`,
+      },
+    }, isMissing ? 404 : 500)
+  }
 })
 
 // ═══════════════════════════════════════
@@ -327,7 +392,11 @@ route.put('/:id', async (c) => {
   // ── 自动快照：更新前将当前版本存入 prompt_versions ──
   if (parsed.data.content !== undefined && parsed.data.content !== existing.content) {
     const changeNote = parsed.data.changeNote ?? '编辑更新'
-    const v = snapshotVersion(id, existing.content, changeNote)
+    const v = archiveAndBump(
+      id,
+      { version: (existing as any).version ?? 1, content: existing.content },
+      changeNote,
+    )
 
     // 版本号自动递增
     const data = { ...parsed.data, version: v } as any
@@ -366,12 +435,16 @@ route.post('/:id/rollback/:version', (c) => {
   }
 
   // 3. 先保存当前版本为快照（防止回滚不可逆）
-  snapshotVersion(id, prompt.content, `回滚前的自动存档 (→ v${targetVersion})`)
+  const v = archiveAndBump(
+    id,
+    { version: (prompt as any).version ?? 1, content: prompt.content },
+    `回滚前的自动存档 (→ v${targetVersion})`,
+  )
 
   // 4. 用目标版本的 content 覆盖当前模板
   const rolledBack = updatePrompt(id, {
     content: versionRecord.content,
-    version: getLatestVersion(id) + 1,
+    version: v,
   } as any)
 
   logAudit(c, {

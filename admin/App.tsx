@@ -66,7 +66,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage apiHeaders={auth.apiHeaders} />} />
         <Route path="/config" element={<ConfigPanel apiHeaders={auth.apiHeaders} />} />
-        <Route path="/prompts" element={<PromptEditor apiHeaders={auth.apiHeaders} />} />
+        <Route path="/prompts" element={<PromptEditor />} />
         <Route path="/guardrails" element={<GuardPanel />} />
         <Route path="/audit" element={<AuditLog apiHeaders={auth.apiHeaders} />} />
         <Route path="/llm" element={<LLMPage apiHeaders={auth.apiHeaders} />} />

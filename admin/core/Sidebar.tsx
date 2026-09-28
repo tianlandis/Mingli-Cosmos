@@ -176,7 +176,7 @@ export default function Sidebar({ onLogout, collapsed, onToggleCollapse }: Sideb
                           )
                         }
                       >
-                        {({ isActive }) => (
+                        {() => (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="relative">

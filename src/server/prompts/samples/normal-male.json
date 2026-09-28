@@ -1,0 +1,68 @@
+{
+  "chart": {
+    "birthDate": "1990-05-15",
+    "birthTime": "08:00",
+    "gender": "男",
+    "yearPillar": { "stem": "庚", "branch": "午", "stemWuXing": "金", "branchWuXing": "火", "hiddenStems": ["丁"], "ganZhi": "庚午" },
+    "monthPillar": { "stem": "辛", "branch": "巳", "stemWuXing": "金", "branchWuXing": "火", "hiddenStems": ["戊", "庚", "丙"], "ganZhi": "辛巳" },
+    "dayPillar": { "stem": "乙", "branch": "卯", "stemWuXing": "木", "branchWuXing": "木", "hiddenStems": ["乙"], "ganZhi": "乙卯" },
+    "hourPillar": { "stem": "庚", "branch": "辰", "stemWuXing": "金", "branchWuXing": "土", "hiddenStems": ["乙", "癸", "戊"], "ganZhi": "庚辰" },
+    "dayMaster": "乙",
+    "fiveElements": { "金": 4, "木": 3, "水": 0, "火": 2, "土": 2 },
+    "tenGods": [],
+    "daYun": [],
+    "currentDaYun": null,
+    "currentYear": { "stem": "丙", "branch": "午", "ganZhi": "丙午" },
+    "qiYunDays": 10,
+    "daYunForward": true
+  },
+  "annotation": {
+    "overview": { "summary": "乙木生于巳月火旺，身弱需印比扶助", "dayMaster": "乙木", "strength": "偏弱", "pattern": "偏财格", "mbti": "ISFP", "combination": "" },
+    "strengthAnalysis": { "strength": "偏弱", "score": 35, "confidence": 0.76, "reasons": ["月令巳火泄木", "年时两庚金伐木"], "classicReference": [], "components": { "yueLing": 10, "diZhiGen": 20, "tianGanBiJie": 0, "shengFu": 30, "keXieHao": 70 } },
+    "wuXingBalance": [
+      { "name": "金", "level": "偏旺", "count": 4, "advice": "官杀旺，宜印化不宜冲克" },
+      { "name": "木", "level": "偏弱", "count": 3, "advice": "日主偏弱，喜水木扶持" },
+      { "name": "水", "level": "偏弱", "count": 0, "advice": "印星缺，靠贵人相助" },
+      { "name": "火", "level": "中和", "count": 2, "advice": "食伤适度，表达力尚可" },
+      { "name": "土", "level": "中和", "count": 2, "advice": "财星适中，不善理财" }
+    ],
+    "shiShenProfile": [
+      { "name": "比肩", "count": 1, "positions": ["日干"] },
+      { "name": "劫财", "count": 0, "positions": [] },
+      { "name": "正官", "count": 3, "positions": ["年干庚", "时干庚", "年支午丁"] },
+      { "name": "偏官", "count": 0, "positions": [] },
+      { "name": "正财", "count": 0, "positions": [] },
+      { "name": "偏财", "count": 0, "positions": [] },
+      { "name": "正印", "count": 0, "positions": [] },
+      { "name": "偏印", "count": 0, "positions": [] },
+      { "name": "食神", "count": 1, "positions": ["月支巳内戊"] },
+      { "name": "伤官", "count": 1, "positions": ["月干辛"] }
+    ],
+    "patternAnalysis": {
+      "patternType": "正格", "patternName": "偏财格", "confidence": 0.68,
+      "conditions": ["月令巳中丙火透出", "日主身弱不胜财"], "quality": "平",
+      "description": "乙木生于巳月，火旺泄身，财星为忌",
+      "alternatives": [{ "name": "食伤格", "reason": "月令巳火食伤" }], "classicReference": [], "method": "月令取格", "sourceStem": "丙", "shiShen": "伤官",
+      "jiXiong": "中性", "jiXiongDesc": "财旺身弱，需印比扶持", "combination": { "name": "财旺身弱", "dominantPattern": "偏财格", "keyCombination": "财星伤官同透", "keyStem": "庚", "keyPosition": "年干", "isPure": false },
+      "poGeRisks": [{ "type": "财多累身", "description": "财旺身弱为忌", "severity": "中", "suggestion": "守成勿贪", "mbtiAdjust": "" }],
+      "mbti": { "cognitiveFunctions": "Fi-Se-Ni-Te", "typicalTypes": ["ISFP", "ISTP"], "traits": "温和内敛，不善社交", "portrait": "艺术型人格，重视实际体验", "industrySuggestions": ["设计", "工艺", "服务"], "energyAdjustments": ["提升自信", "扩展社交圈"] }
+    },
+    "luckAnalysis": {
+      "daYunList": [
+        { "ganZhi": "壬午", "startAge": 8, "endAge": 17, "interpretation": "壬水正印，少年学业不错", "quality": "佳" },
+        { "ganZhi": "癸未", "startAge": 18, "endAge": 27, "interpretation": "癸水偏印，大学深造", "quality": "平" },
+        { "ganZhi": "甲申", "startAge": 28, "endAge": 37, "interpretation": "甲木劫财，中年波折", "quality": "平" },
+        { "ganZhi": "乙酉", "startAge": 38, "endAge": 47, "interpretation": "乙木比肩，渐入佳境", "quality": "佳" }
+      ],
+      "currentYear": { "ganZhi": "丙午", "interpretation": "伤官旺年，注意口舌", "focus": ["人际", "健康"] },
+      "milestones": [{ "age": 28, "year": 2018, "ganZhi": "戊戌", "event": "职业转型", "reason": "甲申大运劫财助身" }]
+    },
+    "branchRelations": { "summary": ["日支卯与年支午破"], "items": ["卯午相破"], "kongWang": [], "heJu": [], "pillarRelations": [] },
+    "shenSha": { "summary": [], "items": [
+      { "name": "驿马", "type": "中性", "description": "日干乙见日支卯为命局驿马", "pillar": "日柱", "classicRef": "《星平会海》" }
+    ] },
+    "specialTopics": { "personality": ["温和", "内敛"], "career": ["技术", "设计", "服务"], "wealth": ["中年后渐旺"], "marriage": ["官杀旺婚迟"], "health": ["肝胆偏弱"], "children": ["子女缘一般"] },
+    "disclaimer": "以上批注内容基于传统命理学理论模型自动生成，仅供文化娱乐参考。",
+    "comprehensiveAdvice": ["加强健康管理", "稳中求进"]
+  }
+}

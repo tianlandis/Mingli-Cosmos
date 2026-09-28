@@ -39,6 +39,45 @@
 
 ---
 
+## 未发布 — Phase 4a 打磨收尾 R1~R6 (2026-09-28)
+
+> **主题**：把管理后台从"功能存在"推进到"闭环可验证"
+
+### 🔗 R1 护栏热生效闭环
+
+- 端到端验证 `GuardPanel → PUT /prompts/guards → app_configs → buildAntiHallucinationPromptDynamic() / getRejectMessage()` 全链路，14 项测试覆盖「未配置回退 / 保存热生效 / 损坏回退 / 前后端默认值一致性」。
+- 前端"已修改"判定改为对比**服务端返回的当前生效配置**，不再依赖前端另存的一份默认值副本。
+
+### 🧪 R3 Debug 闭环（含一处真断点修复）
+
+- **断点**：此前 `prompt_templates` 中的模板内容**不参与运行时**，沙盒里调试的 Prompt 与真实对话实际使用的 Prompt 是两套。
+- 修复：运行时 `buildSystemPrompt()` 支持「管理员自定义指令」段（仅消费 `isActive=1` 的自定义模板，默认无则行为完全不变）。
+- 新增 `GET /prompts/samples`、`POST /prompts/render`：可用内置命例渲染**运行时真实 System Prompt**。
+- 沙盒抽出为 `admin/modules/prompts/DebugPanel.tsx`，支持「编辑器内容 / 运行时真实 Prompt」双来源调试。
+
+### 🛡 R4 L3 护栏回退兜底
+
+- 新增结构校验 `isValidGuards()`：8 条规则必须齐全、名称在白名单内、内容非空、拒绝话术非空、无重名 —— 任一不满足**整体回退**内置常量，避免管理员误删关键规则导致防幻觉失效。
+- `L1_RULE_NAMES` 提为唯一权威来源（`anti-hallucination.ts` 导出，管理后台 Zod 校验 import 复用）。
+
+### 🕓 R6 版本回滚演练
+
+- **修正版本推进逻辑**：原实现首次编辑后版本号仍为 1，与快照版本号撞号。现为「先归档当前内容 → 再推进版本号」，回滚动作本身也会存档（可再次回滚）。
+- 后台回滚弹窗新增行级 diff 对比（+/- 统计 + 逐行着色）。
+
+### 🧱 附带修复
+
+- **`admin/` 目录从未参与类型检查**：`tsconfig.app.json` 的 `include` 由 `["src"]` 扩展为 `["src", "admin"]`，并修掉暴露的 19 处错误（含 `App.tsx` 向 `PromptEditor` 传不存在的 props、`GuardPanel` 读取不存在的 `json.source` 两处真 bug）。
+- 新增 `isDbReady()`：DB 未初始化时走纯代码回退，防止可选增强逻辑误建真实库文件。
+
+### ✅ 验证
+
+- `tsc -b --noEmit` → 零错误（含 `admin/` 21 个文件）
+- `vitest run`（Node 26）→ **252 passed / 0 failed**（12 个文件，新增 38 项）
+- `vite build` → 成功
+
+---
+
 ## v4.1.0 — Phase 4d 规则字典大闭环 (2026-06-24)
 
 > **主题**：35/35 项全量规则字典 + 五分类完整体系

@@ -7,7 +7,7 @@
 // ⚠️ v3 修复：全局调色对齐"玄青朱砂"系统配色（border-white/[0.06] / bg-[#1A2332]）
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Shield,
   ShieldAlert,
@@ -21,7 +21,6 @@ import {
   ChevronUp,
   Globe,
   MessageSquareOff,
-  HelpCircle,
   Info,
 } from 'lucide-react'
 import { api } from '../../lib/api'
@@ -145,7 +144,16 @@ export default function GuardPanel() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [source, setSource] = useState<'builtin' | 'db'>('builtin')
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
-  const [dirty, setDirty] = useState(false)
+  // 基线快照：以「服务端返回的当前生效配置」为准判断是否有未保存改动，
+  // 避免与后端 buildDefaultGuards() 重复维护一份默认值导致的判定漂移
+  const [baseline, setBaseline] = useState<GuardsPayload | null>(null)
+
+  const dirty = useMemo(() => {
+    if (!baseline) return false
+    if (rejectMsg !== baseline.l1RejectMessage) return true
+    if (rules.length !== baseline.l1Rules.length) return true
+    return rules.some((r, i) => r.content !== baseline.l1Rules[i]?.content)
+  }, [baseline, rules, rejectMsg])
 
   // ── 加载当前护栏配置 ──
   const loadGuards = useCallback(async () => {
@@ -159,9 +167,9 @@ export default function GuardPanel() {
       if (json.data) {
         setRules(json.data.l1Rules)
         setRejectMsg(json.data.l1RejectMessage)
-        setSource((json.data as any).source || json.source || 'builtin')
-        setUpdatedAt((json.data as any).updatedAt || json.updatedAt || null)
-        setDirty(false)
+        setBaseline({ l1Rules: json.data.l1Rules, l1RejectMessage: json.data.l1RejectMessage })
+        setSource(((json.data as any).source as 'builtin' | 'db') || 'builtin')
+        setUpdatedAt((json.data as any).updatedAt ?? null)
       }
     } catch (e: any) {
       setError(`加载护栏配置失败: ${e.message}`)
@@ -188,7 +196,10 @@ export default function GuardPanel() {
       setSuccessMsg(json.message || '护栏规则已保存')
       setUpdatedAt((json.data as any)?.updatedAt || new Date().toISOString())
       setSource('db')
-      setDirty(false)
+      // 保存成功后刷新基线：以服务端回显内容为准
+      if (json.data?.l1Rules) {
+        setBaseline({ l1Rules: json.data.l1Rules, l1RejectMessage: json.data.l1RejectMessage })
+      }
       setTimeout(() => setSuccessMsg(null), 4000)
     } catch (e: any) {
       setError(`保存失败: ${e.message}`)
@@ -201,7 +212,6 @@ export default function GuardPanel() {
   const handleReset = useCallback(() => {
     setRules(BUILTIN_DEFAULTS.l1Rules)
     setRejectMsg(BUILTIN_DEFAULTS.l1RejectMessage)
-    setDirty(true)
   }, [])
 
   // ── 切换单条规则展开/折叠 ──
@@ -217,7 +227,6 @@ export default function GuardPanel() {
   // ── 编辑单条规则 ──
   const updateRule = (name: string, content: string) => {
     setRules(prev => prev.map(r => (r.name === name ? { ...r, content } : r)))
-    setDirty(true)
   }
 
   // ═══════════════════════════════════════
@@ -337,10 +346,7 @@ export default function GuardPanel() {
           </div>
           <textarea
             value={rejectMsg}
-            onChange={e => {
-              setRejectMsg(e.target.value)
-              setDirty(true)
-            }}
+            onChange={e => setRejectMsg(e.target.value)}
             rows={3}
             className="w-full px-3 py-2.5 bg-[#1A2332] border border-white/[0.08] rounded-md text-xs text-[#D8D2C8] placeholder:text-[#6B6459] resize-none focus:outline-none focus:border-[#C04030]/50 transition-colors font-mono leading-relaxed"
             placeholder="输入拒绝排盘的标准话术..."
@@ -400,9 +406,8 @@ export default function GuardPanel() {
                     </Tooltip>
                   </TooltipProvider>
                   {rule.content !==
-                    BUILTIN_DEFAULTS.l1Rules.find(r => r.name === rule.name)
-                      ?.content && (
-                    <span className="inline-block size-1.5 rounded-full bg-[#B8964A] shrink-0" title="已修改" />
+                    baseline?.l1Rules.find(r => r.name === rule.name)?.content && (
+                    <span className="inline-block size-1.5 rounded-full bg-[#B8964A] shrink-0" title="与当前生效配置不同" />
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-3">

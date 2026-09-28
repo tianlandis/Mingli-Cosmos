@@ -81,32 +81,67 @@ export function buildAntiHallucinationPrompt(
 // L3: DB 动态热加载（Phase 4.11）
 // ═══════════════════════════════════════
 
-interface GuardRuleItem {
+export interface GuardRuleItem {
   name: string
   label: string
   content: string
 }
 
-interface GuardsPayload {
+export interface GuardsPayload {
   l1Rules: GuardRuleItem[]
   l1RejectMessage: string
 }
 
 /**
+ * L1 规则白名单（唯一权威来源）
+ * 管理后台的 Zod 校验与运行时回退判定均以此为准，避免两份清单漂移
+ */
+export const L1_RULE_NAMES = [
+  'corePositioning', 'toolAuthorization',
+  'rule0_noPaipan', 'rule1_dataLock', 'rule2_noAbsolute',
+  'rule3_safety', 'rule4_style', 'rule5_topicBoundary',
+] as const
+
+/**
+ * 护栏结构校验（R4 兜底的核心）
+ *
+ * 只要 DB 中的规则不满足「完整 + 关键规则在位 + 内容非空」，
+ * 一律整体回退硬编码常量——宁可用内置安全规则，也不能让残缺的护栏上线
+ */
+function isValidGuards(data: unknown): data is GuardsPayload {
+  if (!data || typeof data !== 'object') return false
+  const g = data as Partial<GuardsPayload>
+
+  if (!Array.isArray(g.l1Rules) || g.l1Rules.length !== L1_RULE_NAMES.length) return false
+  if (typeof g.l1RejectMessage !== 'string' || g.l1RejectMessage.trim().length === 0) return false
+
+  const seen = new Set<string>()
+  for (const rule of g.l1Rules) {
+    if (!rule || typeof rule.name !== 'string') return false
+    if (!(L1_RULE_NAMES as readonly string[]).includes(rule.name)) return false
+    if (typeof rule.content !== 'string' || rule.content.trim().length === 0) return false
+    if (seen.has(rule.name)) return false
+    seen.add(rule.name)
+  }
+  return seen.size === L1_RULE_NAMES.length
+}
+
+/**
  * 从 app_configs 表加载防幻觉护栏规则
- * 若 DB 无自定义配置 → 回退到 buildAntiHallucinationPrompt 硬编码常量
+ * 若 DB 无配置 / 配置损坏 / 结构不全 → 回退到 buildAntiHallucinationPrompt 硬编码常量
  */
 function loadGuardsFromDB(): GuardsPayload | null {
   try {
     const row = getConfig('anti_hallucination_rules')
     if (row?.value) {
-      const parsed = JSON.parse(row.value) as GuardsPayload
-      if (parsed.l1Rules && parsed.l1Rules.length > 0) {
+      const parsed = JSON.parse(row.value) as unknown
+      if (isValidGuards(parsed)) {
         return parsed
       }
+      console.warn('[Guardrail] DB 护栏配置结构不完整，已回退内置默认规则')
     }
   } catch {
-    // DB 不可用时静默回退
+    // DB 不可用 / JSON 损坏时静默回退
   }
   return null
 }

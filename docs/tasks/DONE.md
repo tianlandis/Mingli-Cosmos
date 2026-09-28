@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-09-28 — Phase 4a 打磨收尾 R1~R6 全闭环 ✅
+
+> 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**252/252** ｜ `vite build` 通过
+
+| ID | 任务 | 交付 | 测试 |
+|:---:|------|------|------|
+| R1 | 护栏热生效闭环 | 端到端验证 `GuardPanel → PUT /prompts/guards → app_configs → buildAntiHallucinationPromptDynamic()` 全链路；前端"已修改"判定改为对比服务端基线，消除前后端两份默认值漂移 | `guards.test.ts` 14 项 |
+| R2 | Prompt 编辑器自解释 | 新增 `HelpTip` 组件；模板标识/版本号、启用开关、用途说明、系统锁定区、版本历史、停用标记全部补齐 tooltip | — |
+| R3 | Debug 闭环 | **修复断点**：此前 `prompt_templates` 内容运行时不消费，沙盒调试与真实对话是两套。现新增 `GET /samples` + `POST /render`，运行时 System Prompt 支持管理员自定义指令段；沙盒抽出为 `DebugPanel.tsx` 并支持「编辑器内容 / 运行时真实 Prompt」双来源 | `debug-loop.test.ts` 10 项 |
+| R4 | L3 护栏热编辑 + 回退兜底 | 新增 `isValidGuards()` 结构校验（8 条规则在位 + 白名单 + 内容非空 + 话术非空 + 无重名），任一不满足即整体回退硬编码；`L1_RULE_NAMES` 提为唯一权威来源，管理后台 Zod 校验改为 import | `guards.test.ts` +7 项 |
+| R6 | 版本回滚演练 | 修正版本推进逻辑（原首次编辑后版本号仍为 1、与快照撞号）；回滚前自动存档可再回滚；后台新增行级 diff 对比视图 | `versions.test.ts` 7 项 |
+
+### 附带修复
+
+- **`admin/` 从未被类型检查**：`tsconfig.app.json` 的 `include` 只有 `src`，管理后台 21 个文件长期裸奔。已纳入并修掉 19 处错误（含 `App.tsx` 给 `PromptEditor` 传不存在 props、`GuardPanel` 读 `json.source` 不存在字段两处真 bug）。
+- 新增 `isDbReady()`：DB 未初始化时纯代码回退，避免可选增强逻辑误建真实库文件。
+
+### 新增文件
+
+- `src/server/modules/__tests__/guards.test.ts`、`debug-loop.test.ts`、`versions.test.ts`
+- `src/server/prompts/samples.ts` + `src/server/prompts/samples/`（3 个调试命例）
+- `admin/modules/prompts/DebugPanel.tsx`
+
+---
+
 ## 2026-09-28 — 工程基线修复：tsc 全绿 + 214/214 + build 通过 🧱
 
 ### 背景
