@@ -61,7 +61,7 @@
 
 | key | 默认 | 说明 |
 |---|---|---|
-| `chart_verify_mode` | `off` | `off` / `warn` / `enforce` |
+| `chart_verify_mode` | `off`（**生产 2026-09-29 已置 `warn`**） | `off` / `warn` / `enforce` |
 | `quota_enforce_chat` | 生产 `true`，其他 `false` | AI 对话扣减额度 |
 | `payment_notify_secret` | 空 → 回调关闭 | 回调签名密钥（默认安全） |
 | `consent_privacy_version` / `consent_agreement_version` | `v1.0` | 协议版本号 |
@@ -126,10 +126,13 @@
 3. **P5-4 灰度**：生产 `quota_enforce_chat` 现为 `true`（转正）——「失败不计费」已由回归测试 +
    真实端到端验证（见上「部署后自测发现的缺陷与修复」）。上线后观察 `quota_ledger`
    增长与 402 比例即可；如遇异常，后台一键改回 `false` 即恢复放行。
-4. **P5-3 灰度**：`chart_verify_mode` 建议 `off → warn → enforce` 三步走，
-   观察日志中的 `CHART_MISMATCH_WARN` 比例。**前端已于 2026-09-29 切到 `/api/v1/app/chart`**
-   （服务端优先 + 本地兜底，`sessionId` 透传至对话 → 对话走权威快照 `source=session/verified=true`），
-   即"前端切换到权威端点"这一前提已满足，可按 `off → warn` 推进。
+4. **P5-3 灰度**：`chart_verify_mode` 三步走 `off → warn → enforce`。
+   · **已完成 `off → warn`（2026-09-29）**：前端切到 `/api/v1/app/chart` 后（服务端优先 + 本地兜底，
+     `sessionId` 透传至对话 → 对话走权威快照 `source=session/verified=true`），灰度前提已满足，
+     生产经后台 `POST /api/v1/admin/config` 置 `warn`，并实测触发
+     `[ChartSource] CHART_MISMATCH_WARN`（放行 + 记差异）。
+   · **待推进 `warn → enforce`**：观察一段时间 `CHART_MISMATCH_WARN` 比例，确认无不一致（即无异常客户端）
+     后再切 `enforce`（不一致直接 409）。**回退**：后台改回 `off` 即可，无需发版。
 5. **P5-5**：`payment_notify_secret` 保持空（回调关闭）直到真实渠道接入并完成证书/域名准备。
 
 ## 剩余（需外部输入，非代码问题）

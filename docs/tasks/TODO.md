@@ -104,14 +104,15 @@
 
 | 项 | 任务 | 关联 | 提交 |
 |:--|------|:--|:--|
-| 11 | **阶段1**：`sessions` 加 `system` 列（`ALTER TABLE ... DEFAULT 'bazi'` 在线回填）+ 索引 | ADR-011 | 本批 |
-| 12 | **阶段2**：`SystemEngine` 接口 + `bazi` 薄适配器（包住封版引擎，`engine/` 零改动）+ 注册表 | ADR-011 | 本批 |
-| 13 | **阶段3**：`resolveContext` 泛化 + prompt 按体系路由（`buildSystemPromptFor`，**行为等价**） | ADR-011 | 本批 |
-| 14 | **可插拔性回归**：`systems/__tests__/registry.test.ts`（注册 mock 体系即插即用 + 八字 prompt 逐字等价） | ADR-011 | 本批 |
-| 15 | **生产上线**：备份 → `docker compose up -d --build` → 深度健康检查 | 部署 | 本批 |
-| 16 | **`chart_verify_mode` → `warn`**：前端已切服务端权威，灰度前提满足（回退仅需改回 `off`） | ADR-005 | 本批 |
+| 11 | **阶段1**：`sessions` 加 `system` 列（`ALTER TABLE ... DEFAULT 'bazi'` 在线回填）+ 索引 | ADR-011 | `38a526b` |
+| 12 | **阶段2**：`SystemEngine` 接口 + `bazi` 薄适配器（包住封版引擎，`engine/` 零改动）+ 注册表 | ADR-011 | `38a526b` |
+| 13 | **阶段3**：`resolveContext` 泛化 + prompt 按体系路由（`buildSystemPromptFor`，**行为等价**） | ADR-011 | `38a526b` |
+| 14 | **可插拔性回归**：`systems/__tests__/registry.test.ts`（注册 mock 体系即插即用 + 八字 prompt 逐字等价） | ADR-011 | `38a526b` |
+| 15 | **生产上线**：备份 → `docker compose up -d --build` → 深度健康检查（生产新 `38a526b`，`sessions.system` 迁移已回填） | 部署 | `38a526b` |
+| 16 | **`chart_verify_mode` → `warn`**：经后台接口置 `warn`，实测触发 `CHART_MISMATCH_WARN`（回退仅需改回 `off`） | ADR-005 | 运维 |
 
-**本批验收**：`typecheck` 0 错 ｜ `vitest` **417/417**（24 文件）｜ `build` 通过 ｜ `smoke` **42/42** ｜ 实测 `system=bazi`→200、`system=astro`→400。
+**本批验收**：`typecheck` 0 错 ｜ `vitest` **417/417**（24 文件）｜ `build` 通过 ｜ **本地 + 生产** `smoke` **42/42** ｜ 实测 `system=bazi`→200、`system=astro`→400、warn 闸门触发。
+**安全锚点**：GitHub tag `pre-system-registry-20260929`（泛化前）/ `deploy-20260929-adr011`（上线后）；生产库备份 `mingli-20260928-132939.db`。
 
 ---
 

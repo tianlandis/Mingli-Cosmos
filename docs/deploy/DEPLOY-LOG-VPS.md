@@ -156,3 +156,28 @@ cp /proc/$DB_PID/fd/28 /opt/mingli/recovery/live.db-wal
 > **持久化数据绝不能放在会被 `git` 改写的目录里。**
 > 应用"看起来正常"不等于数据安全——要核对**磁盘文件**与**进程 fd 指向的 inode**是否一致。
 > 部署脚本的 `git reset --hard` / `git pull` 是**高危操作**，必须确认工作树内没有运行期数据。
+
+---
+
+## 九、部署记录 · 2026-09-29（ADR-011 多体系注册表泛化 + 灰度）
+
+> **上线版本**：`40aa587` → **`38a526b`**（master）｜**方式**：`git pull` + `docker compose up -d --build`
+> **安全锚点**：GitHub tag `pre-system-registry-20260929`（泛化前）、`deploy-20260929-adr011`（上线后）
+
+| 步骤 | 命令 / 动作 | 结果 |
+|---|---|---|
+| 1. 备份（部署前强制） | `python3 scripts/backup-db.py --db /opt/mingli-data/mingli.db --out /opt/mingli/backups --retain 14` | ✅ `mingli-20260928-132939.db`（304 KiB） |
+| 2. 数据守卫生效 | `git ls-files -- data logs` | ✅ `tracked_count=0`（未跟踪运行期数据） |
+| 3. 拉代码 | `git pull --ff-only origin master` | ✅ `40aa587 → 38a526b`（8 commits） |
+| 4. 构建 + 启动 | `docker compose up -d --build` | ✅ 镜像重建，`bazipaipan-prod` Recreated → Started（约 79s） |
+| 5. 迁移（自动幂等） | 容器重启执行 `runMigrations` | ✅ `sessions.system` 新增列 + `idx_sessions_system`；2 条历史会话回填 `bazi` |
+| 6. 深度健康 | `GET /api/health/deep` | ✅ 200 |
+| 7. 计算权威端点 | `POST /api/v1/app/chart` | ✅ `system=bazi` → 200（`v4.1.0` / `v1:…`）；`system=astro` → 400 `UNKNOWN_SYSTEM` |
+| 8. 灰度 `chart_verify_mode` | `POST /api/v1/admin/config` → `warn` | ✅ `off → warn`；实测触发 `[ChartSource] CHART_MISMATCH_WARN`（放行 + 记差异） |
+| 9. 生产冒烟 | `BASE=http://216.167.120.225:3001 node scripts/smoke-e2e.mjs` | ✅ **42 / 42 通过** |
+
+**本批变更**：`sessions` 增 `system` 维度（多体系注册表阶段 1~3，引擎零侵入）。
+**回滚预案**：代码 `git reset --hard pre-system-registry-20260929` + 重建镜像；
+配置 `chart_verify_mode` 后台改回 `off`（无需发版）；数据（如需）用 step 1 备份恢复。
+
+---
