@@ -2,6 +2,35 @@
 
 ---
 
+## 未发布 — 🔴 安全修复：ADMIN_PASSWORD 被静默忽略导致默认弱口令可用 (2026-09-28)
+
+> **发现场景**：首次部署到生产 VPS（216.167.120.225）后跑端到端冒烟，
+> 后台登录用 `.env` 中设置的 `ADMIN_PASSWORD` 却返回 401。深挖后确认：
+> **生产环境后台一直可以用内置默认密码 `mingli2026` 登录。**
+
+### 缺陷链路
+
+1. `src/server/modules/auth/index.ts` 在**模块顶层**读取配置：
+   `const DEFAULT_PASSWORD = process.env.ADMIN_PASSWORD || 'mingli2026'`
+2. 该模块的求值时机可能早于 `import 'dotenv/config'` 完成注入 → 读到 `undefined` → 落到内置默认值
+3. 首次登录时把「内置默认值」的 bcrypt 哈希写入 `app_configs.admin_password_hash`
+4. 而密码来源优先级是 **DB > env**，于是此后再改 `.env` 也**永远不会生效**
+5. 结果：部署方以为已设置强密码，实际后台弱口令公网可用
+
+### 修复
+
+- **环境变量改为惰性读取**（`adminUsername()` / `resolveConfiguredPassword()` 调用时求值），彻底消除模块求值时序依赖
+- 新增 `ensureAdminPasswordInitialized()`：在 `initDb()` 之后由启动流程**显式初始化**密码哈希，不再依赖「第一次有人登录」这个不确定时机
+- 启动时打印密码来源，并对以下情况**显式告警**：
+  - 未设置 `ADMIN_PASSWORD` → 「后台正在使用内置默认密码，请立即修改」
+  - DB 中仍是内置默认密码 → 「管理员仍在使用内置默认密码」
+  - `.env` 与 DB 不一致（DB 优先）→ 提示如何让环境变量生效
+- 新增 `src/server/modules/__tests__/admin-password.test.ts`（5 项）：含
+  「启动自检写入 env 密码而非默认值」「默认密码必须登录失败」等回归用例；
+  该测试刻意在模块加载**之后**设置 env，旧实现在此必然失败
+
+---
+
 ## 未发布 — 上线前加固：端到端冒烟 + 登录限流缺陷修复 (2026-09-28)
 
 > **主题**：单测全绿 ≠ 真实运行态可用。补一条真实服务的端到端冒烟链路，并修复冒烟暴露的可用性缺陷

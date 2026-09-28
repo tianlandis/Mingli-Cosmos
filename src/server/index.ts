@@ -13,6 +13,7 @@ import { createApp } from './core/app'
 import { initDb, closeDb } from './db'
 import { logger, closeLogger } from './lib/logger'
 import { bootKnowledgeRegistry } from './services/KnowledgeProvider'
+import { ensureAdminPasswordInitialized } from './modules/auth'
 
 // ═══════════════════════════════════════
 // 环境判定
@@ -30,6 +31,8 @@ if (process.env.DB_ENABLED !== 'false') {
   // Phase 4b：加载知识资产到引擎侧 Registry
   const { loaded, errors } = bootKnowledgeRegistry()
   console.log(`[Knowledge] Registry booted: ${loaded} assets loaded${errors > 0 ? `, ${errors} parse errors` : ''}`)
+  // 安全自检：确保管理员密码就位（避免部署时 ADMIN_PASSWORD 被静默忽略）
+  ensureAdminPasswordInitialized()
 }
 
 // ═══════════════════════════════════════

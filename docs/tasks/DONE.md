@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-09-28 — 🔴 安全修复：ADMIN_PASSWORD 静默失效（默认弱口令）✅
+
+> 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run` **320/320**（16 文件）
+> ｜ 生产实测：新密码可登录、`mingli2026` 被拒
+
+| 落点 | 内容 |
+|------|------|
+| 根因 | `auth/index.ts` 模块顶层常量读 `process.env.ADMIN_PASSWORD`，求值早于 dotenv 注入 → 落到内置默认值并写入 DB；而 DB 优先级最高，此后改 `.env` 永不生效 |
+| 修复 | 环境变量全部惰性读取；新增 `ensureAdminPasswordInitialized()` 在 `initDb()` 后显式初始化，并打印密码来源 / 弱口令告警 / env 与 DB 不一致提示 |
+| 回归测试 | `src/server/modules/__tests__/admin-password.test.ts`（5 项）：自检写入 env 密码、默认密码必须 401、DB 已有记录不被覆盖 |
+
+> 教训：**配置读取不要放在模块顶层**。凡是「模块加载可能早于配置注入」的场景
+> （dotenv / 容器注入 / 单测注入），一律惰性读取，并在启动时显式初始化 + 自检告警。
+
+---
+
 ## 2026-09-28 — 端到端冒烟 + 登录限流缺陷修复 ✅
 
 > 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**315/315**（15 文件）｜ `vite build` 通过

@@ -53,12 +53,26 @@ const revokeBodySchema = z.object({
 // 管理员密码管理（DB 持久化）
 // ═══════════════════════════════════════
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
-const DEFAULT_PASSWORD = process.env.ADMIN_PASSWORD || 'mingli2026'
+/** 内置兜底密码：仅当既无 DB 记录、又未设置 ADMIN_PASSWORD 时使用，会打印安全警告 */
+export const FALLBACK_ADMIN_PASSWORD = 'mingli2026'
+
+/**
+ * ⚠️ 必须惰性求值，不能在模块顶层读 process.env。
+ * 2026-09-28 生产事故复盘：模块顶层 `const DEFAULT_PASSWORD = process.env.ADMIN_PASSWORD || 'mingli2026'`
+ * 在 dotenv 注入完成前即被求值，导致部署时 `.env` 里设置的 ADMIN_PASSWORD 被静默忽略，
+ * 生产环境后台一直可用内置弱口令 `mingli2026` 登录。
+ */
+function adminUsername(): string {
+  return process.env.ADMIN_USERNAME || 'admin'
+}
+
+function resolveConfiguredPassword(): string {
+  return process.env.ADMIN_PASSWORD || FALLBACK_ADMIN_PASSWORD
+}
 
 /**
  * 获取当前生效的管理员密码 hash
- * 优先级：app_configs (key='admin_password_hash') > env ADMIN_PASSWORD > 默认
+ * 优先级：app_configs (key='admin_password_hash') > env ADMIN_PASSWORD > 内置兜底
  */
 function getAdminPasswordHash(): string {
   try {
@@ -70,7 +84,7 @@ function getAdminPasswordHash(): string {
   } catch { /* DB 未就绪时回退 */ }
 
   // 回退：使用环境变量，并自动写入 DB
-  const hash = bcrypt.hashSync(DEFAULT_PASSWORD, 10)
+  const hash = bcrypt.hashSync(resolveConfiguredPassword(), 10)
   try {
     getDb().insert(appConfigs).values({
       key: 'admin_password_hash',
@@ -106,6 +120,60 @@ function updateAdminPasswordHash(newHash: string): void {
     target: appConfigs.key,
     set: { value: newHash },
   }).run()
+}
+
+/**
+ * 启动自检：确保管理员密码就位，并把安全风险显式打到启动日志。
+ * 必须在 initDb() 之后调用（见 src/server/index.ts）。
+ *
+ * 解决的问题：原先密码只在「第一次有人登录」时才写入 DB ——
+ * 一旦初始化时 env 尚未生效，DB 就被写死成内置默认密码，且此后一直优先于 env，
+ * 部署方改了 .env 也不会生效（静默弱口令）。
+ */
+export function ensureAdminPasswordInitialized(): void {
+  const configured = process.env.ADMIN_PASSWORD
+  let existing: string | undefined
+  try {
+    existing = getDb().select({ value: appConfigs.value })
+      .from(appConfigs)
+      .where(eq(appConfigs.key, 'admin_password_hash'))
+      .get()?.value
+  } catch { /* DB 未就绪则跳过自检 */ }
+
+  if (!existing) {
+    const hash = bcrypt.hashSync(resolveConfiguredPassword(), 10)
+    try {
+      getDb().insert(appConfigs).values({
+        key: 'admin_password_hash',
+        value: hash,
+        displayName: '管理员密码哈希',
+        description: 'BCrypt hash of the admin password',
+        valueType: 'string',
+        category: 'security',
+      }).onConflictDoUpdate({
+        target: appConfigs.key,
+        set: { value: hash },
+      }).run()
+      console.log(`[Auth] 管理员密码已初始化（来源：${configured ? 'ADMIN_PASSWORD 环境变量' : '内置默认值'}）`)
+    } catch (e) {
+      console.warn('[Auth] 管理员密码初始化失败：', e)
+    }
+    if (!configured) {
+      console.warn('[Auth] ⚠️ 安全告警：未设置 ADMIN_PASSWORD，后台正在使用内置默认密码，请立即修改！')
+    }
+    return
+  }
+
+  if (bcrypt.compareSync(FALLBACK_ADMIN_PASSWORD, existing)) {
+    console.warn('[Auth] ⚠️ 安全告警：后台管理员仍在使用内置默认密码，请立即通过后台或 ADMIN_PASSWORD 修改！')
+  } else if (configured && !bcrypt.compareSync(configured, existing)) {
+    console.warn(
+      '[Auth] 提示：ADMIN_PASSWORD 与数据库中的密码不一致（数据库优先，环境变量未生效）。'
+      + '如需让环境变量生效，请删除 app_configs 表中 key=admin_password_hash 的记录后重启。',
+    )
+  } else {
+    console.log('[Auth] 管理员密码就绪（来源：数据库）')
+  }
 }
 
 // ═══════════════════════════════════════
@@ -146,7 +214,7 @@ route.post('/login', loginRateLimit(), async (c) => {
   }
 
   // 验证凭据
-  if (username !== ADMIN_USERNAME || !verifyAdminPassword(password)) {
+  if (username !== adminUsername() || !verifyAdminPassword(password)) {
     recordLoginFailure(clientIp, username)
     return c.json({
       success: false,
@@ -231,7 +299,7 @@ route.put('/password', authMiddleware, async (c) => {
 
   // 强制所有会话下线（安全措施）
   const user = c.get('adminUser')
-  const username = user?.username || ADMIN_USERNAME
+  const username = user?.username || adminUsername()
   invalidateAllSessions(username)
 
   logAudit(c, { action: 'update', resource: 'auth', detail: `管理员 ${username} 修改了密码，所有会话已强制下线` })
