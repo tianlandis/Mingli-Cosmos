@@ -17,6 +17,51 @@
 
 ---
 
+## 〇·五、1Panel 环境专用路线（服务器已装 1Panel 时走这条）
+
+> 实测环境：`1Panel` 面板（含 OpenResty）已占用 **80 端口**，`443` 默认未放行，
+> 应用容器只映射 `3001`。因此**不要用 `certbot --nginx`**（会改写面板托管的配置），
+> 改为「面板建反代站点 + 面板一键签 SSL」。
+
+### 步骤
+
+1. **放行端口**：云服务器安全组 / 系统防火墙开放 `80`、`443`（面板端口 `28322` 与 SSH 已开）。
+   > 1Panel：面板设置 → 安全 → 防火墙；云厂商控制台还需同步开安全组。
+2. **装 Docker**：1Panel → 应用商店 → 搜索 `Docker` / `Docker Compose` → 安装。
+3. **部署应用**（面板 → 终端，或 SSH 执行）：
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/tianlandis/Mingli-Cosmos/master/scripts/deploy-vps.sh -o /tmp/deploy.sh
+   bash /tmp/deploy.sh          # 默认装到 /opt/mingli
+   vi /opt/mingli/.env          # 必须填 LLM_API_KEY
+   cd /opt/mingli && docker compose up -d
+   ```
+4. **建反代站点**：1Panel → 网站 → 创建网站 → 类型选「**反向代理**」
+   - 主域名：你的域名（无域名可先填服务器 IP）
+   - 代理地址：`http://127.0.0.1:3001`
+5. **确认 SSE 参数**（站点 → 反向代理 → 配置文件）：
+   ```nginx
+   proxy_buffering off;                # 关闭缓冲，否则 AI 回答会「整段一次性出现」
+   proxy_cache off;
+   proxy_read_timeout 300s;            # 长连接 5 分钟
+   proxy_http_version 1.1;
+   proxy_set_header Host $host;
+   proxy_set_header X-Real-IP $remote_addr;
+   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;   # 登录限流按 IP，必须透传
+   proxy_set_header X-Forwarded-Proto $scheme;
+   ```
+6. **签 SSL**：站点 → SSL → Let's Encrypt → 申请（面板自动续期）。
+7. **验收**：`BASE=https://你的域名 node scripts/smoke-e2e.mjs`（期望 26/26）。
+
+### 与命令行路线（certbot）的区别
+
+| 项 | 1Panel 路线 | 命令行 certbot 路线 |
+|---:|---|---|
+| 80 端口归属 | 面板 OpenResty | 面板 OpenResty（同样被占用） |
+| SSL 签发 | 面板一键 + 自动续期 | `certbot --nginx` 可能改写面板配置 ⚠️ |
+| 配置维护 | 面板 UI，可视化 | 手写 nginx.conf |
+
+---
+
 ## 一、D-4 域名绑定 + SSL
 
 ```bash

@@ -37,6 +37,11 @@ if (process.env.DB_ENABLED !== 'false') {
 // ═══════════════════════════════════════
 
 const port = Number(process.env.SERVER_PORT) || 3001
+/**
+ * 监听地址：默认 0.0.0.0（Docker 容器内必须如此，否则端口映射无法访问）
+ * 仅非容器直连部署时可设 SERVER_HOST=127.0.0.1 让服务只接受本机反代
+ */
+const hostname = process.env.SERVER_HOST || '0.0.0.0'
 
 // ═══════════════════════════════════════
 // 启动辅助：带 TIME_WAIT 重试
@@ -44,7 +49,7 @@ const port = Number(process.env.SERVER_PORT) || 3001
 
 function startServer(app: any, port: number, isProduction: boolean, retries = 10, delay = 3000) {
   try {
-    const srv = serve({ fetch: app.fetch, port }, (info) => {
+    const srv = serve({ fetch: app.fetch, port, hostname }, (info) => {
       const mode = isProduction ? 'production' : 'development'
       logger.info('server', '服务器启动', {
         port: info.port,
@@ -52,7 +57,7 @@ function startServer(app: any, port: number, isProduction: boolean, retries = 10
         nodeVersion: process.version,
         logEnabled,
       })
-      console.log(`[Server] Hono listening on http://localhost:${info.port}`)
+      console.log(`[Server] Hono listening on http://${hostname}:${info.port}`)
       console.log(`[Server] Mode: ${mode}`)
       console.log(`[Server] Health:   http://localhost:${info.port}/api/health`)
       console.log(`[Server] Admin V1: http://localhost:${info.port}/api/v1/admin/*`)
