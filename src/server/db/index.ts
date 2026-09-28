@@ -117,3 +117,6 @@ export * from './repositories/analytics'
 // Phase 5：额度幂等台账（P5-4）/ 告知同意（P5-6）
 export * from './repositories/quota'
 export * from './repositories/consent'
+// [ADR-012] 数据域分层：生辰档案（用户身份域）/ AI 调用明细（运营分析域）
+export * from './repositories/birth-profiles'
+export * from './repositories/llm-call-logs'

@@ -48,6 +48,9 @@ import {
   CONSENT_TYPES,
   createAuditLog,
   getConfig,
+  // [ADR-012] 生辰档案（用户身份域 · 核心 PII）
+  listBirthProfilesByUser,
+  deleteBirthProfilesByUser,
 } from '../../db'
 import { getActiveSubscription } from '../../db'
 import { trackEvent, type UserRow } from '../../db'
@@ -453,6 +456,13 @@ route.get('/data/export', userAuthMiddleware, (c) => {
       exportedAt: new Date().toISOString(),
       notice: '本文件包含您的个人信息（含生辰），请妥善保管',
       user: sanitize(user),
+      // [ADR-012] 生辰档案（含核心 PII，随导出一并交付）
+      birthProfiles: listBirthProfilesByUser(user.id).map(p => ({
+        id: p.id, label: p.label, calendarType: p.calendarType,
+        birthYear: p.birthYear, birthMonth: p.birthMonth, birthDay: p.birthDay,
+        birthHour: p.birthHour, birthMinute: p.birthMinute, isLeapMonth: p.isLeapMonth === 1,
+        gender: p.gender, isDefault: p.isDefault === 1, createdAt: p.createdAt,
+      })),
       consents: listConsentsByUser(user.id).map(r => ({
         type: r.type, version: r.version, agreed: r.agreed === 1, createdAt: r.createdAt,
       })),
@@ -500,6 +510,8 @@ route.delete('/data', userAuthMiddleware, async (c) => {
 
   // 1) 硬删 PII：排盘快照（含生辰）
   const purgedCharts = deleteSessionsByUser(user.id)
+  // 1b) [ADR-012] 硬删 PII：生辰档案
+  const purgedProfiles = deleteBirthProfilesByUser(user.id)
   // 2) 匿名化埋点（保留统计价值，抹除身份关联）
   const anonymizedEvents = anonymizeEventsByUser(user.id)
   // 3) 软删用户（状态置 deleted + 清空可识别字段）
@@ -512,7 +524,7 @@ route.delete('/data', userAuthMiddleware, async (c) => {
     action: 'delete',
     resource: 'user_data',
     resourceId: user.id,
-    detail: JSON.stringify({ purgedCharts, anonymizedEvents, revokedSessions, self: true }),
+    detail: JSON.stringify({ purgedCharts, purgedProfiles, anonymizedEvents, revokedSessions, self: true }),
     operator: `user:${user.id}`,
     ip: clientIp(c),
     createdAt: new Date().toISOString(),
@@ -523,6 +535,7 @@ route.delete('/data', userAuthMiddleware, async (c) => {
     data: {
       deleted: true,
       purgedCharts,
+      purgedProfiles,
       anonymizedEvents,
       revokedSessions,
       message: '账号数据已删除，登录会话已失效',

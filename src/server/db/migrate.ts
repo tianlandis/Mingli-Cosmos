@@ -325,4 +325,53 @@ export function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_consent_user ON consent_records(user_id);
     CREATE INDEX IF NOT EXISTS idx_consent_type ON consent_records(type);
   `)
+
+  // ═══════════════════════════════════════
+  // [ADR-012] 用户身份域：生辰档案（核心 PII）
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS birth_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      label TEXT,
+      calendar_type TEXT NOT NULL,
+      birth_year INTEGER NOT NULL,
+      birth_month INTEGER NOT NULL,
+      birth_day INTEGER NOT NULL,
+      birth_hour INTEGER,
+      birth_minute INTEGER DEFAULT 0,
+      is_leap_month INTEGER DEFAULT 0,
+      gender TEXT,
+      is_default INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_birth_profiles_user ON birth_profiles(user_id);
+    CREATE INDEX IF NOT EXISTS idx_birth_profiles_default ON birth_profiles(user_id, is_default);
+  `)
+
+  // ═══════════════════════════════════════
+  // [ADR-012] 运营分析域：AI 调用明细（追加式只增不改）
+  // ═══════════════════════════════════════
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS obs_llm_call_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      session_id TEXT,
+      provider TEXT NOT NULL,
+      model TEXT,
+      prompt_tokens INTEGER,
+      completion_tokens INTEGER,
+      total_tokens INTEGER,
+      latency_ms INTEGER,
+      status TEXT NOT NULL,
+      error_code TEXT,
+      cost_cents INTEGER,
+      trace_id TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_obs_llm_created ON obs_llm_call_logs(created_at);
+    CREATE INDEX IF NOT EXISTS idx_obs_llm_user ON obs_llm_call_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_obs_llm_status ON obs_llm_call_logs(status);
+  `)
 }

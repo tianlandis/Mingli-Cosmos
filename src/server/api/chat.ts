@@ -20,12 +20,13 @@ import {
   reserveQuota,
   commitQuota,
   refundQuota,
+  recordLlmCall,
   type ReserveFailReason,
 } from '../db/index'
 import { orchestrate } from '../agents/orchestrate'
 import { extractBearerToken, verifyUserToken } from '../core/middleware/user-auth'
 import { resolveChartSource } from '../lib/chart-source'
-import { newTraceId } from '../lib/trace'
+import { newTraceId, currentTraceId } from '../lib/trace'
 
 /** 滑动窗口：最多保留最近 N 条消息 */
 const MAX_MESSAGES = 10
@@ -36,6 +37,42 @@ const MAX_TOOL_STEPS = 5
 function trimMessages(messages: ChatMessage[]): ChatMessage[] {
   if (messages.length <= MAX_MESSAGES) return messages
   return messages.slice(-MAX_MESSAGES)
+}
+
+/**
+ * [ADR-012] 记录一次 LLM 调用到 obs_llm_call_logs（运营分析域）。
+ * 纯审计性质，**绝不影响主流程** —— 全量 try/catch，失败仅告警。
+ */
+function logLlmCall(c: any, opts: {
+  provider: string
+  model?: string | null
+  sessionId?: string | null
+  status: 'ok' | 'error'
+  errorCode?: string | null
+  latencyMs?: number | null
+  promptTokens?: number | null
+  completionTokens?: number | null
+  totalTokens?: number | null
+}): void {
+  try {
+    const token = extractBearerToken(c)
+    const payload = token ? verifyUserToken(token) : null
+    recordLlmCall({
+      userId: payload?.userId ?? null,
+      sessionId: opts.sessionId ?? null,
+      provider: opts.provider,
+      model: opts.model ?? null,
+      promptTokens: opts.promptTokens ?? null,
+      completionTokens: opts.completionTokens ?? null,
+      totalTokens: opts.totalTokens ?? null,
+      latencyMs: opts.latencyMs ?? null,
+      status: opts.status,
+      errorCode: opts.errorCode ?? null,
+      traceId: currentTraceId(c),
+    })
+  } catch (e) {
+    console.warn('[Chat] LLM 调用日志写入失败（不影响主流程）:', e)
+  }
 }
 
 /**
@@ -187,10 +224,13 @@ chatRoute.post('/api/chat', async (c) => {
   const tools = loadActiveTools()
 
   // [P5-4] LLM 初始化失败必须**退回额度**，否则用户为一次失败的调用买单
+  // [ADR-012] 保存本次调用口径 + 起始时间，用于 obs_llm_call_logs 记录
+  const llmConfig = loadConfig()
+  const llmStart = Date.now()
   let result: ReturnType<typeof streamText>
   try {
     result = streamText({
-      model: createModel(loadConfig()),
+      model: createModel(llmConfig),
       system: systemPrompt,
       messages: trimmedMessages,
       tools: Object.keys(tools).length > 0 ? tools : undefined,
@@ -231,6 +271,8 @@ chatRoute.post('/api/chat', async (c) => {
   let fullText = ''
   // [P5-4] 记录流内错误（如上游 402/429/5xx），用于"失败不计费"判定
   let streamError: { message?: string } | null = null
+  // [ADR-012] 捕获 finish chunk 的 usage（token 统计用；字段名跨版本兼容）
+  let usageInfo: { prompt?: number | null; completion?: number | null; total?: number | null } | null = null
 
   const sseStream = new ReadableStream({
     async start(controller) {
@@ -296,6 +338,15 @@ chatRoute.post('/api/chat', async (c) => {
                 console.log(`[Chat] finishReason=${fc.finishReason}`)
               }
               if (fc.text) fullText += fc.text
+              // [ADR-012] 抓取 usage（v5+ inputTokens/outputTokens，v4 promptTokens/completionTokens）
+              const u = fc.totalUsage || fc.usage
+              if (u) {
+                usageInfo = {
+                  prompt: u.inputTokens ?? u.promptTokens ?? null,
+                  completion: u.outputTokens ?? u.completionTokens ?? null,
+                  total: u.totalTokens ?? null,
+                }
+              }
               // DEBUG: log finish chunk keys
               console.log(`[Chat DEBUG] finish chunk keys:`, Object.keys(fc).join(', '))
               if (fc.text) console.log(`[Chat DEBUG] finish text length=${fc.text.length}`)
@@ -364,6 +415,18 @@ chatRoute.post('/api/chat', async (c) => {
         if (streamError || !fullText) {
           const reason = streamError?.message || 'AI 未产出任何内容'
           console.warn(`[Chat] 生成失败，退回额度：${reason}`)
+          // [ADR-012] 记录失败调用（运营分析域；不影响计费）
+          logLlmCall(c, {
+            provider: llmConfig.provider,
+            model: llmConfig.model ?? null,
+            sessionId: resolved.data.sessionId,
+            status: 'error',
+            errorCode: 'LLM_STREAM_FAILED',
+            latencyMs: Date.now() - llmStart,
+            promptTokens: usageInfo?.prompt ?? null,
+            completionTokens: usageInfo?.completion ?? null,
+            totalTokens: usageInfo?.total ?? null,
+          })
           if (quota.key) {
             const r = refundQuota(quota.key)
             if (r.refunded) console.warn(`[Chat] 额度已退回 ${r.amount}（key=${quota.key}）`)
@@ -385,6 +448,17 @@ chatRoute.post('/api/chat', async (c) => {
         controller.enqueue(encoder.encode('data: [DONE]\n\n'))
         // [P5-4] AI 成功 → 落定额度（幂等）
         if (quota.key) commitQuota(quota.key)
+        // [ADR-012] 记录成功调用（运营分析域；不影响计费）
+        logLlmCall(c, {
+          provider: llmConfig.provider,
+          model: llmConfig.model ?? null,
+          sessionId: resolved.data.sessionId,
+          status: 'ok',
+          latencyMs: Date.now() - llmStart,
+          promptTokens: usageInfo?.prompt ?? null,
+          completionTokens: usageInfo?.completion ?? null,
+          totalTokens: usageInfo?.total ?? null,
+        })
         controller.close()
       } catch (err) {
         console.error('[Chat SSE] stream error:', err)
@@ -393,6 +467,15 @@ chatRoute.post('/api/chat', async (c) => {
           const r = refundQuota(quota.key)
           if (r.refunded) console.warn(`[Chat] 额度已退回 ${r.amount}（key=${quota.key}）`)
         }
+        // [ADR-012] 记录异常终止（运营分析域；不影响计费）
+        logLlmCall(c, {
+          provider: llmConfig.provider,
+          model: llmConfig.model ?? null,
+          sessionId: resolved.data.sessionId,
+          status: 'error',
+          errorCode: 'STREAM_EXCEPTION',
+          latencyMs: Date.now() - llmStart,
+        })
         controller.error(err)
       }
     },

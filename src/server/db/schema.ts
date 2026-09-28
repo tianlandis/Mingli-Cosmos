@@ -232,6 +232,30 @@ export const userSessions = sqliteTable('user_sessions', {
 })
 
 // ═══════════════════════════════════════
+// [ADR-012] birth_profiles — 生辰档案（用户身份域 · 核心 PII）
+//   1 用户 = N 档案（本人 / 家人）；is_default 支撑「登录自动排盘」
+//   注意：此表属 PII，必须纳入 GET /user/data/export 与 DELETE /user/data
+// ═══════════════════════════════════════
+
+export const birthProfiles = sqliteTable('birth_profiles', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  label: text('label'),                            // '本人' / '父亲' / 自定义
+  calendarType: text('calendar_type').notNull(),   // 'solar' | 'lunar'
+  birthYear: integer('birth_year').notNull(),
+  birthMonth: integer('birth_month').notNull(),
+  birthDay: integer('birth_day').notNull(),
+  birthHour: integer('birth_hour'),                // 0-23，未知可空
+  birthMinute: integer('birth_minute').default(0),
+  isLeapMonth: integer('is_leap_month').default(0).notNull(),
+  gender: text('gender'),                          // 'male' | 'female'
+  isDefault: integer('is_default').default(0).notNull(),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
 // [Phase 4b M-7] plans — 订阅套餐
 // ═══════════════════════════════════════
 
@@ -304,5 +328,29 @@ export const analyticsEvents = sqliteTable('analytics_events', {
   payload: text('payload').default('{}'),          // JSON 附加数据
   ip: text('ip'),
   userAgent: text('user_agent'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+})
+
+// ═══════════════════════════════════════
+// [ADR-012] obs_llm_call_logs — AI 调用明细（运营分析域）
+//   追加式、只增不改。与 quota_ledger（财务口径）互补：
+//   本表记「花了多少算力」，台账记「扣不扣钱」，经 traceId / sessionId 关联。
+//   可采样、可定期归档外迁（阶段 2 优先拆分的域）。
+// ═══════════════════════════════════════
+
+export const obsLlmCallLogs = sqliteTable('obs_llm_call_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id'),                      // 可空：匿名调用
+  sessionId: text('session_id'),
+  provider: text('provider').notNull(),            // 'deepseek' | 'local' | ...
+  model: text('model'),
+  promptTokens: integer('prompt_tokens'),
+  completionTokens: integer('completion_tokens'),
+  totalTokens: integer('total_tokens'),
+  latencyMs: integer('latency_ms'),
+  status: text('status').notNull(),                // 'ok' | 'error'
+  errorCode: text('error_code'),                   // 'LLM_STREAM_FAILED' | '402' | ...
+  costCents: integer('cost_cents'),                // 成本（分）
+  traceId: text('trace_id'),                       // 关联全局 X-Trace-Id
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 })

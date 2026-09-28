@@ -1,0 +1,38 @@
+{
+  "_comment": "格式示范 —— 导入脚本会跳过 *.sample.json。真实数据请另建 zodiac.json（爬虫产出）。",
+  "category": "zodiac",
+  "items": [
+    {
+      "key": "aries",
+      "description": "白羊座 | 03-21 ~ 04-19 | 火象 | 示例条目（value 结构可自定义）",
+      "sortOrder": 10,
+      "value": {
+        "nameZh": "白羊座",
+        "nameEn": "Aries",
+        "dateRange": "03-21 ~ 04-19",
+        "element": "fire",
+        "quality": "cardinal",
+        "ruling": "Mars",
+        "traits": ["热情", "果敢", "直率"],
+        "portrait": null,
+        "source": "sample"
+      }
+    },
+    {
+      "key": "taurus",
+      "description": "金牛座 | 04-20 ~ 05-20 | 土象 | 示例条目",
+      "sortOrder": 20,
+      "value": {
+        "nameZh": "金牛座",
+        "nameEn": "Taurus",
+        "dateRange": "04-20 ~ 05-20",
+        "element": "earth",
+        "quality": "fixed",
+        "ruling": "Venus",
+        "traits": ["稳重", "务实", "坚韧"],
+        "portrait": null,
+        "source": "sample"
+      }
+    }
+  ]
+}

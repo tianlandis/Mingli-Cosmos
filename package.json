@@ -15,6 +15,7 @@
     "lint": "eslint .",
   "typecheck": "tsc -b --noEmit",
   "test": "vitest",
+  "db:seed": "tsx scripts/seed-import.mts",
   "smoke": "node scripts/smoke-e2e.mjs"
   },
   "dependencies": {
