@@ -103,7 +103,8 @@ export function assembleReport(
 }
 
 function formatTopics(specialTopics: AnnotationResult['specialTopics']): string {
-  const domainLabels: Record<string, string> = {
+  type TopicKey = keyof AnnotationResult['specialTopics']
+  const domainLabels: Record<TopicKey, string> = {
     personality: '性格',
     career: '事业',
     wealth: '财运',
@@ -112,9 +113,10 @@ function formatTopics(specialTopics: AnnotationResult['specialTopics']): string 
     children: '子女',
   }
 
-  return Object.entries(specialTopics)
-    .map(([key, items]) =>
-      `### ${domainLabels[key] ?? key}\n${items.map(t => `- ${t}`).join('\n')}`,
-    )
+  return (Object.keys(domainLabels) as TopicKey[])
+    .map((key) => {
+      const items = specialTopics[key] ?? []
+      return `### ${domainLabels[key]}\n${items.map(t => `- ${t}`).join('\n')}`
+    })
     .join('\n\n')
 }

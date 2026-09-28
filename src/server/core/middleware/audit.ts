@@ -8,8 +8,30 @@ import { getDb, schema } from '../../db'
 
 const { auditLogs } = schema
 
+/** 审计动作全集（新增动作时同步扩展此联合类型） */
+export type AuditAction =
+  | 'create' | 'update' | 'delete'
+  | 'login' | 'logout'
+  | 'export' | 'import' | 'migrate'
+  | 'debug' | 'rollback'
+  | 'fetch_models' | 'update_tools' | 'update_tool_calling'
+
+/** 后台管理上下文变量 */
+export interface AdminUserPayload {
+  username: string
+  jti: string
+  exp: number
+}
+
+/**
+ * 后台管理路由统一 Env（authMiddleware 注入 adminUser）
+ * 各 admin 模块路由应声明为 `new Hono<AdminEnv>()`，
+ * 以使其 Context 变量类型与 logAudit / authMiddleware 匹配。
+ */
+export type AdminEnv = { Variables: { adminUser?: AdminUserPayload } }
+
 interface AuditEntry {
-  action: 'create' | 'update' | 'delete' | 'login' | 'logout' | 'export' | 'migrate' | 'update_tools'
+  action: AuditAction
   resource: string
   resourceId?: number
   detail?: string
@@ -18,7 +40,7 @@ interface AuditEntry {
 /**
  * 记录审计日志（可在路由中直接调用）
  */
-export function logAudit(c: Context, entry: AuditEntry) {
+export function logAudit(c: Context<AdminEnv>, entry: AuditEntry) {
   try {
     const operator = c.get('adminUser')?.username || 'admin'
     const ip = c.req.header('x-forwarded-for') ||

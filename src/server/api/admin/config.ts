@@ -6,7 +6,7 @@
 
 import { Hono } from 'hono'
 import { authMiddleware } from './auth'
-import { setConfig, getConfigValue, listConfigs, deleteConfig } from '../../db'
+import { setConfig, listConfigs, deleteConfig } from '../../db'
 import { reloadConfig, isUsingDbConfig } from '../../config'
 import { createAuditLog } from '../../db'
 

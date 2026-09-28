@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-09-28 — 工程基线修复：tsc 全绿 + 214/214 + build 通过 🧱
+
+### 背景
+
+复工盘点的结论：项目的"健康度"被两类假象掩盖 ——（1）`tsc --noEmit` 零错误是**假的**（根 `tsconfig.json` 只有 `references`，不检查任何文件）；（2）测试/构建隐式依赖 Node 版本，无声明。本次把基线拉回"真实可验证"。
+
+### 一、工程基建
+
+- 新增 `.nvmrc`（内容 `26`）；`package.json` 增 `engines.node >= 26.0.0`。原因：`better-sqlite3` 按 Node 26（ABI 147）编译，托管 Node 22（ABI 127）加载即崩。
+- 确认有效验证入口为 `npm run typecheck`（`tsc -b --noEmit`）。
+
+### 二、真实 TypeScript 错误修复（约 50 处）
+
+**AI SDK v6 API 漂移（顺手修掉的功能级 bug）**：
+
+| 问题 | 文件 | 修复 |
+|------|------|------|
+| `maxTokens` 被静默忽略 | `step-personality.ts` / `step-luck.ts` / `router-agent.ts` | → `maxOutputTokens` |
+| 工具参数校验失效 | `modules/llm/tools-executor.ts` | `tool({ parameters })` → `tool({ inputSchema })` |
+| `LanguageModelV1` 类型不存在 | `lib/llm.ts` | → `LanguageModel`，删无效 `@ts-expect-error` |
+
+**类型收敛**：`TOOL_EXECUTORS` / `getEnabledTools` / `getAllToolExecutors` 由 `ReturnType<typeof tool>`（退化为 `Tool<never,never>`）改为 `ToolSet`；`logAudit` 改用统一导出的 `AdminEnv`，config/knowledge/llm/prompts 模块路由改为 `new Hono<AdminEnv>()`；`step-assemble.formatTopics` 用 `keyof` 键类型收敛替代 `as Record<string,string[]>` 强转。
+
+**Zod v4**：object 上 `.default({})` → `.prefault({})`；`z.record(z.any())` → `z.record(z.string(), z.any())`。
+**TS 6**：删除 `tsconfig.app.json` / `tsconfig.node.json` 已弃用的 `baseUrl`。
+**严格模式**：批量清理未使用导入/变量。**顺带**：重写 `executeSolarTermCalc`（原两分支必抛、全靠 fallback）。
+
+### 三、测试隔离缺陷修复（4 个文件）
+
+- `tests/config.test.ts`：`deleteConfig('default_llm_provider')` → `reloadConfig()`，验证 `.env` 回退。
+- `tests/db.test.ts`：持有 `createdKeyId` / `createdPromptId`，不再假设 `id=1`。
+- `workflows.test.ts` / `e2e.test.ts`：各自 `beforeAll` 设 `DB_PATH=':memory:'` + `initDb()`。
+
+### 四、验证结果
+
+| 项目 | 结果 |
+|------|:--:|
+| `tsc -b --noEmit` | ✅ 零错误 |
+| `vitest run`（Node 26） | ✅ **214 passed / 0 failed**（9 文件） |
+| `vite build` | ✅ 成功（2.50s） |
+
+---
+
 ## 2026-06-24 — Admin UI 字号放大收网 + Dashboard 细节修复
 
 ### Admin 管理后台全站字号放大（9 文件 ~230 处）

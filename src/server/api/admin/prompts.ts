@@ -7,7 +7,7 @@
 import { Hono } from 'hono'
 import { authMiddleware } from './auth'
 import {
-  listPrompts, getPrompt, createPrompt, updatePrompt, deletePrompt, getPromptByName,
+  listPrompts, getPrompt, createPrompt, updatePrompt, deletePrompt,
 } from '../../db'
 import { createAuditLog } from '../../db'
 

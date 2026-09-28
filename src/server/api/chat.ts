@@ -113,7 +113,7 @@ chatRoute.post('/api/chat', async (c) => {
     messages: trimmedMessages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     maxSteps: MAX_TOOL_STEPS,
-    onFinish: ({ text }) => {
+    onFinish: ({ text }: { text: string }) => {
       if (text) {
         const guard = validateResponse(text)
         if (!guard.passed) {
@@ -310,7 +310,7 @@ chatRoute.post('/api/chat/route', async (c) => {
     console.error('[Multi-Agent] 路由失败:', err)
     // 回退：使用默认墨白 prompt
     const fallbackPrompt = buildSystemPrompt(body.chart, body.annotation, body.reportSummary)
-    return createSSEStream(body, trimmedMessages, fallbackPrompt, 'general')
+    return createSSEStream(trimmedMessages, fallbackPrompt, 'general')
   }
 
   const { route, systemPrompt } = routeResult
@@ -320,7 +320,7 @@ chatRoute.post('/api/chat/route', async (c) => {
     `confidence=${route.confidence.toFixed(2)}`,
   )
 
-  return createSSEStream(body, trimmedMessages, systemPrompt, route.agent.id)
+  return createSSEStream(trimmedMessages, systemPrompt, route.agent.id)
 })
 
 /**
@@ -328,7 +328,6 @@ chatRoute.post('/api/chat/route', async (c) => {
  * - routeAgentId: 用于注入 route-start 事件
  */
 function createSSEStream(
-  body: ChatRequest,
   messages: ChatMessage[],
   systemPrompt: string,
   routeAgentId: string,
@@ -342,7 +341,7 @@ function createSSEStream(
     messages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     maxSteps: MAX_TOOL_STEPS,
-    onFinish: ({ text }) => {
+    onFinish: ({ text }: { text: string }) => {
       if (text) {
         const guard = validateResponse(text)
         if (!guard.passed) console.warn('[Guardrail]', guard.reason)
@@ -354,7 +353,6 @@ function createSSEStream(
   const encoder = new TextEncoder()
   let toolCallCount = 0
   let fullText = ''
-  let routed = false
 
   const sseStream = new ReadableStream({
     async start(controller) {
@@ -374,7 +372,6 @@ function createSSEStream(
                 })}\n\n`,
               ),
             )
-            routed = true
           }
         }
 

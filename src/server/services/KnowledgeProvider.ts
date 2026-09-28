@@ -5,7 +5,7 @@
 //       确保不写入 Prompt 硬编码，多端算法绝对一致。
 // ============================================================
 
-import { listKnowledgeAssets, getKnowledgeAssetByKey, type KnowledgeAsset } from '../db'
+import { listKnowledgeAssets, type KnowledgeAsset } from '../db'
 import { KnowledgeRegistry, type KnowledgeAssetInput } from '../../engine/knowledge-registry'
 import { reloadBranchRelations } from '../../engine/relation'
 import { reloadShenShaRules } from '../../engine/rules/shenShaRules'

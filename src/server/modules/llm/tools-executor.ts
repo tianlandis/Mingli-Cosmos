@@ -9,12 +9,12 @@
 //   5. 按 Provider 的 supported_tools 过滤
 // ============================================================
 
-import { tool } from 'ai'
+import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
 import { parseSupportedTools } from './tools-registry'
 import type { ToolDefinition } from './tools-registry'
 import { AVAILABLE_TOOLS } from './tools-registry'
-import { getCategory, query, formatAsContext } from '../../services/KnowledgeProvider'
+import { getCategory } from '../../services/KnowledgeProvider'
 import * as https from 'node:https'
 import * as http from 'node:http'
 
@@ -54,73 +54,32 @@ async function executeSolarTermCalc(args: { year: number; month?: number }) {
   const year = args.year
   const results: Array<{ name: string; datetime: string; julianDay: number }> = []
 
-  const JIE_QI_NAMES = [
-    '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
-    '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
-    '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
-    '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
-  ]
+  /** Solar → 'YYYY-MM-DD HH:mm' */
+  const fmt = (s: {
+    getYear(): number; getMonth(): number; getDay(): number
+    getHour(): number; getMinute(): number
+  }) =>
+    `${s.getYear()}-${String(s.getMonth()).padStart(2, '0')}-${String(s.getDay()).padStart(2, '0')} ` +
+    `${String(s.getHour()).padStart(2, '0')}:${String(s.getMinute()).padStart(2, '0')}`
 
-  if (args.month) {
-    const indices = [args.month * 2 - 2, args.month * 2 - 1].filter(i => i >= 0 && i < 24)
-    for (const idx of indices) {
-      try {
-        const solar = Solar.fromYmd(year, args.month, 1)
-        const lunar = solar.getLunar()
-        const jie = lunar.getJie()
-        if (jie) {
-          const jieSolar = jie.getSolar()
-          results.push({
-            name: jie.getName(),
-            datetime: `${jieSolar.getYear()}-${String(jieSolar.getMonth()).padStart(2, '0')}-${String(jieSolar.getDay()).padStart(2, '0')} ${String(jieSolar.getHour()).padStart(2, '0')}:${String(jieSolar.getMinute()).padStart(2, '0')}`,
-            julianDay: jieSolar.getJulianDay(),
-          })
-        }
-      } catch { /* skip */ }
-    }
-  } else {
-    for (const name of JIE_QI_NAMES) {
-      try {
-        const solar = Solar.fromYmd(year, 2, 4)
-        const lunar = solar.getLunar()
-        const jieTable = lunar.getJieQiTable()
-        if (jieTable && jieTable[name]) {
-          const jieSolar = jieTable[name].getSolar()
-          results.push({
-            name,
-            datetime: `${jieSolar.getYear()}-${String(jieSolar.getMonth()).padStart(2, '0')}-${String(jieSolar.getDay()).padStart(2, '0')} ${String(jieSolar.getHour()).padStart(2, '0')}:${String(jieSolar.getMinute()).padStart(2, '0')}`,
-            julianDay: jieSolar.getJulianDay(),
-          })
-        }
-      } catch { /* skip */ }
-    }
+  // 逐月逼近：以每月 15 日为锚点，取其前后两个节气（节 + 中气）。
+  // 12 个月覆盖全年 24 节气；传入 month 时只返回该月的两个节气。
+  for (let m = 1; m <= 12; m++) {
+    if (args.month && m !== args.month) continue
+    try {
+      const lunar = Solar.fromYmd(year, m, 15).getLunar()
+      for (const jq of [lunar.getPrevJieQi(), lunar.getNextJieQi()]) {
+        if (!jq) continue
+        const sol = jq.getSolar()
+        if (sol.getYear() !== year) continue
+        const name = jq.getName()
+        if (!name || results.some(r => r.name === name)) continue
+        results.push({ name, datetime: fmt(sol), julianDay: sol.getJulianDay() })
+      }
+    } catch { /* skip */ }
   }
 
-  // fallback: 逐月逼近法
-  if (results.length < 2) {
-    for (let m = 1; m <= 12; m++) {
-      try {
-        const solar = Solar.fromYmd(year, m, 15)
-        const lunar = solar.getLunar()
-        for (const s of [lunar.getPrevJie(), lunar.getNextJie()]) {
-          if (s) {
-            const sol = s.getSolar()
-            if (sol.getYear() === year) {
-              const name = s.getName()
-              if (!results.find(r => r.name === name)) {
-                results.push({
-                  name,
-                  datetime: `${sol.getYear()}-${String(sol.getMonth()).padStart(2, '0')}-${String(sol.getDay()).padStart(2, '0')} ${String(sol.getHour()).padStart(2, '0')}:${String(sol.getMinute()).padStart(2, '0')}`,
-                  julianDay: sol.getJulianDay(),
-                })
-              }
-            }
-          }
-        }
-      } catch { /* skip */ }
-    }
-    results.sort((a, b) => a.julianDay - b.julianDay)
-  }
+  results.sort((a, b) => a.julianDay - b.julianDay)
 
   return {
     year,
@@ -644,11 +603,11 @@ async function executeWebSearch(args: { query: string }) {
 // AI SDK tool() 定义
 // ═══════════════════════════════════════
 
-const TOOL_EXECUTORS: Record<string, ReturnType<typeof tool>> = {
+const TOOL_EXECUTORS: ToolSet = {
   solar_term_calc: tool({
     description:
       '精准计算指定年份的24节气时刻。基于天文算法，返回每个节气的精确日期时间（精确到分钟）。可用于八字排盘中的节气判定、起运时间计算等。',
-    parameters: z.object({
+    inputSchema: z.object({
       year: z.number().describe('公历年份，如 2026'),
       month: z.number().min(1).max(12).optional().describe('可选，指定月份(1-12)，不填则返回全年'),
     }),
@@ -660,7 +619,7 @@ const TOOL_EXECUTORS: Record<string, ReturnType<typeof tool>> = {
   calendar_lookup: tool({
     description:
       '万年历查询工具。输入公历日期，返回对应的农历日期、天干地支纪年、生肖、当日节气等信息。用于八字排盘时的日期转换和时辰判定。',
-    parameters: z.object({
+    inputSchema: z.object({
       gregorianYear: z.number().min(1900).max(2100).describe('公历年'),
       gregorianMonth: z.number().min(1).max(12).describe('公历月'),
       gregorianDay: z.number().min(1).max(31).describe('公历日'),
@@ -675,7 +634,7 @@ const TOOL_EXECUTORS: Record<string, ReturnType<typeof tool>> = {
   classic_search: tool({
     description:
       '命理典籍检索工具。从《渊海子平》《三命通会》《滴天髓》《穷通宝鉴》四大经典中检索相关内容，涵盖十神、格局、五行、调候、六十甲子等200+条目。可用于引经据典、增强分析的权威性。',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string().describe('检索关键词，如"正官"、"庚金"、"用神"、"调候"、"魁罡"、"三合"'),
     }),
     execute: async (args) => {
@@ -686,7 +645,7 @@ const TOOL_EXECUTORS: Record<string, ReturnType<typeof tool>> = {
   famous_chart_compare: tool({
     description:
       '历史名人命例对比分析工具。查询与当前命盘日主或格局相似的历史名人八字（30+历史人物，涵盖10天干），用于命理分析中的参考对照。名人包括诸葛亮、苏轼、曾国藩、康熙、李白、朱元璋、岳飞、武则天等。',
-    parameters: z.object({
+    inputSchema: z.object({
       dayMaster: z.string().optional().describe('日主天干，如"庚金"、"丙火"、"癸水"'),
       pattern: z.string().optional().describe('格局名称，如"七杀格"、"正印格"、"伤官格"'),
     }),
@@ -698,7 +657,7 @@ const TOOL_EXECUTORS: Record<string, ReturnType<typeof tool>> = {
   web_search: tool({
     description:
       '联网搜索补充信息。先查 Wikipedia（中文维基），失败则用 DuckDuckGo Instant Answer，再失败则用本地典籍库兜底。当本地知识库不足以回答用户问题时，可调用此工具获取最新信息。',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string().describe('搜索关键词，支持中文/英文，如"诸葛亮八字"、"庚金辛金区别"'),
     }),
     execute: async (args) => {
@@ -713,19 +672,19 @@ const TOOL_EXECUTORS: Record<string, ReturnType<typeof tool>> = {
 
 export function getEnabledTools(args: {
   supportedToolsJson?: string | null
-}): Record<string, ReturnType<typeof tool>> {
+}): ToolSet {
   const enabledIds = parseSupportedTools(args.supportedToolsJson)
 
   if (enabledIds.length === 0) {
     const defaults = ['solar_term_calc', 'calendar_lookup']
-    const tools: Record<string, ReturnType<typeof tool>> = {}
+    const tools: ToolSet = {}
     for (const id of defaults) {
       if (TOOL_EXECUTORS[id]) tools[id] = TOOL_EXECUTORS[id]
     }
     return tools
   }
 
-  const tools: Record<string, ReturnType<typeof tool>> = {}
+  const tools: ToolSet = {}
   for (const id of enabledIds) {
     if (TOOL_EXECUTORS[id]) {
       tools[id] = TOOL_EXECUTORS[id]
@@ -734,7 +693,7 @@ export function getEnabledTools(args: {
   return tools
 }
 
-export function getAllToolExecutors(): Record<string, ReturnType<typeof tool>> {
+export function getAllToolExecutors(): ToolSet {
   return { ...TOOL_EXECUTORS }
 }
 
@@ -749,7 +708,7 @@ export function generateToolSchemaDocs(): Array<{
     let paramsDesc: Record<string, unknown> = {}
     if (executor) {
       try {
-        const shape = (executor.parameters as any)._def?.shape?.()
+        const shape = (executor.inputSchema as any)._def?.shape?.()
         if (shape) {
           paramsDesc = {
             type: 'object',

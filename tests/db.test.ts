@@ -22,6 +22,10 @@ afterAll(() => {
 })
 
 describe('API Keys CRUD', () => {
+  // 注意：initDb() 会写入默认 local provider（id 占用），因此不能假设自建记录 id=1，
+  // 必须显式持有创建返回的 id。
+  let createdKeyId = 0
+
   it('创建 API Key', () => {
     const row = createApiKey({
       provider: 'siliconflow',
@@ -30,6 +34,7 @@ describe('API Keys CRUD', () => {
       baseUrl: 'https://api.siliconflow.cn/v1',
       model: 'deepseek-ai/DeepSeek-V3',
     })
+    createdKeyId = row.id
     expect(row.id).toBeGreaterThan(0)
     expect(row.provider).toBe('siliconflow')
     expect(row.label).toBe('测试 Key')
@@ -41,25 +46,27 @@ describe('API Keys CRUD', () => {
   })
 
   it('按 ID 查询', () => {
-    const row = getApiKey(1)
+    const row = getApiKey(createdKeyId)
     expect(row).toBeTruthy()
     expect(row!.label).toBe('测试 Key')
   })
 
   it('更新 API Key', () => {
-    const updated = updateApiKey(1, { label: '改名后的 Key', model: 'Pro/deepseek-ai/DeepSeek-V3' })
+    const updated = updateApiKey(createdKeyId, { label: '改名后的 Key', model: 'Pro/deepseek-ai/DeepSeek-V3' })
     expect(updated!.label).toBe('改名后的 Key')
     expect(updated!.model).toContain('DeepSeek-V3')
   })
 
   it('删除 API Key', () => {
-    deleteApiKey(1)
-    const row = getApiKey(1)
+    deleteApiKey(createdKeyId)
+    const row = getApiKey(createdKeyId)
     expect(row).toBeUndefined()
   })
 })
 
 describe('Prompt Templates CRUD', () => {
+  let createdPromptId = 0
+
   it('创建 Prompt 模板', () => {
     const row = createPrompt({
       name: 'anti-hallucination',
@@ -67,6 +74,7 @@ describe('Prompt Templates CRUD', () => {
       content: '你是解盘者，绝非排盘者。',
       variables: JSON.stringify(['chart.dayMaster', 'chart.birthDate']),
     })
+    createdPromptId = row.id
     expect(row.id).toBeGreaterThan(0)
     expect(row.version).toBe(1)
   })
@@ -78,14 +86,14 @@ describe('Prompt Templates CRUD', () => {
   })
 
   it('更新 Prompt（版本号不变，手动管理）', () => {
-    const updated = updatePrompt(1, {
+    const updated = updatePrompt(createdPromptId, {
       content: '你是解盘者，绝非排盘者。（加强版）',
     })
     expect(updated!.content).toContain('加强版')
   })
 
   it('删除 Prompt', () => {
-    deletePrompt(1)
+    deletePrompt(createdPromptId)
     const rows = listPrompts()
     expect(rows.length).toBe(0)
   })

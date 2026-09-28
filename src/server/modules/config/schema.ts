@@ -19,20 +19,20 @@ export const moduleSettingsSchema = z.object({
     /** 自动生成报告 */      autoReport:      z.boolean().default(true),
     /** 对话历史导出 */      chatExport:      z.boolean().default(false),
     /** 批量排盘 */          batchChart:      z.boolean().default(false),
-  }).default({}),
+  }).prefault({}),
 
   limits: z.object({
     /** 单会话最大消息数 */  maxChatMessages:    z.number().int().positive().default(50),
     /** 每分钟 API 限流 */   rateLimitPerMinute: z.number().int().positive().default(10),
     /** 最大并发会话数 */    maxConcurrentSessions: z.number().int().positive().default(100),
     /** 报告最大 Token */    maxReportTokens:    z.number().int().positive().default(4096),
-  }).default({}),
+  }).prefault({}),
 
   ui: z.object({
     /** 默认主题 */          theme:            z.enum(['dark', 'light']).default('dark'),
     /** 语言 */              language:         z.enum(['zh-CN', 'zh-TW', 'en']).default('zh-CN'),
     /** 显示高级选项 */      showAdvanced:     z.boolean().default(false),
-  }).default({}),
+  }).prefault({}),
 })
 
 export type ModuleSettings = z.infer<typeof moduleSettingsSchema>

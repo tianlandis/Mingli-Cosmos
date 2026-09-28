@@ -8,7 +8,6 @@ import { appConfigs } from '../schema'
 import { eq } from 'drizzle-orm'
 
 type ConfigRow = typeof appConfigs.$inferSelect
-type ConfigInsert = typeof appConfigs.$inferInsert
 
 export function listConfigs(): ConfigRow[] {
   return getDb().select().from(appConfigs).all()

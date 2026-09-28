@@ -7,7 +7,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { authMiddleware } from '../../core/middleware/auth'
-import { logAudit } from '../../core/middleware/audit'
+import { logAudit, type AdminEnv } from '../../core/middleware/audit'
 import {
   listKnowledgeAssets,
   getKnowledgeAsset,
@@ -44,7 +44,7 @@ const updateBodySchema = z.object({
 // 路由
 // ═══════════════════════════════════════
 
-export const route = new Hono()
+export const route = new Hono<AdminEnv>()
 route.use('*', authMiddleware)
 
 // ── GET /knowledge — 列出所有（支持 ?category=xxx）──
@@ -180,7 +180,7 @@ route.get('/export/all', (c) => {
 const importAssetSchema = z.object({
   category: z.enum(['classics', 'shensha', 'personality', 'bazi', 'pattern']),
   key: z.string().min(1).max(128),
-  value: z.union([z.string(), z.record(z.any())]),
+  value: z.union([z.string(), z.record(z.string(), z.any())]),
   description: z.string().optional().default(''),
   sortOrder: z.number().int().optional().default(0),
   isActive: z.number().min(0).max(1).optional().default(1),

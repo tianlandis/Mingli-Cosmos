@@ -11,11 +11,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-interface ModuleDefinition {
-  prefix: string        // e.g. 'auth', 'dashboard', 'llm'
-  router: Hono          // Hono sub-router instance
-}
-
 /**
  * 自动扫描 modules/ 目录，动态加载并注册所有业务模块
  *

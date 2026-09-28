@@ -2,11 +2,26 @@
 // SOP 流水线集成测试 — workflows.test.ts (mock LLM)
 // 文件：src/server/workflows/__tests__/workflows.test.ts
 // ============================================================
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest'
 import type { AnnotationResult } from '@/engine/annotation/types'
 import type { BaZiResult } from '@/engine/types'
 import path from 'node:path'
 import fs from 'node:fs'
+
+// ─── 独立内存库：workflows 走 config 加载链路，需要建表。
+//        vitest 配置为 singleFork（同进程串行），必须自行声明 DB_PATH，
+//        否则会被其它测试文件残留的 DB_PATH 污染。 ───
+import { initDb, closeDb } from '@/server/db'
+
+beforeAll(() => {
+  process.env.DB_PATH = ':memory:'
+  initDb()
+})
+
+afterAll(() => {
+  closeDb()
+  delete process.env.DB_PATH
+})
 
 // ─── mock LLM (必须 top-level) ───
 vi.mock('ai', () => ({

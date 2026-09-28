@@ -50,7 +50,7 @@ export async function classifyIntent(question: string): Promise<RouteDecision> {
       system: ROUTER_SYSTEM_PROMPT,
       prompt: `用户提问：「${question}」\n请给出分类结果（只输出 JSON，不要任何其他文字）。`,
       temperature: 0.1,
-      maxTokens: 128,
+      maxOutputTokens: 128,
     })
 
     const text = result.text.trim()

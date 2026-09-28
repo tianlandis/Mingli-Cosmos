@@ -9,6 +9,9 @@ import { useCallback, useRef, useState } from 'react'
 import type { BaZiResult, AnnotationResult } from '../engine/index'
 import type { ChatMessage } from '../server/lib/types'
 
+// 对外统一从本 Hook 暴露对话相关类型，避免消费方直接依赖 server 层
+export type { ChatMessage }
+
 export interface StreamingMessage {
   role: 'assistant'
   content: string

@@ -31,7 +31,7 @@ export async function generatePersonality(
       system,
       prompt,
       temperature: config.temperature,
-      maxTokens: config.maxTokens,
+      maxOutputTokens: config.maxTokens,
     })
 
     return parsePersonalityOutput(text)

@@ -8,7 +8,7 @@
 import { Hono } from 'hono'
 import { authMiddleware } from '../../core/middleware/auth'
 import { getDb, schema } from '../../db'
-import { desc, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 const { auditLogs, adminSessions } = schema
 

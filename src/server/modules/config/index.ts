@@ -8,7 +8,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { authMiddleware } from '../../core/middleware/auth'
-import { logAudit } from '../../core/middleware/audit'
+import { logAudit, type AdminEnv } from '../../core/middleware/audit'
 import { listConfigs, setConfig, deleteConfig } from '../../db'
 import { reloadConfig, isUsingDbConfig } from '../../config'
 import { moduleSettingsSchema, type ModuleSettings } from './schema'
@@ -30,7 +30,7 @@ const setConfigBodySchema = z.object({
 // 导出路由
 // ═══════════════════════════════════════
 
-export const route = new Hono()
+export const route = new Hono<AdminEnv>()
 route.use('*', authMiddleware)
 
 // ---- GET /config — 列出所有配置 ----

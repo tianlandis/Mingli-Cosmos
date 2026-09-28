@@ -32,7 +32,7 @@ export async function generateLuck(
       system,
       prompt,
       temperature: config.temperature,
-      maxTokens: config.maxTokens,
+      maxOutputTokens: config.maxTokens,
     })
 
     return parseLuckOutput(text)

@@ -7,6 +7,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Hono } from 'hono'
 import { reportRoute } from '@/server/api/report'
 import { chatRoute } from '@/server/api/chat'
+import { initDb, closeDb } from '@/server/db'
 
 // ─── 创建 Hono 测试 App ───
 function createTestApp(): Hono {
@@ -22,8 +23,11 @@ function createTestApp(): Hono {
   return app
 }
 
-// ─── Mock LLM 环境 ───
+// ─── Mock LLM 环境 + 独立内存库 ───
+// singleFork 下同进程串行，需自建表避免受其它测试文件 DB_PATH 影响
 beforeAll(() => {
+  process.env.DB_PATH = ':memory:'
+  initDb()
   process.env.LLM_PROVIDER = 'local'
   process.env.LLM_API_KEY = 'mock-key'
   process.env.LLM_BASE_URL = 'http://localhost:11434/v1'
@@ -31,6 +35,8 @@ beforeAll(() => {
 })
 
 afterAll(() => {
+  closeDb()
+  delete process.env.DB_PATH
   delete process.env.LLM_PROVIDER
   delete process.env.LLM_API_KEY
 })

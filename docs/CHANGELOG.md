@@ -2,6 +2,43 @@
 
 ---
 
+## 未发布 — 工程基线修复（v4.1.0 后复工）(2026-09-28)
+
+> **主题**：恢复"真实可验证"的工程基线 —— 类型检查、测试、构建三线全绿
+>
+> **背景**：长期未动的代码库存在两类系统性问题：① 真实 TypeScript 错误被 `tsc --noEmit` 假绿掩盖；② 测试与构建依赖 Node 版本，缺乏显式声明。
+
+### 🧱 工程基建
+
+- 新增 `.nvmrc`（`26`）+ `package.json` `engines.node >= 26.0.0`：明确 `better-sqlite3` 原生模块 ABI（Node 26 / ABI 147）要求，杜绝 Node 22 下装包后运行时崩溃。
+- 确认 `tsc -b --noEmit` 为有效验证入口（根 `tsconfig.json` 仅 `references`，旧的 `tsc --noEmit` 不检查任何文件 → 长期假绿）。
+
+### 🐛 真实类型错误修复（约 50 处）
+
+- **AI SDK v6 API 漂移（功能级 bug）**：
+  - `maxTokens` → `maxOutputTokens`（`step-personality` / `step-luck` / `router-agent`）—— 原参数被静默忽略。
+  - `tool({ parameters })` → `tool({ inputSchema })`（`tools-executor`）—— 工具调用参数校验此前失效。
+  - `LanguageModelV1` → `LanguageModel`（`lib/llm.ts`），移除失效 `@ts-expect-error`。
+- **类型收敛**：`TOOL_EXECUTORS` / `getEnabledTools` 等由 `ReturnType<typeof tool>`（退化为 `Tool<never,never>`）改为 `ToolSet`；`logAudit` 统一使用导出的 `AdminEnv`，各 admin 模块路由声明 `new Hono<AdminEnv>()`；`SpecialTopics` 专题遍历改为键类型收敛（去掉不安全强转）。
+- **Zod v4**：object 上 `.default({})` → `.prefault({})`；`z.record(z.any())` → `z.record(z.string(), z.any())`。
+- **TypeScript 6**：移除 `tsconfig.*.json` 中已弃用的 `baseUrl`（paths 改相对）。
+- **严格模式清理**：批量删除未使用导入/变量（`noUnusedLocals` / `noUnusedParameters`）。
+- **顺带修正**：`tools-executor.executeSolarTermCalc` 原两分支必抛异常、全靠 fallback 兜底 —— 重写为逐月逼近（`getPrevJieQi` / `getNextJieQi`）。
+
+### 🧪 测试隔离缺陷修复
+
+- `tests/config.test.ts`：先 `deleteConfig('default_llm_provider')` 再 `reloadConfig()`，验证 `.env` 回退（原被 seed 数据污染）。
+- `tests/db.test.ts`：改为持有创建返回的 `createdKeyId` / `createdPromptId`，不再假设 `id=1`（seed 默认 provider 占用 id=1）。
+- `workflows.test.ts` / `e2e.test.ts`：各自 `beforeAll` 设 `DB_PATH=':memory:'` + `initDb()`，避免 `singleFork` 单进程下 `DB_PATH` 跨文件串扰。
+
+### ✅ 验证
+
+- `tsc -b --noEmit` → 零错误
+- `vitest run`（Node 26）→ **214 passed / 0 failed**（9 个文件）
+- `vite build` → 成功（2.50s）
+
+---
+
 ## v4.1.0 — Phase 4d 规则字典大闭环 (2026-06-24)
 
 > **主题**：35/35 项全量规则字典 + 五分类完整体系

@@ -8,7 +8,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { authMiddleware } from '../../core/middleware/auth'
-import { logAudit } from '../../core/middleware/audit'
+import { logAudit, type AdminEnv } from '../../core/middleware/audit'
 import {
   listPrompts, getPrompt, createPrompt, updatePrompt, deletePrompt,
   listPromptVersions, getPromptVersion, createPromptVersion, getLatestVersion,
@@ -50,7 +50,7 @@ function snapshotVersion(promptId: number, oldContent: string, changeNote?: stri
 // 导出路由
 // ═══════════════════════════════════════
 
-export const route = new Hono()
+export const route = new Hono<AdminEnv>()
 route.use('*', authMiddleware)
 
 // ---- GET /prompts — 列出所有模板 ----

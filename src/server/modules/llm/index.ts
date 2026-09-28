@@ -8,7 +8,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { authMiddleware } from '../../core/middleware/auth'
-import { logAudit } from '../../core/middleware/audit'
+import { logAudit, type AdminEnv } from '../../core/middleware/audit'
 import { listApiKeys, getApiKey, createApiKey, updateApiKey, deleteApiKey } from '../../db'
 import { AVAILABLE_TOOLS, parseSupportedTools, serializeSupportedTools } from './tools-registry'
 import { generateToolSchemaDocs } from './tools-executor'
@@ -209,7 +209,7 @@ async function fetchModelsFromProvider(baseUrl: string, apiKey: string, timeoutM
 // 导出路由
 // ═══════════════════════════════════════
 
-export const route = new Hono()
+export const route = new Hono<AdminEnv>()
 route.use('*', authMiddleware)
 
 // ---- GET /llm — 列出所有 Provider ----
@@ -544,7 +544,6 @@ route.post('/:id/ping', async (c) => {
     return c.json({ success: false, error: { code: 'NO_BASE_URL', message: 'Provider 未配置 Base URL' } }, 400)
   }
 
-  const start = Date.now()
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 5000)  // 5秒超时
 

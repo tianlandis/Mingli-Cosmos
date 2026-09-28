@@ -18,10 +18,9 @@ import {
   listActiveSessions,
   getSessionById,
   revokeSessionById,
-  listActiveSessionsByUser,
 } from '../../core/middleware/auth'
 import { loginRateLimit, checkUserRate } from '../../core/middleware/rate-limit'
-import { logAudit } from '../../core/middleware/audit'
+import { logAudit, type AdminEnv } from '../../core/middleware/audit'
 import { getDb, schema } from '../../db'
 
 const { appConfigs } = schema
@@ -107,7 +106,9 @@ function updateAdminPasswordHash(newHash: string): void {
 // 导出路由
 // ═══════════════════════════════════════
 
-export const route = new Hono()
+// 后台上下文 AdminEnv（authMiddleware 注入的 adminUser）由 middleware/audit 统一导出
+
+export const route = new Hono<AdminEnv>()
 
 // ---- POST /login ----
 route.post('/login', loginRateLimit(), async (c) => {

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { initDb, closeDb, setConfig } from '@/server/db'
+import { initDb, closeDb, setConfig, deleteConfig } from '@/server/db'
 
 beforeAll(() => {
   process.env.DB_PATH = ':memory:'
@@ -15,9 +15,13 @@ afterAll(() => { closeDb() })
 
 describe('双轨配置路由', () => {
   it('.env 回退：数据库无配置时读环境变量', async () => {
-    // Import after setting up env
-    const { getAppConfig } = await import('@/server/config')
-    const config = getAppConfig()
+    // initDb() 会 seed 默认配置（default_llm_provider 等）。
+    // 需先清除 app_configs 中的默认厂商，才能模拟「数据库无配置」场景，
+    // 否则 getAppConfig() 会命中 DB 轨道而非回退到 .env。
+    deleteConfig('default_llm_provider')
+
+    const { reloadConfig } = await import('@/server/config')
+    const config = reloadConfig()
     expect(config.source).toBe('env')
     expect(config.provider).toBeDefined()
     expect(config.temperature).toBeGreaterThan(0)

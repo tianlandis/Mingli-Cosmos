@@ -5,7 +5,7 @@
 // ============================================================
 
 import { createOpenAI } from '@ai-sdk/openai'
-import type { LanguageModelV1 } from 'ai'
+import type { LanguageModel } from 'ai'
 import type { LLMConfig, ModelProvider, Try } from './types'
 import { getAppConfig, isUsingDbConfig } from '../config'
 
@@ -37,7 +37,7 @@ function getDefaultBaseUrl(provider: ModelProvider): string {
  *    三方兼容 API 只支持 Chat Completions (/chat/completions)，
  *    因此显式使用 provider.chat(modelId)
  */
-export function createModel(config: LLMConfig): LanguageModelV1 {
+export function createModel(config: LLMConfig): LanguageModel {
   const { model: defaultModel } = PROVIDER_DEFAULTS[config.provider]
 
   const provider = createOpenAI({
@@ -45,7 +45,7 @@ export function createModel(config: LLMConfig): LanguageModelV1 {
     baseURL: config.baseUrl ?? getDefaultBaseUrl(config.provider),
   })
 
-  // @ts-expect-error @ai-sdk/openai v3 返回 LanguageModelV3，与 ai v6 的 LanguageModelV1 结构兼容
+  // @ai-sdk/openai v3 的 chat() 返回 LanguageModelV3，可直接被 ai v6 的 generateText/streamText 消费
   return provider.chat(config.model ?? defaultModel)
 }
 
