@@ -2,6 +2,28 @@
 
 ---
 
+## 未发布 — 🔴 生产事故修复：数据库文件被 git 覆盖（数据持久化承重柱）(2026-09-28)
+
+> **现象**：部署备份脚本后核对，发现生产库**磁盘文件只有 9 张表**（缺 users/orders 等），
+> 但所有接口正常 —— 说明应用在写一个**已被删除的 inode**。
+> **根因**：`data/mingli.db`（一个 9 表的开发库）**被 git 跟踪**；docker-compose 把 `./data`
+> 挂进容器，于是每次 `git reset --hard` / `git pull` 都用仓库里的旧库**覆盖运行中的生产库**，
+> 应用继续写被 unlink 的 inode，**容器一重启即丢全部真实数据**。
+> **抢救**：从进程 fd（`/proc/<pid>/fd`）导出活库 + WAL，恢复出完整 15 表、用户/订单齐全的数据。
+
+### 修复（根治 + 纵深防御）
+- **取消跟踪** `data/mingli.db`（`git rm --cached`）；`.gitignore` 早已覆盖 `data/`、`*.db*`。
+- **数据目录移出仓库**：compose 改用 `${HOST_DATA_DIR:-./data}:/app/data`（日志同理），
+  生产设为 `/opt/mingli-data` —— 从根上杜绝 git 操作触碰线上库。
+- **部署守卫**：`scripts/deploy-vps.sh` 检测到仓库跟踪 `data/`、`logs/` 立即中止，并自动创建/迁移数据目录。
+- **启动自检**：`src/server/db/index.ts` 新增 `warnIfDbInsideGitTree()`，库落在 git 工作树内时显式告警。
+- `.env.example` 补充 `HOST_DATA_DIR` / `HOST_LOG_DIR` 说明。
+
+### 验证
+`tsc -b` 零错误 ｜ `vitest run` **320/320** ｜ 生产：从 fd 恢复数据 + 切换数据目录后服务健康、用户/订单可用。
+
+---
+
 ## 未发布 — 🧱 Phase 5 骨架 P5-1：数据库自动备份（ADR-008）(2026-09-28)
 
 > **背景**：评审将「生产库无备份」列为最沉默的 P0 风险（唯一副本、无 PITR、无恢复演练）。

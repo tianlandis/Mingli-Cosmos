@@ -13,6 +13,8 @@
 #   APP_DIR=/opt/mingli       部署目录（默认 /opt/mingli）
 #   BRANCH=master             分支（默认 master）
 #   SKIP_BUILD=1              跳过重新构建（仅重启）
+#   HOST_DATA_DIR=/opt/mingli-data   数据目录（默认 ${APP_DIR}-data，**仓库之外**）
+#   HOST_LOG_DIR=/opt/mingli-logs    日志目录（默认 ${APP_DIR}-logs，**仓库之外**）
 # ============================================================
 
 set -euo pipefail
@@ -20,6 +22,9 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/mingli}"
 BRANCH="${BRANCH:-master}"
 REPO="https://github.com/tianlandis/Mingli-Cosmos.git"
+# ⚠️ 数据/日志默认放在仓库【之外】，避免 git pull / git reset 覆盖运行中的数据库
+HOST_DATA_DIR="${HOST_DATA_DIR:-${APP_DIR}-data}"
+HOST_LOG_DIR="${HOST_LOG_DIR:-${APP_DIR}-logs}"
 
 log()  { echo -e "\033[32m[deploy]\033[0m $*"; }
 warn() { echo -e "\033[33m[warn]\033[0m $*"; }
@@ -48,6 +53,21 @@ else
   cd "$APP_DIR"
 fi
 
+# ── 2.5 守卫：仓库内不得跟踪任何运行期数据文件 ──────────
+# 历史上 data/mingli.db 被误提交，git pull/reset 会用它覆盖线上库 → 真实数据丢失
+if git ls-files -- data logs 2>/dev/null | grep -q .; then
+  die "检测到仓库跟踪了 data/ 或 logs/ 下的文件（$(git ls-files -- data logs | head -3 | tr '\n' ' ')），
+      git 操作会覆盖运行中的数据库。请先执行：git rm -r --cached data logs && git commit"
+fi
+
+# ── 3. 准备数据/日志目录（仓库之外）─────────────
+mkdir -p "$HOST_DATA_DIR" "$HOST_LOG_DIR"
+log "数据目录: $HOST_DATA_DIR ｜ 日志目录: $HOST_LOG_DIR"
+if [ -f "$APP_DIR/data/mingli.db" ] && [ ! -f "$HOST_DATA_DIR/mingli.db" ]; then
+  warn "仓库内发现旧库 $APP_DIR/data/mingli.db，迁移到 $HOST_DATA_DIR/mingli.db"
+  cp -p "$APP_DIR/data/mingli.db" "$HOST_DATA_DIR/mingli.db"
+fi
+
 # ── 3. 准备 .env ─────────────────────────────
 if [ ! -f "$APP_DIR/.env" ]; then
   log "生成 .env（随机安全密钥）..."
@@ -62,6 +82,10 @@ LLM_MODEL=Qwen/Qwen3.5-122B-A10B
 # ── 服务 ──────────────────────────────
 SERVER_PORT=3001
 DB_PATH=data/mingli.db
+
+# ── 数据/日志目录（仓库之外，避免 git 覆盖线上数据库）──
+HOST_DATA_DIR=$HOST_DATA_DIR
+HOST_LOG_DIR=$HOST_LOG_DIR
 
 # ── 安全 ──────────────────────────────
 ADMIN_PASSWORD=$(head -c 12 /dev/urandom | base64 | tr -d '/+=' | head -c 14)
@@ -79,7 +103,7 @@ fi
 
 # ── 4. 构建并启动 ────────────────────────────
 cd "$APP_DIR"
-mkdir -p data logs
+mkdir -p "$HOST_DATA_DIR" "$HOST_LOG_DIR"
 
 if [ "${SKIP_BUILD:-0}" != "1" ]; then
   log "构建镜像（首次约 3-8 分钟）..."

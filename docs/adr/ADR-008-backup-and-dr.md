@@ -67,3 +67,9 @@ ADR-002（迁移预案）｜ADR-006（PII 加密）｜ADR-007（备份任务需�
   不关闭连接，导致文件句柄泄漏、重命名失败 → 改为显式 `close()`。
 - **生产部署**：脚本置于 `/opt/mingli/scripts/backup-db.py`，备份目录 `/opt/mingli/backups/`，
   cron：`17 3 * * * … --retain 14`。
+
+### 同批修复：数据目录移出仓库（事故驱动）
+部署检查时发现**生产库磁盘文件与进程实际写入的 inode 不一致**（应用在写被 `git` 覆盖后
+unlink 的幽灵文件），根因是 `data/mingli.db` 被 git 跟踪且 compose 挂载仓库内目录。
+已根治：取消跟踪 + `HOST_DATA_DIR` 指向仓库之外（`/opt/mingli-data`）+ 部署守卫 + 启动自检。
+**完整复盘见 `../deploy/DEPLOY-LOG-VPS.md` §八。**

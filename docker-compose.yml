@@ -13,11 +13,13 @@ services:
     volumes:
       # 动态挂载 .env：修改宿主机 .env 后只需 docker compose restart，无需重新构建镜像
       - ./.env:/app/.env:ro
-      # ⚠️ SQLite 持久化：users / orders / subscriptions / analytics_events 均存于此，
-      #    不挂载会在容器重建后丢失全部用户与订单数据
-      - ./data:/app/data
-      # 生产日志（结构化 JSON，容器内 7 天轮转；挂载后可在宿主机直接查看）
-      - ./logs:/app/logs
+      # ⚠️ SQLite 持久化：users / orders / subscriptions / analytics_events 均存于此。
+      #    生产【必须】把 HOST_DATA_DIR 指向**仓库之外的绝对路径**（如 /opt/mingli-data），
+      #    否则 git pull / git reset 会覆盖运行中的数据库文件 → 应用继续写被 unlink 的 inode，
+      #    容器一重启即丢全部真实数据（2026-09-28 生产事故，见 docs/deploy/DEPLOY-LOG-VPS.md）。
+      - ${HOST_DATA_DIR:-./data}:/app/data
+      # 生产日志（结构化 JSON，容器内 7 天轮转）；同样建议移出仓库
+      - ${HOST_LOG_DIR:-./logs}:/app/logs
     restart: always                           # 容器异常退出 / 宿主机重启后自动恢复
     environment:
       - NODE_ENV=production

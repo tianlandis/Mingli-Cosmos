@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-09-28 — 🔴 生产事故修复：数据库文件被 git 覆盖（最严重）✅
+
+> 部署备份脚本时**顺带发现**：生产库磁盘文件是 9 表旧库，而应用在写一个**被删除的 inode**
+> —— 一旦容器重启，真实用户/订单数据全丢。
+
+| 落点 | 内容 |
+|---|---|
+| **抢救** | 从 `/proc/<pid>/fd` 导出活库 + WAL → 恢复出 15 表完整数据（用户/订单/订阅/埋点齐全） |
+| `git rm --cached data/mingli.db` | 取消对那个 9 表开发库的跟踪（**根因**） |
+| `docker-compose.yml` | 挂载改 `${HOST_DATA_DIR:-./data}`，生产指向仓库之外 `/opt/mingli-data` |
+| `scripts/deploy-vps.sh` | 守卫：仓库跟踪 data/logs 即中止；自动建/迁移数据目录 |
+| `src/server/db/index.ts` | 启动自检 `warnIfDbInsideGitTree()` |
+| `docs/deploy/DEPLOY-LOG-VPS.md` | 新增事故复盘章节 |
+
+**验证**：`tsc -b` 零错误 ｜ `vitest 320/320` ｜ 生产服务健康、数据可用。
+
+---
+
 ## 2026-09-28 — 🧱 Phase 5 骨架 P5-1：数据库自动备份（ADR-008）✅
 
 > 先止住"生产库无备份"这个最沉默的 P0 风险。

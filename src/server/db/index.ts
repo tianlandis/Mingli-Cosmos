@@ -7,13 +7,37 @@
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { existsSync, mkdirSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import * as schema from './schema'
 import { runMigrations } from './migrate'
 import { seedDefaults, seedLocalProvider, seedKnowledgeAssets, seedDefaultPlans } from './seed'
 
 let _db: ReturnType<typeof drizzle> | null = null
 let _sqlite: Database.Database | null = null
+
+/**
+ * 启动自检：数据库若落在 git 工作树内，`git pull` / `git reset` 会覆盖运行中的库文件，
+ * 应用则继续写被 unlink 的 inode，容器一重启即丢全部真实数据（2026-09-28 生产事故根因）。
+ * 这里只做**显式告警**、不阻断启动（本地开发常在工作树内）。
+ */
+function warnIfDbInsideGitTree(dbPath: string) {
+  if (dbPath === ':memory:' || dbPath.startsWith('file:')) return // 内存库 / URI，无文件路径
+  const abs = resolve(dbPath)
+  let dir = dirname(abs)
+  for (;;) {
+    if (existsSync(join(dir, '.git'))) {
+      console.warn(
+        `[DB][安全告警] 数据库位于 git 工作树内：${abs}\n` +
+          `              git pull / git reset 可能覆盖运行中的库文件 → 容器重启会丢失真实数据。\n` +
+          `              生产请将 docker-compose 的 HOST_DATA_DIR 指向仓库之外的绝对路径（如 /opt/mingli-data）。`
+      )
+      return
+    }
+    const parent = dirname(dir)
+    if (parent === dir) return
+    dir = parent
+  }
+}
 
 /**
  * 获取数据库实例（单例）
@@ -27,6 +51,8 @@ export function getDb() {
   if (dir && dir !== '.' && !existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }
+
+  warnIfDbInsideGitTree(dbPath)
 
   _sqlite = new Database(dbPath)
   _sqlite.pragma('journal_mode = WAL')
