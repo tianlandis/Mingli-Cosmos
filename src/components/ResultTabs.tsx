@@ -42,8 +42,13 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
     key === 'reading' ? '批注生成中…' : key === 'topics' ? '暂无专题分析' : '数据准备中…'
 
   return (
-    <section className="rounded-md border border-[#E4DED3] bg-white overflow-hidden">
-      <div role="tablist" aria-label="命盘详情" className="flex border-b border-[#E8E3D9] overflow-x-auto">
+    <section className="rounded-md border border-[#E4DED3] bg-white">
+      {/* 移动端：标签栏吸顶，长内容滚动时无需回顶部即可切 Tab */}
+      <div
+        role="tablist"
+        aria-label="命盘详情"
+        className="flex border-b border-[#E8E3D9] overflow-x-auto rounded-t-md sticky top-0 z-20 bg-white/95 backdrop-blur-sm"
+      >
         {TABS.map(t => {
           const selected = active === t.key
           return (
@@ -51,9 +56,11 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
               key={t.key}
               type="button"
               role="tab"
+              id={`tab-${t.key}`}
               aria-selected={selected}
+              aria-controls={`panel-${t.key}`}
               onClick={() => setActive(t.key)}
-              className={`relative shrink-0 px-4 py-3 text-sm tracking-wider whitespace-nowrap transition-colors ${
+              className={`relative shrink-0 px-4 py-3.5 sm:py-3 text-sm tracking-wider whitespace-nowrap transition-colors ${
                 selected ? 'text-[#B83A2E] font-medium' : 'text-[#B0A898] hover:text-[#6B6459]'
               }`}
             >
@@ -66,9 +73,9 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
         })}
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className="p-4 sm:p-5 rounded-b-md">
         {/* 命盘细节：只依赖 result */}
-        <div role="tabpanel" hidden={active !== 'chart'} className="space-y-6">
+        <div role="tabpanel" id="panel-chart" aria-labelledby="tab-chart" hidden={active !== 'chart'} className="space-y-6">
           <HiddenStems
             yearPillar={result.yearPillar}
             monthPillar={result.monthPillar}
@@ -78,7 +85,7 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
           <TenGods tenGods={result.tenGods} />
         </div>
 
-        <div role="tabpanel" hidden={active !== 'reading'}>
+        <div role="tabpanel" id="panel-reading" aria-labelledby="tab-reading" hidden={active !== 'reading'}>
           {annotation ? (
             <div className="space-y-6">
               <DayMasterStrength analysis={annotation.strengthAnalysis} dayMaster={result.dayMaster} />
@@ -89,7 +96,7 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
           )}
         </div>
 
-        <div role="tabpanel" hidden={active !== 'luck'}>
+        <div role="tabpanel" id="panel-luck" aria-labelledby="tab-luck" hidden={active !== 'luck'}>
           <LuckTimeline
             daYun={result.daYun}
             currentDaYun={result.currentDaYun}
@@ -97,13 +104,13 @@ export default function ResultTabs({ result, annotation, showChat, onOpenChat, o
           />
         </div>
 
-        <div role="tabpanel" hidden={active !== 'topics'}>
+        <div role="tabpanel" id="panel-topics" aria-labelledby="tab-topics" hidden={active !== 'topics'}>
           {annotation?.specialTopics
             ? <TopicTabs specialTopics={annotation.specialTopics} />
             : <Placeholder text={placeholderFor('topics')} />}
         </div>
 
-        <div role="tabpanel" hidden={active !== 'chat'}>
+        <div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" hidden={active !== 'chat'}>
           {!annotation ? (
             <Placeholder text="数据准备中…" />
           ) : showChat ? (

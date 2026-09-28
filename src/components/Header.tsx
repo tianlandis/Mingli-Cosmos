@@ -20,10 +20,10 @@ const VIP_LABEL: Record<string, string> = {
 
 export default function Header({ user, onLoginClick, onLogout }: HeaderProps) {
   return (
-    <header className="w-full bg-[#FBF7F0] border-b border-[#D8D2C8] py-3 px-6">
+    <header className="w-full bg-[#FBF7F0] border-b border-[#D8D2C8] py-2.5 sm:py-3 px-4 sm:px-6 safe-top">
       <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
         <h1
-          className="text-xl font-bold tracking-[0.15em] text-[#1C1914] shrink-0"
+          className="text-lg sm:text-xl font-bold tracking-[0.15em] text-[#1C1914] shrink-0"
           style={{ fontFamily: '"Noto Serif SC", serif' }}
         >
           八字排盘
@@ -50,15 +50,16 @@ export default function Header({ user, onLoginClick, onLogout }: HeaderProps) {
               <button
                 onClick={onLogout}
                 title="退出登录"
-                className="p-1.5 rounded-sm text-[#8A8172] hover:text-[#1C1914] hover:bg-[#F0E9DF] transition-colors"
+                aria-label="退出登录"
+                className="p-2 sm:p-1.5 rounded-sm text-[#8A8172] hover:text-[#1C1914] hover:bg-[#F0E9DF] transition-colors"
               >
-                <LogOut size={14} />
+                <LogOut size={15} />
               </button>
             </div>
           ) : (
             <button
               onClick={onLoginClick}
-              className="px-3 py-1.5 rounded-sm border border-[#B83A2E] text-[#B83A2E] text-xs font-bold tracking-wider hover:bg-[#F9F0EB] transition-colors"
+              className="px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-sm border border-[#B83A2E] text-[#B83A2E] text-xs font-bold tracking-wider hover:bg-[#F9F0EB] transition-colors"
             >
               登录 / 注册
             </button>

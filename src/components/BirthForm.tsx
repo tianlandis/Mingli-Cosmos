@@ -30,11 +30,12 @@ interface Props {
   }) => void
 }
 
-/* ── 样式常量：卡内统一栅格，控件等宽对齐 ── */
-const labelCls = 'block text-[11px] text-[#8A8172] tracking-[0.15em] mb-1.5'
+/* ── 样式常量：卡内统一栅格，控件等宽对齐 ──
+ * 移动端（无 sm 前缀）一律取更大的触摸目标（≈40–44px 高），桌面端收紧回原值。 */
+const labelCls = 'block text-xs sm:text-[11px] text-[#8A8172] tracking-[0.15em] mb-1.5'
 const segmentWrap = 'grid grid-cols-2 rounded-sm overflow-hidden border border-[#D8D2C8]'
-const segmentBase = 'w-full py-2 text-xs text-center transition-colors cursor-pointer'
-const selectCls = 'w-full bg-white border border-[#D8D2C8] rounded-sm px-2 py-2 text-xs text-[#1C1914] hover:border-[#C4B8A8] focus:border-[#B83A2E] focus:outline-none cursor-pointer'
+const segmentBase = 'w-full py-2.5 sm:py-2 text-xs text-center transition-colors cursor-pointer'
+const selectCls = 'w-full bg-white border border-[#D8D2C8] rounded-sm px-2 py-2.5 sm:py-2 text-xs text-[#1C1914] hover:border-[#C4B8A8] focus:border-[#B83A2E] focus:outline-none cursor-pointer'
 
 export default function BirthForm({ onCalculate }: Props) {
   const now = new Date()
@@ -213,12 +214,12 @@ export default function BirthForm({ onCalculate }: Props) {
 
       {/* 闰月勾选 —— 仅农历且该月为闰月时出现 */}
       {calendarType === 'lunar' && leapMonth > 0 && month === leapMonth && (
-        <label className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#6B6459] cursor-pointer">
+        <label className="mt-2 inline-flex items-center gap-2 py-1 text-xs text-[#6B6459] cursor-pointer">
           <input
             type="checkbox"
             checked={isLeapMonth}
             onChange={e => setIsLeapMonth(e.target.checked)}
-            className="accent-[#B83A2E] w-3.5 h-3.5 cursor-pointer"
+            className="accent-[#B83A2E] size-4 sm:size-3.5 cursor-pointer"
           />
           本月为闰月
         </label>
@@ -232,9 +233,11 @@ export default function BirthForm({ onCalculate }: Props) {
             <button
               key={opt.hour}
               type="button"
+              aria-pressed={selectedHour === opt.hour}
+              aria-label={`${opt.label}时 ${opt.range}`}
               onClick={() => setSelectedHour(opt.hour)}
               title={`${opt.label}时 ${opt.range}`}
-              className={`w-full py-1.5 text-[11px] text-center rounded-sm transition-colors cursor-pointer ${
+              className={`w-full py-2.5 sm:py-1.5 text-xs sm:text-[11px] text-center rounded-sm transition-colors cursor-pointer ${
                 selectedHour === opt.hour
                   ? 'bg-[#B83A2E] text-white'
                   : 'bg-white border border-[#D8D2C8] text-[#6B6459] hover:border-[#C4B8A8]'
@@ -249,7 +252,7 @@ export default function BirthForm({ onCalculate }: Props) {
       {/* 排盘 CTA —— 整宽按钮，明确的主动作 */}
       <button
         type="submit"
-        className="mt-5 w-full py-2.5 bg-[#B83A2E] text-white text-sm font-medium tracking-[0.3em] rounded-sm hover:bg-[#9B2C22] transition-colors cursor-pointer"
+        className="mt-5 w-full py-3 sm:py-2.5 bg-[#B83A2E] text-white text-sm font-medium tracking-[0.3em] rounded-sm hover:bg-[#9B2C22] transition-colors cursor-pointer"
       >
         开始排盘
       </button>

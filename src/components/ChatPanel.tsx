@@ -49,7 +49,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
   const hasContent = messages.length > 0 || streaming
 
   return (
-    <div className="flex flex-col h-[500px] bg-white border border-[#D8D2C8] rounded-sm overflow-hidden">
+    <div className="flex flex-col h-[62vh] min-h-[360px] sm:h-[500px] bg-white border border-[#D8D2C8] rounded-sm overflow-hidden">
       {/* 标题栏 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#D8D2C8] bg-[#FAF7F2] shrink-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -66,7 +66,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
           <button
             type="button"
             onClick={toggleMode}
-            className={`text-[10px] px-2 py-1 rounded-sm font-medium transition-colors ${
+            className={`text-[11px] sm:text-[10px] px-2.5 py-1.5 sm:px-2 sm:py-1 rounded-sm font-medium transition-colors ${
               mode === 'multi'
                 ? 'bg-[#B83A2E] text-white'
                 : 'bg-[#E8E3D8] text-[#8B7A5E] hover:bg-[#DDD6C8]'
@@ -78,7 +78,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
           <button
             type="button"
             onClick={reset}
-            className="text-xs text-[#B0A898] hover:text-[#8B3A2B] transition-colors"
+            className="text-xs text-[#B0A898] hover:text-[#8B3A2B] px-2 py-1.5 rounded-sm hover:bg-[#EFEAE2] transition-colors"
           >
             新对话
           </button>
@@ -86,7 +86,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
             <button
               type="button"
               onClick={onClose}
-              className="text-xs text-[#B0A898] hover:text-[#8B3A2B] transition-colors"
+              className="text-xs text-[#B0A898] hover:text-[#8B3A2B] px-2 py-1.5 rounded-sm hover:bg-[#EFEAE2] transition-colors"
             >
               关闭
             </button>
@@ -138,19 +138,20 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
       </div>
 
       {/* 输入区 */}
-      <form onSubmit={handleSubmit} className="shrink-0 border-t border-[#D8D2C8] p-3 bg-[#FAF7F2]">
+      <form onSubmit={handleSubmit} className="shrink-0 border-t border-[#D8D2C8] p-3 bg-[#FAF7F2] safe-bottom">
         <div className="flex gap-2">
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="命理问题输入框"
             placeholder={
               mode === 'multi'
                 ? '说点什么，系统会自动分派给合适的 Agent...'
                 : '输入你的命理问题...'
             }
             rows={1}
-            className="flex-1 resize-none rounded-sm border border-[#D8D2C8] px-3 py-2 text-sm bg-white placeholder:text-[#B0A898] focus:outline-none focus:border-[#B83A2E] transition-colors"
+            className="flex-1 resize-none rounded-sm border border-[#D8D2C8] px-3 py-2.5 sm:py-2 text-sm bg-white placeholder:text-[#B0A898] focus:outline-none focus:border-[#B83A2E] transition-colors"
             disabled={loading}
           />
           {loading ? (
@@ -171,7 +172,7 @@ export default function ChatPanel({ chart, annotation, reportSummary, onClose }:
             </button>
           )}
         </div>
-        <p className="text-[10px] text-[#B0A898] mt-1.5 text-center">
+        <p className="text-[11px] sm:text-[10px] text-[#B0A898] mt-1.5 text-center">
           墨白基于命盘数据作答 · 仅供参考，不构成人生建议
         </p>
       </form>

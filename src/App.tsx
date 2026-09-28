@@ -40,7 +40,7 @@ export default function App() {
         onLogout={logout}
       />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 md:px-8 lg:pr-24 py-6">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-3 sm:px-4 md:px-8 lg:pr-24 py-4 sm:py-6 safe-x">
         {/* 输入区 — 卡片式生辰录入（L 输入） */}
         <div className="mb-5">
           <BirthForm onCalculate={handleCalculateWithTrack} />
@@ -111,7 +111,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="text-center py-4 text-xs text-[#B0A898] border-t border-[#D8D2C8] tracking-wider">
+      <footer className="text-center py-4 text-xs text-[#B0A898] border-t border-[#D8D2C8] tracking-wider safe-bottom">
         八字排盘 · 四柱八字命理工具 · 仅供参考
       </footer>
 

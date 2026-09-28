@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover：让页面延伸到 iPhone 刘海/圆角安全区，配合 CSS env(safe-area-*) 使用 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="四柱八字排盘与命理解读 · 五行强弱、十神、大运流年、命盘批注与 AI 问答" />
+    <!-- 移动端：状态栏/地址栏着色，与页面宣纸底色一致 -->
+    <meta name="theme-color" content="#FBF7F0" />
+    <!-- 避免 iOS 把数字串识别成电话号码并自动加链接 -->
+    <meta name="format-detection" content="telephone=no" />
+    <!-- 添加到主屏后以独立应用方式启动（PWA 基础） -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="八字排盘" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />

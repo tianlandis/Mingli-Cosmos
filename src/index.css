@@ -205,3 +205,57 @@ select {
     animation: none;
   }
 }
+
+/* ===== 移动端适配（P0-M）=====
+ * 目标：触控友好、安全区正确、避免 iOS 表单聚焦缩放。
+ */
+
+/* 禁止 iOS Safari 在横屏时擅自放大正文字号 */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 触屏：去掉点击高亮块 + 去掉 300ms 点击延迟 */
+button,
+a,
+label,
+[role='tab'],
+select,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+label,
+[role='tab'] {
+  touch-action: manipulation;
+}
+
+/* 安全区（iPhone 刘海 / 底部横条 / 横屏左右）
+ * 需 index.html 设置 viewport-fit=cover 才生效 */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* iOS 表单聚焦时若字号 < 16px 会自动放大页面。
+ * 仅在 iOS（用 -webkit-touch-callout 特性探测）的窄屏上把控件字号抬到 16px，
+ * 既抑制缩放，又不影响 Android / 桌面的视觉。 */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 640px) {
+    select,
+    input:not([type='checkbox']):not([type='radio']),
+    textarea {
+      font-size: 16px;
+    }
+  }
+}

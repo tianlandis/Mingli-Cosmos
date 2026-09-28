@@ -94,7 +94,7 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
           return (
             <div key={i} className="flex items-stretch">
               {/* 左侧：年龄标记 + 竖线 */}
-              <div className="relative flex flex-col items-center w-14 shrink-0">
+              <div className="relative flex flex-col items-center w-12 sm:w-14 shrink-0">
                 {/* 连接线 */}
                 {i > 0 && (
                   <div
@@ -124,7 +124,7 @@ export default function LuckTimeline({ daYun, currentDaYun, luckAnalysis }: Prop
 
               {/* 右侧：内容卡片 */}
               <div
-                className={`flex-1 ml-3 mb-3 rounded-sm px-4 py-3 transition-colors ${
+                className={`flex-1 ml-2.5 sm:ml-3 mb-3 rounded-sm px-3.5 py-3 sm:px-4 transition-colors ${
                   isActive
                     ? 'bg-[#FDF5F3] border border-[#D4A8A4]'
                     : 'bg-[#F5F2EB] border border-transparent'
