@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-09-28 — 端到端冒烟 + 登录限流缺陷修复 ✅
+
+> 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**315/315**（15 文件）｜ `vite build` 通过
+> ｜ `npm run smoke` 真实服务 **26/26** 且可连续重跑
+
+| 落点 | 内容 |
+|------|------|
+| 冒烟脚本 | `scripts/smoke-e2e.mjs`（`npm run smoke`）：真实 HTTP 覆盖 C 端注册/登录/下单/支付/埋点 + 后台用户/订单/看板 + 双鉴权未授权拦截 |
+| 缺陷修复 | 登录限流改为「失败才计数」：中间件只预检，失败时 `recordLoginFailure()`、成功时 `clearLoginAttempts()`；原实现把成功登录也计入，5 次即锁 15 分钟 |
+| 回归测试 | `src/server/core/__tests__/rate-limit.test.ts`（7 项）：IP 5 次/账号 10 次阈值、成功清零、两维度独立 |
+| 配套 | `package.json` 新增 `npm run smoke` |
+
+---
+
 ## 2026-09-28 — Phase 4b 运营中台 M-6/M-7/M-8 + 设计轨 S1 全闭环 ✅
 
 > 验收：`tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**308/308**（14 文件）｜ `vite build` 通过

@@ -117,7 +117,23 @@ curl -s -X POST $API/track -H 'Content-Type: application/json' \
 # 期望 201；非白名单事件返回 400 UNSUPPORTED_EVENT
 ```
 
-### 3.4 SSE 流式（公网最关键的一项）
+### 3.4 一键端到端冒烟（替代 3.3 的手工 curl）
+
+仓库内置 26 项断言的冒烟脚本，可直接对公网域名跑：
+
+```bash
+BASE=https://example.com node scripts/smoke-e2e.mjs
+# 或用管理员凭据（脚本默认 admin / mingli2026，生产请显式传入）
+BASE=https://example.com ADMIN_PASSWORD=<你的密码> node scripts/smoke-e2e.mjs
+```
+
+覆盖：健康检查 → 注册 → 重名/错密码拦截 → 登录 → me/quota → 套餐 → 下单 → 模拟支付
+→ 我的订单/订阅 → 埋点（含白名单拒绝）→ 后台登录 → 用户/订单/看板 → 未授权拦截。
+
+> 期望输出 `通过 26 项 / 失败 0 项`。
+> 注：脚本会写入真实数据（用户 `smoke*`、一笔测试订单），验收后可在后台删除。
+
+### 3.5 SSE 流式（公网最关键的一项）
 
 浏览器打开排盘 → 点击「向墨白提问命理问题」→ 发送消息：
 
@@ -125,7 +141,7 @@ curl -s -X POST $API/track -H 'Content-Type: application/json' \
 - [ ] 流式输出无卡顿、无整段一次性返回
 - [ ] 中途不出现 504 / 连接重置
 
-### 3.5 数据持久化验证（本次修复项）
+### 3.6 数据持久化验证（本次修复项）
 
 ```bash
 docker compose restart

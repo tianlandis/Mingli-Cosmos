@@ -59,6 +59,8 @@ let activeRequests = 0
 // 使用 schema 默认值：ipWindowSec=900s, userWindowSec=3600s
 const DEFAULT_IP_WINDOW_MS = 900 * 1000
 const DEFAULT_USER_WINDOW_MS = 3600 * 1000
+const DEFAULT_IP_MAX = 5
+const DEFAULT_USER_MAX = 10
 const MAX_WINDOW_MS = Math.max(DEFAULT_IP_WINDOW_MS, DEFAULT_USER_WINDOW_MS)
 
 setInterval(() => {
@@ -77,6 +79,14 @@ setInterval(() => {
 // 中间件工厂
 // ═══════════════════════════════════════
 
+/**
+ * 登录路由中间件：全局并发保护 + IP 维度预检
+ *
+ * ⚠️ 语义（2026-09-28 修正）：本中间件**不计数**。
+ * 计数只在登录失败时由路由显式调用 `recordLoginFailure()` 累加，
+ * 登录成功时调用 `clearLoginAttempts()` 清零。
+ * 旧实现「每次请求都计数」会导致正常多设备/多次登录 5 次即被锁 15 分钟。
+ */
 export function loginRateLimit(config?: Partial<RateLimitConfig>) {
   const cfg = rateLimitConfigSchema.parse(config ?? {})
 
@@ -92,17 +102,18 @@ export function loginRateLimit(config?: Partial<RateLimitConfig>) {
 
     activeRequests++
     try {
-      // IP 限流
+      // IP 维度预检（只读，不计数）
       const ip = extractClientIP(c)
       const ipWindowMs = cfg.ipWindowSec * 1000
-      if (!checkRate(ipStore, ip, cfg.ipMaxAttempts, ipWindowMs)) {
-        const retryAfter = Math.ceil(ipWindowMs / 1000 / 60)
+      const ipCheck = peek(ipStore, ip, cfg.ipMaxAttempts, ipWindowMs)
+      if (!ipCheck.allowed) {
+        const retryAfter = Math.ceil(ipCheck.retryAfterMs / 1000 / 60)
         c.header('Retry-After', String(retryAfter * 60))
         return c.json({
           success: false,
           error: {
             code: 'RATE_LIMITED',
-            message: `登录尝试过于频繁，请 ${retryAfter} 分钟后重试`,
+            message: `登录尝试过于频繁，请 ${Math.max(1, retryAfter)} 分钟后重试`,
           },
         }, 429)
       }
@@ -123,52 +134,106 @@ interface CheckRateResult {
   retryAfterMs: number  // 如果被限流，还需等待多少毫秒
 }
 
-function checkRateWithInfo(
+/**
+ * 只检查不计数：窗口内失败次数是否已达上限
+ * （计数只在「登录失败」时发生，见 recordFailure）
+ */
+function peek(
   store: Map<string, AttemptRecord>,
   key: string,
   maxAttempts: number,
   windowMs: number,
 ): CheckRateResult {
   const now = Date.now()
-  let record = store.get(key)
-
-  if (!record) {
-    store.set(key, { timestamps: [now], earliestTime: now })
-    return { allowed: true, retryAfterMs: 0 }
-  }
+  const record = store.get(key)
+  if (!record) return { allowed: true, retryAfterMs: 0 }
 
   // 清理过期
   record.timestamps = record.timestamps.filter(t => now - t < windowMs)
-
-  if (record.timestamps.length >= maxAttempts) {
-    // 计算还需等待的时间
-    const retryAfterMs = record.timestamps[0] + windowMs - now
-    return { allowed: false, retryAfterMs: Math.max(0, retryAfterMs) }
+  if (record.timestamps.length === 0) {
+    store.delete(key)
+    return { allowed: true, retryAfterMs: 0 }
   }
 
-  record.timestamps.push(now)
-  record.earliestTime = record.timestamps[0]
+  if (record.timestamps.length >= maxAttempts) {
+    return { allowed: false, retryAfterMs: Math.max(0, record.timestamps[0] + windowMs - now) }
+  }
   return { allowed: true, retryAfterMs: 0 }
 }
 
-function checkRate(
+function recordFailure(
   store: Map<string, AttemptRecord>,
   key: string,
-  maxAttempts: number,
   windowMs: number,
-): boolean {
-  return checkRateWithInfo(store, key, maxAttempts, windowMs).allowed
+): void {
+  const now = Date.now()
+  let record = store.get(key)
+  if (!record) {
+    record = { timestamps: [], earliestTime: now }
+    store.set(key, record)
+  }
+  record.timestamps = record.timestamps.filter(t => now - t < windowMs)
+  record.timestamps.push(now)
+  record.earliestTime = record.timestamps[0]
 }
 
+function clearAttempts(store: Map<string, AttemptRecord>, key: string): void {
+  store.delete(key)
+}
+
+// ═══════════════════════════════════════
+// IP 维度（默认 5 次失败 / 15 分钟）
+// ═══════════════════════════════════════
+
+export function isIpBlocked(ip: string): CheckRateResult {
+  return peek(ipStore, ip, DEFAULT_IP_MAX, DEFAULT_IP_WINDOW_MS)
+}
+
+export function recordIpFailure(ip: string): void {
+  recordFailure(ipStore, ip, DEFAULT_IP_WINDOW_MS)
+}
+
+export function clearIpAttempts(ip: string): void {
+  clearAttempts(ipStore, ip)
+}
+
+// ═══════════════════════════════════════
+// 账号维度（默认 10 次失败 / 1 小时）
+// ═══════════════════════════════════════
+
 /**
- * 按用户名检查限流（在解析 body 后调用）
+ * 按账号检查是否已被限流（不计数）
+ * 兼容旧名 checkUserRate：语义已从「检查并计数」改为「仅检查」
  */
 export function checkUserRate(
   username: string,
-  maxAttempts = 10,
-  windowMs = 3600_000,
+  maxAttempts = DEFAULT_USER_MAX,
+  windowMs = DEFAULT_USER_WINDOW_MS,
 ): boolean {
-  return checkRate(userStore, username, maxAttempts, windowMs)
+  return peek(userStore, username, maxAttempts, windowMs).allowed
+}
+
+export function recordUserFailure(
+  username: string,
+  windowMs = DEFAULT_USER_WINDOW_MS,
+): void {
+  recordFailure(userStore, username, windowMs)
+}
+
+export function clearUserAttempts(username: string): void {
+  clearAttempts(userStore, username)
+}
+
+/** 登录成功：清空该 IP + 账号的失败计数（避免正常多设备登录被误锁） */
+export function clearLoginAttempts(ip: string, username?: string): void {
+  clearIpAttempts(ip)
+  if (username) clearUserAttempts(username)
+}
+
+/** 登录失败：同时记录 IP 与账号两个维度 */
+export function recordLoginFailure(ip: string, username?: string): void {
+  recordIpFailure(ip)
+  if (username) recordUserFailure(username)
 }
 
 /**

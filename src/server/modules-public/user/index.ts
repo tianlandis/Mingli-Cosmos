@@ -16,7 +16,12 @@ import {
   optionalUserAuth,
   type UserEnv,
 } from '../../core/middleware/user-auth'
-import { loginRateLimit, checkUserRate } from '../../core/middleware/rate-limit'
+import {
+  loginRateLimit,
+  checkUserRate,
+  recordLoginFailure,
+  clearLoginAttempts,
+} from '../../core/middleware/rate-limit'
 import {
   getUserById,
   getUserByAccount,
@@ -188,12 +193,16 @@ route.post('/login', loginRateLimit(), async (c) => {
 
   const user = getUserByAccount(account)
   if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+    recordLoginFailure(clientIp(c), account)
     return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: '账号或密码错误' } }, 401)
   }
 
   if (user.status !== 'active') {
     return c.json({ success: false, error: { code: 'ACCOUNT_DISABLED', message: '账号已被停用，请联系客服' } }, 403)
   }
+
+  // 登录成功：清空失败计数，避免正常多设备登录被误锁
+  clearLoginAttempts(clientIp(c), account)
 
   const session = issueLogin(c, user)
   return c.json({

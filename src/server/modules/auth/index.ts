@@ -19,7 +19,13 @@ import {
   getSessionById,
   revokeSessionById,
 } from '../../core/middleware/auth'
-import { loginRateLimit, checkUserRate } from '../../core/middleware/rate-limit'
+import {
+  loginRateLimit,
+  checkUserRate,
+  recordLoginFailure,
+  clearLoginAttempts,
+  extractClientIP,
+} from '../../core/middleware/rate-limit'
 import { logAudit, type AdminEnv } from '../../core/middleware/audit'
 import { getDb, schema } from '../../db'
 
@@ -129,8 +135,9 @@ route.post('/login', loginRateLimit(), async (c) => {
   }
 
   const { username, password } = parsed.data
+  const clientIp = extractClientIP(c)
 
-  // 用户名限流
+  // 账号维度限流（只读检查；计数只在失败时累加）
   if (!checkUserRate(username)) {
     return c.json({
       success: false,
@@ -140,11 +147,15 @@ route.post('/login', loginRateLimit(), async (c) => {
 
   // 验证凭据
   if (username !== ADMIN_USERNAME || !verifyAdminPassword(password)) {
+    recordLoginFailure(clientIp, username)
     return c.json({
       success: false,
       error: { code: 'UNAUTHORIZED', message: '用户名或密码错误' },
     }, 401)
   }
+
+  // 登录成功：清空该 IP / 账号的失败计数，避免正常多设备登录被误锁
+  clearLoginAttempts(clientIp, username)
 
   // 签发 JWT + 创建 session（记录 IP/UA）
   const { token, jti, expiresAt } = signToken(username)

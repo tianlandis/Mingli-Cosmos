@@ -13,8 +13,9 @@
     "build": "vite build",
     "start": "npm run build && tsx src/server/index.ts --prod",
     "lint": "eslint .",
-    "typecheck": "tsc -b --noEmit",
-    "test": "vitest"
+  "typecheck": "tsc -b --noEmit",
+  "test": "vitest",
+  "smoke": "node scripts/smoke-e2e.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.72",
