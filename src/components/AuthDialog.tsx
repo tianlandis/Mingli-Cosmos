@@ -50,8 +50,8 @@ export default function AuthDialog({
         })
       }
       onClose()
-    } catch (err: any) {
-      setError(err.message || '操作失败')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '操作失败')
     } finally {
       setBusy(false)
     }
@@ -124,13 +124,15 @@ export default function AuthDialog({
             </>
           )}
 
-          <Field label="密码（至少 6 位）">
+          {/* 密码长度下限只属于「注册」规则；登录仅校验非空，
+              否则任何早于当前密码策略的账号都无法在 UI 中登录 */}
+          <Field label={mode === 'register' ? '密码（至少 6 位）' : '密码'}>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={mode === 'register' ? 6 : undefined}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               placeholder="••••••"
               className={inputCls}

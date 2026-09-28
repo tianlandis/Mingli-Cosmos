@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 
 interface HourOption { label: string; hour: number; range: string }
 
@@ -28,16 +29,18 @@ interface Props {
     calendarType: 'solar' | 'lunar'
     isLeapMonth?: boolean
   }) => void
+  /** 排盘进行中：锁定控件并给出明确反馈，避免重复提交 */
+  loading?: boolean
 }
 
 /* ── 样式常量：卡内统一栅格，控件等宽对齐 ──
  * 移动端（无 sm 前缀）一律取更大的触摸目标（≈40–44px 高），桌面端收紧回原值。 */
-const labelCls = 'block text-xs sm:text-[11px] text-[#8A8172] tracking-[0.15em] mb-1.5'
+const labelCls = 'block text-xs sm:text-[11px] text-fg-secondary tracking-[0.15em] mb-1.5'
 const segmentWrap = 'grid grid-cols-2 rounded-sm overflow-hidden border border-line-strong'
-const segmentBase = 'w-full py-2.5 sm:py-2 text-xs text-center transition-colors cursor-pointer'
-const selectCls = 'w-full bg-white border border-line-strong rounded-sm px-2 py-2.5 sm:py-2 text-xs text-fg-primary hover:border-neutral-300 focus:border-brand focus:outline-none cursor-pointer'
+const segmentBase = 'w-full py-2.5 sm:py-2 text-xs text-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60'
+const selectCls = 'w-full bg-surface-raised border border-line-strong rounded-sm px-2 py-2.5 sm:py-2 text-xs text-fg-primary hover:border-neutral-300 focus:border-brand focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-60'
 
-export default function BirthForm({ onCalculate }: Props) {
+export default function BirthForm({ onCalculate, loading = false }: Props) {
   const now = new Date()
   const [calendarType, setCalendarType] = useState<'solar' | 'lunar'>('solar')
   const [year, setYear] = useState(now.getFullYear())
@@ -48,21 +51,13 @@ export default function BirthForm({ onCalculate }: Props) {
   const [isLeapMonth, setIsLeapMonth] = useState(false)
   const [leapMonth, setLeapMonth] = useState(0)
 
-  useEffect(() => {
-    if (calendarType === 'lunar') {
-      checkLeapMonth(year)
-    }
-  }, [year, calendarType])
-
-  const checkLeapMonth = async (lunarYear: number) => {
+  /** 农历闰月查表：仅在切换到农历 / 变更年份时按需执行（事件驱动，不占 effect） */
+  const syncLeapMonth = async (lunarYear: number) => {
     try {
       const { LunarYear } = await import('lunar-typescript')
-      const y = LunarYear.fromYear(lunarYear)
-      const lm = y.getLeapMonth()
+      const lm = LunarYear.fromYear(lunarYear).getLeapMonth()
       setLeapMonth(lm)
-      if (lm === 0 || month !== lm) {
-        setIsLeapMonth(false)
-      }
+      if (lm === 0 || month !== lm) setIsLeapMonth(false)
     } catch {
       setLeapMonth(0)
       setIsLeapMonth(false)
@@ -75,6 +70,7 @@ export default function BirthForm({ onCalculate }: Props) {
       : 30
     setYear(value)
     if (day > maxDay) setDay(maxDay)
+    if (calendarType === 'lunar') void syncLeapMonth(value)
   }
 
   const handleMonthChange = (value: number) => {
@@ -88,6 +84,7 @@ export default function BirthForm({ onCalculate }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return
     onCalculate({
       year, month, day, hour: selectedHour, minute: 0, gender,
       calendarType,
@@ -104,6 +101,7 @@ export default function BirthForm({ onCalculate }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
+      aria-busy={loading}
       className="rounded-md border border-line-soft bg-white shadow-[0_1px_3px_rgba(28,25,20,0.05)] p-4 sm:p-5"
     >
       {/* 卡头：区域标题 + 当前时辰回显 */}
@@ -128,8 +126,13 @@ export default function BirthForm({ onCalculate }: Props) {
               <button
                 key={ct}
                 type="button"
+                disabled={loading}
                 aria-pressed={calendarType === ct}
-                onClick={() => { setCalendarType(ct); setIsLeapMonth(false) }}
+                onClick={() => {
+                  setCalendarType(ct)
+                  setIsLeapMonth(false)
+                  if (ct === 'lunar') void syncLeapMonth(year)
+                }}
                 className={`${segmentBase} ${
                   calendarType === ct
                     ? 'bg-fg-primary text-surface-page'
@@ -149,6 +152,7 @@ export default function BirthForm({ onCalculate }: Props) {
               <button
                 key={g}
                 type="button"
+                disabled={loading}
                 aria-pressed={gender === g}
                 onClick={() => setGender(g)}
                 className={`${segmentBase} ${
@@ -170,6 +174,7 @@ export default function BirthForm({ onCalculate }: Props) {
           <span className={labelCls}>年</span>
           <select
             value={year}
+            disabled={loading}
             onChange={e => handleYearChange(Number(e.target.value))}
             aria-label="出生年份"
             className={selectCls}
@@ -183,6 +188,7 @@ export default function BirthForm({ onCalculate }: Props) {
           <span className={labelCls}>月</span>
           <select
             value={month}
+            disabled={loading}
             onChange={e => handleMonthChange(Number(e.target.value))}
             aria-label="出生月份"
             className={selectCls}
@@ -201,6 +207,7 @@ export default function BirthForm({ onCalculate }: Props) {
           <span className={labelCls}>日</span>
           <select
             value={day}
+            disabled={loading}
             onChange={e => setDay(Number(e.target.value))}
             aria-label="出生日期"
             className={selectCls}
@@ -218,6 +225,7 @@ export default function BirthForm({ onCalculate }: Props) {
           <input
             type="checkbox"
             checked={isLeapMonth}
+            disabled={loading}
             onChange={e => setIsLeapMonth(e.target.checked)}
             className="accent-brand size-4 sm:size-3.5 cursor-pointer"
           />
@@ -233,11 +241,12 @@ export default function BirthForm({ onCalculate }: Props) {
             <button
               key={opt.hour}
               type="button"
+              disabled={loading}
               aria-pressed={selectedHour === opt.hour}
               aria-label={`${opt.label}时 ${opt.range}`}
               onClick={() => setSelectedHour(opt.hour)}
               title={`${opt.label}时 ${opt.range}`}
-              className={`w-full py-2.5 sm:py-1.5 text-xs sm:text-[11px] text-center rounded-sm transition-colors cursor-pointer ${
+              className={`w-full py-2.5 sm:py-1.5 text-xs sm:text-[11px] text-center rounded-sm transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                 selectedHour === opt.hour
                   ? 'bg-brand text-white'
                   : 'bg-white border border-line-strong text-fg-secondary hover:border-neutral-300'
@@ -249,12 +258,20 @@ export default function BirthForm({ onCalculate }: Props) {
         </div>
       </div>
 
-      {/* 排盘 CTA —— 整宽按钮，明确的主动作 */}
+      {/* 排盘 CTA —— 整宽按钮，明确的主动作；进行中锁定并给出反馈 */}
       <button
         type="submit"
-        className="mt-5 w-full py-3 sm:py-2.5 bg-brand text-white text-sm font-medium tracking-[0.3em] rounded-sm hover:bg-brand-strong transition-colors cursor-pointer"
+        disabled={loading}
+        className="mt-5 w-full py-3 sm:py-2.5 bg-brand text-white text-sm font-medium tracking-[0.3em] rounded-sm hover:bg-brand-strong transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
       >
-        开始排盘
+        {loading ? (
+          <span className="inline-flex items-center justify-center gap-2">
+            <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+            推演中…
+          </span>
+        ) : (
+          '开始排盘'
+        )}
       </button>
     </form>
   )

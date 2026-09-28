@@ -90,6 +90,7 @@
   --surface-raised: #FFFFFF;
   --surface-sunken: var(--paper-300);
   --surface-muted: var(--paper-200);
+
   --text-primary: var(--ink-900);
   --text-secondary: var(--ink-500);
   --text-tertiary: var(--ink-300);
@@ -213,8 +214,8 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #B83A2E;
-  border: 2.5px solid #B83A2E;
+  color: var(--cinnabar-600);
+  border: 2.5px solid var(--cinnabar-600);
   transform: rotate(-3deg);
   padding: 0 0.5rem;
   font-family: "Noto Serif SC", serif;
@@ -325,5 +326,20 @@ label,
     textarea {
       font-size: 16px;
     }
+  }
+}
+
+/* 章节标题左侧色条（命理印信感，朱砂品牌色） */
+.chapter-title {
+  border-left: 3px solid var(--cinnabar-600);
+  padding-left: 0.6rem;
+}
+
+/* ===== 底部 Tab 占位（P1 应用骨架）=====
+ * BottomNav 为固定定位，仅在手机端显示（sm:hidden）；
+ * 页脚需要预留等高间距（56px 导航 + 底部安全区），否则会被遮挡。 */
+@media (max-width: 640px) {
+  .pb-bottom-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }

@@ -112,67 +112,27 @@ export default function AnnotationPanel({ annotation }: Props) {
         </div>
       </div>
 
-      {/* ── V2.0 MBTI 分析 + 破格风险 并排 ── */}
-      {(patternAnalysis.mbti.typicalTypes.length > 0 || patternAnalysis.poGeRisks.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* MBTI 分析 */}
-          {patternAnalysis.mbti.typicalTypes.length > 0 && (
-            <div className="ink-card border-[#C4B8D8]">
-              <div className="text-[#7B4A8F] text-xs font-bold mb-3 tracking-wider">MBTI 人格画像</div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[#5A3068] text-base font-bold">
-                  {patternAnalysis.mbti.typicalTypes.join(' / ')}
-                </span>
-                <span className="text-fg-tertiary text-xs">（{patternAnalysis.mbti.cognitiveFunctions}）</span>
-              </div>
-              {patternAnalysis.mbti.traits && (
-                <p className="text-fg-secondary text-xs mb-2">{patternAnalysis.mbti.traits}</p>
-              )}
-              {patternAnalysis.mbti.portrait && (
-                <p className="text-fg-tertiary text-xs leading-relaxed mb-2 italic">"{patternAnalysis.mbti.portrait}"</p>
-              )}
-              {patternAnalysis.mbti.industrySuggestions.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-line-strong">
-                  <div className="text-[#7B4A8F]/70 text-xs font-bold mb-1 tracking-wider">行业适配</div>
-                  {patternAnalysis.mbti.industrySuggestions.map((s, i) => (
-                    <p key={i} className="text-fg-secondary text-xs">· {s}</p>
-                  ))}
+      {/* ── 格局风险（人格画像已独立到「人格画像」Tab，此处不再重复）── */}
+      {patternAnalysis.poGeRisks.length > 0 && (
+        <div className="ink-card border-cinnabar-200">
+          <div className="text-brand text-xs font-bold mb-3 tracking-wider">格局风险</div>
+          <div className="space-y-3">
+            {patternAnalysis.poGeRisks.map((risk, i) => (
+              <div key={i} className="bg-cinnabar-100 border border-cinnabar-200 rounded-sm p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-brand-strong text-sm font-bold">{risk.type}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-sm ${
+                    risk.severity === '高' ? 'bg-brand/10 text-brand-strong' :
+                    risk.severity === '中' ? 'bg-semantic-attention/10 text-gold-600' :
+                    'bg-surface-sunken text-fg-tertiary'
+                  }`}>{risk.severity}风险</span>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* 破格风险 */}
-          {patternAnalysis.poGeRisks.length > 0 && (
-            <div className="ink-card border-[#D4A8A4]">
-              <div className="text-brand text-xs font-bold mb-3 tracking-wider">格局风险</div>
-              <div className="space-y-3">
-                {patternAnalysis.poGeRisks.map((risk, i) => (
-                  <div key={i} className="bg-[#F5EDEB] border border-[#D4A8A4] rounded-sm p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-brand-strong text-sm font-bold">{risk.type}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-sm ${
-                        risk.severity === '高' ? 'bg-brand/10 text-brand-strong' :
-                        risk.severity === '中' ? 'bg-semantic-attention/10 text-gold-600' :
-                        'bg-surface-sunken text-fg-tertiary'
-                      }`}>{risk.severity}风险</span>
-                    </div>
-                    <p className="text-fg-secondary text-xs mb-1">{risk.description}</p>
-                    <p className="text-fg-secondary text-xs mb-1">💡 {risk.suggestion}</p>
-                    <p className="text-[#7B4A8F]/80 text-xs">🧠 MBTI补益：{risk.mbtiAdjust}</p>
-                  </div>
-                ))}
+                <p className="text-fg-secondary text-xs mb-1">{risk.description}</p>
+                <p className="text-fg-secondary text-xs mb-1">💡 {risk.suggestion}</p>
+                <p className="text-accent-purple text-xs">🧠 MBTI补益：{risk.mbtiAdjust}</p>
               </div>
-              {patternAnalysis.mbti.energyAdjustments.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-line-strong">
-                  <div className="text-semantic-attention text-xs font-bold mb-1 tracking-wider">能量调整策略</div>
-                  {patternAnalysis.mbti.energyAdjustments.map((adj, i) => (
-                    <p key={i} className="text-fg-secondary text-xs">· {adj}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
 

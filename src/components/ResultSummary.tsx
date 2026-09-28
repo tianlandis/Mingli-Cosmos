@@ -7,26 +7,34 @@ interface Props {
 }
 
 /**
- * L1 速读三卡 —— 用户排盘后第一眼要看到的三个结论：
- * 日主强弱 / 格局 / 命局总览。
- * 只做摘要，完整内容在 L2「命理解读」Tab。
+ * L1 速读层 —— 用户排盘后第一眼要看到的结论。
+ *
+ * 顶部「人格画像」强调卡（16 型人格，规则引擎产出，非 LLM 生成），
+ * 下方三卡：日主强弱 / 格局 / 命局总览。完整内容在 L2 对应 Tab。
  */
 export default function ResultSummary({ annotation, dayMaster }: Props) {
   if (!annotation) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-hidden="true">
-        {[0, 1, 2].map(i => (
-          <div key={i} className="rounded-md border border-line-soft bg-white p-4 animate-pulse">
-            <div className="h-3 w-16 rounded-full bg-surface-sunken mb-3" />
-            <div className="h-5 w-24 rounded-sm bg-surface-sunken mb-2" />
-            <div className="h-3 w-full rounded-full bg-surface-muted" />
-          </div>
-        ))}
+      <div className="space-y-3" aria-hidden="true">
+        <div className="rounded-md border border-line-soft bg-white p-4 animate-pulse">
+          <div className="h-3 w-16 rounded-full bg-surface-sunken mb-3" />
+          <div className="h-6 w-32 rounded-sm bg-surface-sunken" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="rounded-md border border-line-soft bg-white p-4 animate-pulse">
+              <div className="h-3 w-16 rounded-full bg-surface-sunken mb-3" />
+              <div className="h-5 w-24 rounded-sm bg-surface-sunken mb-2" />
+              <div className="h-3 w-full rounded-full bg-surface-muted" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   const { strengthAnalysis, patternAnalysis, overview } = annotation
+  const mbti = patternAnalysis.mbti
 
   const strengthTone =
     strengthAnalysis.score >= 60 ? 'var(--brand)'
@@ -64,19 +72,38 @@ export default function ResultSummary({ annotation, dayMaster }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {cards.map(c => (
-        <div key={c.label} className="rounded-md border border-line-soft bg-white p-4">
-          <div className="text-[11px] text-[#8A8172] tracking-[0.15em] mb-2">{c.label}</div>
-          <div
-            className="text-lg font-bold text-fg-primary mb-1"
-            style={{ fontFamily: '"Noto Serif SC", serif' }}
-          >
-            {c.main}
+    <div className="space-y-3">
+      {/* ── 人格画像（重点突出项）── */}
+      {mbti.typicalTypes.length > 0 && (
+        <div className="rounded-md border border-accent-purple-soft bg-accent-purple/5 p-4">
+          <div className="text-[11px] text-accent-purple tracking-[0.15em] mb-1.5">人格画像</div>
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span
+              className="text-xl font-bold text-accent-purple-deep tracking-wide"
+              style={{ fontFamily: '"Noto Serif SC", serif' }}
+            >
+              {mbti.typicalTypes.join(' / ')}
+            </span>
+            {mbti.traits && <span className="text-xs text-fg-secondary">{mbti.traits}</span>}
           </div>
-          {c.sub && <div className="text-xs text-fg-tertiary">{c.sub}</div>}
         </div>
-      ))}
+      )}
+
+      {/* ── 速读三卡 ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {cards.map(c => (
+          <div key={c.label} className="rounded-md border border-line-soft bg-white p-4">
+            <div className="text-[11px] text-[#8A8172] tracking-[0.15em] mb-2">{c.label}</div>
+            <div
+              className="text-lg font-bold text-fg-primary mb-1"
+              style={{ fontFamily: '"Noto Serif SC", serif' }}
+            >
+              {c.main}
+            </div>
+            {c.sub && <div className="text-xs text-fg-tertiary">{c.sub}</div>}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
