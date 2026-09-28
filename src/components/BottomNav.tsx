@@ -10,7 +10,7 @@
 // ============================================================
 
 import { NavLink } from 'react-router-dom'
-import { Compass, User } from 'lucide-react'
+import { Compass, LayoutGrid, User } from 'lucide-react'
 
 interface NavItem {
   to: string
@@ -21,6 +21,7 @@ interface NavItem {
 
 const ITEMS: NavItem[] = [
   { to: '/', label: '排盘', icon: Compass, end: true },
+  { to: '/discover', label: '发现', icon: LayoutGrid, end: false },
   { to: '/my', label: '我的', icon: User, end: false },
 ]
 

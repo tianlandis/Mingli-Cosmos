@@ -25,6 +25,7 @@ const VIP_LABEL: Record<string, string> = {
 
 const NAV = [
   { to: '/', label: '排盘', end: true },
+  { to: '/discover', label: '发现', end: false },
   { to: '/my', label: '我的', end: false },
 ]
 

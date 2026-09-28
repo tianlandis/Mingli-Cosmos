@@ -6,13 +6,16 @@
 // 状态来源：外壳层（useShell），保证切到「我的」再切回不丢命盘。
 // ============================================================
 
+import { useState } from 'react'
 import BirthForm from '../components/BirthForm'
 import BaziChart from '../components/BaziChart'
 import ElementBar from '../components/ElementBar'
 import ResultSummary from '../components/ResultSummary'
 import ResultTabs from '../components/ResultTabs'
+import SystemSwitcher from '../components/SystemSwitcher'
 import { EmptyGuide, ErrorNotice, LoadingBar } from '../components/StateBlocks'
 import { useShell } from '../lib/shell'
+import { DEFAULT_SYSTEM_ID, getSystem } from '../lib/systems'
 
 export default function PaipanPage() {
   const {
@@ -20,10 +23,19 @@ export default function PaipanPage() {
     showChat, openChat, closeChat,
   } = useShell()
 
+  // 体系选择：后端 ADR-011 注册表目前只注册 bazi，其余为禁用态（先布局）。
+  // 后续体系就绪时，把 selectedSystem 随 chart 请求的 `system` 字段下发即可。
+  const [selectedSystem, setSelectedSystem] = useState(DEFAULT_SYSTEM_ID)
+  const system = getSystem(selectedSystem)
+
   return (
     <>
-      {/* 输入区 — 卡片式生辰录入 */}
-      <div className="mb-5">
+      {/* 输入区 — 体系切换 + 卡片式生辰录入 */}
+      <div className="mb-5 space-y-3">
+        <SystemSwitcher value={selectedSystem} onChange={setSelectedSystem} />
+        {system && (
+          <p className="text-xs text-fg-tertiary tracking-wide">{system.desc}</p>
+        )}
         <BirthForm onCalculate={calculate} loading={loading} />
       </div>
 
