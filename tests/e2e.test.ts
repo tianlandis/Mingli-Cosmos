@@ -5,13 +5,31 @@
 // ============================================================
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Hono } from 'hono'
+import bcrypt from 'bcryptjs'
 import { reportRoute } from '@/server/api/report'
 import { chatRoute } from '@/server/api/chat'
-import { initDb, closeDb } from '@/server/db'
+import { initDb, closeDb, createUser, createUserSession } from '@/server/db'
+import { signUserToken, verifyUserToken } from '@/server/core/middleware/user-auth'
+
+/**
+ * 命书接口已要求登录（2026-09-29 止血：原为匿名可刷，内部 4 次大模型调用）。
+ * 本文件的用例测的是**入参校验**，故统一以一个已登录身份发起。
+ */
+let testToken = ''
+
+function authHeaders(): Record<string, string> {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${testToken}` }
+}
 
 // ─── 创建 Hono 测试 App ───
 function createTestApp(): Hono {
   const app = new Hono()
+  // 注入登录态（等价于生产鉴权中间件写入 currentUser）
+  app.use('/api/report', async (c, next) => {
+    const payload = verifyUserToken(testToken)
+    if (payload) c.set('currentUser', payload as never)
+    await next()
+  })
   app.route('/', reportRoute)
   app.route('/', chatRoute)
 
@@ -32,6 +50,11 @@ beforeAll(() => {
   process.env.LLM_API_KEY = 'mock-key'
   process.env.LLM_BASE_URL = 'http://localhost:11434/v1'
   process.env.LLM_MODEL = 'mock-model'
+
+  const u = createUser({ username: 'e2e-report-user', passwordHash: bcrypt.hashSync('x', 10) })
+  const { token, jti, expiresAt } = signUserToken(u.id, u.username)
+  createUserSession({ userId: u.id, tokenJti: jti, expiresAt, ip: '127.0.0.1', userAgent: 'test' })
+  testToken = token
 })
 
 afterAll(() => {
@@ -45,16 +68,26 @@ afterAll(() => {
 // POST /api/report
 // ═══════════════════════════════════════════
 describe('POST /api/report', () => {
-  it('缺少 chart → 400', async () => {
+  it('未登录 → 401（命书需登录，止血后新增）', async () => {
     const app = createTestApp()
     const res = await app.request('/api/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('缺少 chart → 400', async () => {
+    const app = createTestApp()
+    const res = await app.request('/api/report', {
+      method: 'POST',
+      headers: authHeaders(),
       body: JSON.stringify({ chart: null, annotation: {} }),
     })
 
     expect(res.status).toBe(400)
-    const body = await res.json() as any
+    const body = await res.json() as { error?: string }
     expect(body.error).toBe('BAD_REQUEST')
   })
 
@@ -62,12 +95,12 @@ describe('POST /api/report', () => {
     const app = createTestApp()
     const res = await app.request('/api/report', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ chart: {}, annotation: null }),
     })
 
     expect(res.status).toBe(400)
-    const body = await res.json() as any
+    const body = await res.json() as { error?: string }
     expect(body.error).toBe('BAD_REQUEST')
   })
 
@@ -75,7 +108,7 @@ describe('POST /api/report', () => {
     const app = createTestApp()
     const res = await app.request('/api/report', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: '',
     })
 
@@ -96,7 +129,7 @@ describe('POST /api/chat', () => {
     })
 
     expect(res.status).toBe(400)
-    const body = await res.json() as any
+    const body = await res.json() as { error?: string }
     expect(body.error).toBe('BAD_REQUEST')
   })
 
@@ -109,7 +142,7 @@ describe('POST /api/chat', () => {
     })
 
     expect(res.status).toBe(400)
-    const body = await res.json() as any
+    const body = await res.json() as { error?: string }
     expect(body.error).toBe('BAD_REQUEST')
   })
 
@@ -141,9 +174,9 @@ describe('Chat 滑动窗口', () => {
       strengthAnalysis: { strength: '偏旺' as const, score: 72 },
       patternAnalysis: { patternName: '建禄格', quality: '中和' as const },
       shiShenProfile: [{ name: '比肩' as const, count: 3 }],
-      luckAnalysis: { daYunList: [] as any[] },
-      shenSha: { items: [] as any[] },
-      specialTopics: {} as any,
+      luckAnalysis: { daYunList: [] },
+      shenSha: { items: [] },
+      specialTopics: {},
     }
 
     const res = await app.request('/api/chat', {
