@@ -42,8 +42,20 @@ export const meta = { prefix: 'synastry' }
 /** 合盘结果缓存（同一对命盘 + 同一关系） */
 const cache = createTtlCache(500)
 
-/** 默认消耗额度（与前端点券模型 synastry=20 对齐） */
-const DEFAULT_COST = 20
+/** 默认消耗额度（可由后台 `synastry_quota_cost` 覆盖） */
+const DEFAULT_COST = 1
+
+/** 读取合盘消耗额度：后台可配，未配或非法值回落 DEFAULT_COST */
+function readCost(): number {
+  if (!isDbReady()) return DEFAULT_COST
+  try {
+    const raw = getConfig('synastry_quota_cost')?.value
+    const n = Number(raw)
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_COST
+  } catch {
+    return DEFAULT_COST
+  }
+}
 
 const bodySchema = z.object({
   /** 甲方：档案 id 或现场生辰，二选一 */
@@ -117,7 +129,7 @@ function payloadToBirthInput(v: {
   }
 }
 
-// 合盘耗 20 额度，必须登录；中间件会写入 currentUser（未登录直接 401）
+// 合盘消耗额度（后台可配 synastry_quota_cost），必须登录；中间件会写入 currentUser（未登录直接 401）
 route.post('/', userAuthMiddleware, async (c) => {
   const current = c.get('currentUser')
   if (!current) return fail(c, 401, 'UNAUTHORIZED', '请先登录')
@@ -195,7 +207,7 @@ route.post('/', userAuthMiddleware, async (c) => {
     const res = reserveQuota({
       userId: current.userId,
       idempotencyKey: key,
-      cost: DEFAULT_COST,
+      cost: readCost(),
       reason: 'synastry',
       refKey: null,
     })
@@ -205,7 +217,7 @@ route.post('/', userAuthMiddleware, async (c) => {
         error: {
           code: res.reason ?? 'QUOTA_EXHAUSTED',
           message: res.reason === 'QUOTA_EXHAUSTED'
-            ? `合盘需要 ${DEFAULT_COST} 额度，当前余额不足，请充值或订阅套餐`
+            ? `合盘需要 ${readCost()} 额度，当前余额不足，请充值或订阅套餐`
             : '无法完成本次合盘',
         },
         quotaRemaining: res.balanceAfter ?? 0,

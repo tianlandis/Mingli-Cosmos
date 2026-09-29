@@ -23,8 +23,8 @@ import { newTraceId } from '../lib/trace'
 /** 命书额度门控配置项（显式 'false' 才关闭；未配置 = 扣费，堵漏洞） */
 const QUOTA_FLAG = 'quota_enforce_report'
 
-/** 命书消耗额度（可由后台配置覆盖，默认 5，与前端点券模型一致） */
-const DEFAULT_COST = 5
+/** 命书消耗额度（可由后台 `report_quota_cost` 覆盖） */
+const DEFAULT_COST = 1
 
 function readCost(): number {
   if (!isDbReady()) return DEFAULT_COST

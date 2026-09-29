@@ -96,7 +96,7 @@ beforeAll(() => {
   aliceId = alice.user.id
   bobToken = makeUser('bob-syn').token
 
-  // 合盘 cost=20，初始额度不够 —— 补足以便覆盖"扣费/缓存"路径
+  // 把额度补足，以便覆盖"扣费/缓存"路径（合盘 cost 默认 1，后台可配）
   getDb().update(schema.users).set({ quotaTotal: 1000 }).where(eq(schema.users.id, aliceId)).run()
 })
 

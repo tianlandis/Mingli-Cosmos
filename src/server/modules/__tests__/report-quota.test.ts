@@ -124,7 +124,7 @@ describe('命书接口 · 缓存命中不扣额度', () => {
   it('未命中缓存且额度不足 → 402 且不进 pipeline（不再免费白嫖）', async () => {
     resetReportCache()
 
-    // 先把额度耗光（命书 cost=5，初始额度正好 5）
+    // 先把额度耗光（初始额度 5；命书 cost 走后台配置，测试期默认 1）
     const burn = reserveQuota({
       userId,
       idempotencyKey: 'burn-all-quota',
@@ -143,8 +143,8 @@ describe('命书接口 · 缓存命中不扣额度', () => {
     expect(res.status).toBe(402)
     const body = await res.json() as { code?: string; message?: string }
     expect(body.code).toBe('QUOTA_EXHAUSTED')
-    // 必须说明要多少额度，别让用户猜
-    expect(body.message).toContain('5')
+    // 必须说明要多少额度，别让用户猜（测试期 cost=1）
+    expect(body.message).toContain('1 额度')
   })
 })
 

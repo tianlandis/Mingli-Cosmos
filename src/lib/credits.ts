@@ -36,10 +36,11 @@ export interface CreditCostDef {
 export const CREDIT_COSTS: Record<string, CreditCostDef> = {
   chart: { key: 'chart', label: '排盘', credits: 0, backendReady: true, reason: '引擎本地计算，不消耗' },
   chat: { key: 'chat', label: 'AI 问答', credits: 1, backendReady: true, reason: '每轮一次大模型润色' },
-  // backendReady=true：后端已接入幂等额度预留（cost=5）+ 同命盘缓存命中不扣券
-  report: { key: 'report', label: '命书报告', credits: 5, backendReady: true, reason: '四步生成，含人格与运势' },
-  // backendReady=true：规则层算事实（不调模型），已接入扣费 + 同组合缓存
-  synastry: { key: 'synastry', label: '双人合盘', credits: 20, backendReady: true, reason: '双造比对 + 关系评分' },
+  // ⚠️ 测试期（2026-09-29 田哥定）：所有已接入功能统一 cost=1，正式定价后再调回。
+  // backendReady=true：后端已接入幂等额度预留（后台可配 report_quota_cost）+ 同命盘缓存命中不扣券
+  report: { key: 'report', label: '命书报告', credits: 1, backendReady: true, reason: '四步生成，含人格与运势' },
+  // backendReady=true：规则层算事实（不调模型），已接入扣费（后台可配 synastry_quota_cost）+ 同组合缓存
+  synastry: { key: 'synastry', label: '双人合盘', credits: 1, backendReady: true, reason: '双造比对 + 关系评分' },
   relatives: { key: 'relatives', label: '六亲详解', credits: 8, backendReady: false, reason: '六亲宫位逐项推演' },
   fortune: { key: 'fortune', label: '流年详批', credits: 15, backendReady: false, reason: '逐年逐月细批' },
   daily: { key: 'daily', label: '每日运势', credits: 0, backendReady: false, reason: '模板化输出，无需模型' },
