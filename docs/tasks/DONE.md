@@ -4,6 +4,60 @@
 
 ---
 
+## 2026-09-29 — 🚀 批次 IV：命书止血 + 双人合盘 + astro/mbti 体系（已部署内网） ✅
+
+> 目标：把「成本黑洞」堵上、把「第二个付费点」做出来、把「多体系骨架」填实。
+> 三批共 3 个提交（`276c975` / `d44aa21` / `e762f49`），**零 schema 变更**（全是代码与路由）。
+> 部署：内网 `192.168.2.10` 已上线并验收（备份 `mingli-20260929-1436.db`）。
+
+### 批次 A — 命书接口止血（`276c975`）
+
+> 起因：成本规划时发现 `POST /api/report` **无鉴权 + 零扣费 + 4 次 LLM + 无缓存**，
+> 任何人可无限刷，是明确的成本黑洞。
+
+| 落点 | 内容 |
+|---|---|
+| `src/server/api/report.ts` | 重写：登录鉴权（未登录 401）→ 幂等额度预留（cost 默认 5）→ `chart_hash` 缓存命中直返 `cached:true` → 失败 `refundQuota` |
+| `src/server/lib/report-cache.ts` / `ttl-cache.ts` | 新建 TTL 缓存（按 `chart_hash`，防刷） |
+| `src/hooks/useReport.ts` + `PaipanPage.tsx` | 前端命书区块点亮；换 `sessionId` 时 `report.close()` 防串盘 |
+| `src/lib/credits.ts` / `features.ts` | report 成本 5 且 `backendReady:true`；feature 由「未就绪」改 `available` |
+
+**验收**：未登录 → 401「生成命书需要登录」；伪造 `sessionId` → 404 且**额度未扣**（失败退款生效）。
+
+### 批次 B — 双人合盘（`e762f49`）
+
+| 落点 | 内容 |
+|---|---|
+| `src/server/lib/synastry.ts` | 新建规则引擎：**零 LLM**。五维加权（日干相合 / 宫位关系 / 根基家世 / 五行互补 / 强弱互补），权重按 `relation` 分配；`RelationKey` 11 项 |
+| `src/server/modules-public/synastry/index.ts` | `POST /`（cost 20，`userAuthMiddleware` + 参数指纹缓存）+ `GET /relations` |
+| `src/pages/SynastryPage.tsx` + `main.tsx` | 新页面 `/synastry` |
+
+**验收（内网实测）**：未登录 → 401；首次扣 20（100→80，输出 `score:63 / grade:平顺` + 五维评分 + highlights）；
+同参数二次 `cached:true` **不扣费**；换 `relation` 再扣（80→60）。
+
+### 批次 C — astro / mbti 体系（`d44aa21`）
+
+| 落点 | 内容 |
+|---|---|
+| `src/server/systems/astro.ts` | `SystemEngine` 实现：太阳星座（中气时刻分界，复用 `astro-mapping.ts`）；农历明确报错 |
+| `src/server/systems/mbti.ts` | `SystemEngine` 实现：从命盘批注 `patternAnalysis.mbti` 提升（**非问卷**） |
+| `src/server/systems/registry.ts` | 追加 `registerSystem(astroEngine / mbtiEngine)` |
+| `src/server/modules-public/chart/index.ts` | 修「非八字体系被当 `BaziBundle` 拆解返回空」：`isBazi` 分支，`chart/annotation` 仅八字有，非八字走 `systemResult` |
+| `src/lib/systems.ts` | 前端 id 由 `zodiac` → **`astro`** 对齐后端；astro/mbti 状态改 `available` |
+
+**验收（内网实测）**：`system=astro` → 金牛座（1990-05-15，中气分界）✓；`system=mbti` → 四柱 + 画像 ✓；`bazi` 正常 ✓。
+
+### 本批基线
+
+`typecheck` 0 错 ｜ `vitest` **505/505（31 文件）** ｜ `build` ✓ ｜ 本地 + 内网 `smoke` **42/42**。
+
+### ⚠️ 遗留（已知，非缺陷）
+
+**额度定价倒挂**：新用户 `quotaTotal=5`，合盘定价 20 → 新注册用户调合盘**必然 402**。
+田哥决定由**后台调额度**处理（不写代码），故本批未改初始值。
+
+---
+
 ## 2026-09-29 — 👤 真实用户闭环：注册收录生辰 + 登录免重复排盘 ✅
 
 > 目标：修掉"数据层做完、能力未闭环"——`birth_profiles` 早有表+仓储，却**无 API、注册不收**，
