@@ -18,6 +18,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   dashboard: '仪表盘',
   config: '系统配置',
   prompts: 'Prompt 模板',
+  guardrails: 'L3 防幻觉护栏',  // 修复：缺失此项时面包屑直接显示英文 guardrails
   llm: 'LLM 供应商',
   'knowledge-dict': '命理规则字典',
   audit: '审计日志',
@@ -33,11 +34,7 @@ function getBreadcrumbs(pathname: string) {
   for (let i = 0; i < segments.length; i++) {
     const label = BREADCRUMB_LABELS[segments[i]] || segments[i]
     const path = '/' + segments.slice(0, i + 1).join('/')
-    if (i === segments.length - 1) {
-      crumbs.push({ label, path })
-    } else {
-      crumbs.push({ label, path })
-    }
+    crumbs.push({ label, path })
   }
   return crumbs
 }

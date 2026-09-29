@@ -135,6 +135,19 @@ export async function createApp(options: AppOptions): Promise<Hono> {
       }
     })
 
+    // 管理后台 SPA 兜底：/admin/llm、/admin/users 等子路由刷新/直达时，
+    // 必须同样返回 admin/index.html —— 否则会落到下方 C 端的 `/*` 兜底，
+    // 拿到挂载点为 #root 的 index.html，而 admin 挂载点是 #admin-root → 白屏。
+    app.get('/admin/*', (c) => {
+      try {
+        c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        c.header('Pragma', 'no-cache')
+        return c.html(readFileSync(join(distDir, 'admin/index.html'), 'utf-8'))
+      } catch {
+        return c.json({ success: false, error: { code: 'ADMIN_NOT_BUILT', message: '管理后台未构建' } }, 500)
+      }
+    })
+
     // Favicon
     app.get('/favicon.svg', serveStatic({ root: distDir }))
 

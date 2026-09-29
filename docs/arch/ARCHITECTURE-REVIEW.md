@@ -317,23 +317,26 @@ P5 商业化闭环         P6 AI 深化              P7 规模化               
 
 ---
 
-## 8. 待补 ADR 清单（Architecture Decision Records）
+## 8. 架构决策记录（ADR）清单
 
-> ✅ **已于 2026-09-28 架构决策评审会产出**，见 `../adr/`（`docs/adr/README.md` 为索引）。
-> 每条都含 **Context / Drivers / Options / Decision / Consequences / 复审触发条件**。
+> ✅ **2026-09-28 架构评审会产出 10 条（001~010）**；2026-09-29 新增 011~013（多体系/数据域/推介奖励）。
+> 权威状态以 `../adr/README.md` 为准（下表同步自该索引，2026-09-29 核对）。每条含 **Context / Drivers / Options / Decision / Consequences / 复审触发条件**。
 
 | ADR | 标题 | 关联风险 | 状态 |
 |---|---|---|---|
 | [ADR-001](../adr/ADR-001-monolith-first.md) | 单体优先 vs 微服务：为什么现在不拆 | 全局 | Proposed |
 | [ADR-002](../adr/ADR-002-sqlite-to-postgres-triggers.md) | SQLite → PostgreSQL 的迁移触发条件 | 4.1 | Proposed |
 | [ADR-003](../adr/ADR-003-llm-gateway.md) | 引入 LLM 网关（缓存/路由/核算/降级/限流） | 4.3 | Proposed |
-| [ADR-004](../adr/ADR-004-quota-idempotency.md) | 配额与计费的一致性（幂等消费） | 计费闭环 | Proposed |
-| [ADR-005](../adr/ADR-005-computation-authority.md) | 计算权威 SSOT：服务端算 还是 重算校验 | 🔴 R-1 | Proposed ⭐ |
-| [ADR-006](../adr/ADR-006-pii-governance.md) | 个人信息（生辰）数据治理与删除权 | PII 合规 | Proposed |
-| [ADR-007](../adr/ADR-007-observability-baseline.md) | 可观测性基线：SLO / 指标 / 追踪 | 4.4 | Proposed |
-| [ADR-008](../adr/ADR-008-backup-and-dr.md) | 备份与灾难恢复策略 | 4.1 | Proposed |
-| [ADR-009](../adr/ADR-009-payment-integration.md) | 支付接入与回调幂等 | 计费闭环 | Proposed |
+| [ADR-004](../adr/ADR-004-quota-idempotency.md) | 配额与计费的一致性（幂等消费） | 计费闭环 | `Accepted` ✅ |
+| [ADR-005](../adr/ADR-005-computation-authority.md) | 计算权威 SSOT：服务端算 还是 重算校验 | 🔴 R-1 | `Accepted` ✅ ⭐ |
+| [ADR-006](../adr/ADR-006-pii-governance.md) | 个人信息（生辰）数据治理与删除权 | PII 合规 | `Accepted` 🔶 |
+| [ADR-007](../adr/ADR-007-observability-baseline.md) | 可观测性基线：SLO / 指标 / 追踪 | 4.4 | `Accepted` ✅ |
+| [ADR-008](../adr/ADR-008-backup-and-dr.md) | 备份与灾难恢复策略 | 4.1 | `Accepted` ✅ |
+| [ADR-009](../adr/ADR-009-payment-integration.md) | 支付接入与回调幂等 | 计费闭环 | `Accepted` 🔶 |
 | [ADR-010](../adr/ADR-010-api-versioning.md) | API 版本与弃用策略（含 /api/admin 退场） | 🟢 R-4 | Proposed |
+| [ADR-011](../adr/ADR-011-multi-system-registry.md) | 多体系注册表：从「八字专用」到「多体系共存」 | 领域扩展 | Proposed |
+| [ADR-012](../adr/ADR-012-data-domain-strategy.md) | 数据域分层与多库演进策略 | 数据扩展 | `Accepted` ✅ |
+| [ADR-013](../adr/ADR-013-referral-rewards.md) | 推介奖励域：邀请码·绑定·达标·幂等发奖 | 增长 | `Accepted` ✅ |
 
 ---
 

@@ -5,7 +5,8 @@
 // ============================================================
 
 import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom'
+import { Compass } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import { setUnauthorizedHandler } from './lib/api'
 import Login from './components/Login'
@@ -20,6 +21,28 @@ import OrdersPage from './modules/orders/OrdersPage'
 import ConfigPanel from './components/ConfigPanel'
 import AuditLog from './components/AuditLog'
 import { RefreshCw } from 'lucide-react'
+
+/** 404：未注册路径的兜底页（原先是空白内容区） */
+function NotFound() {
+  const { pathname } = useLocation()
+  return (
+    <div className="flex flex-col items-center justify-center py-24 gap-3">
+      <div className="size-12 flex items-center justify-center rounded-xl bg-[#B8964A]/10 border border-[#B8964A]/20">
+        <Compass size={22} className="text-[#B8964A]" />
+      </div>
+      <h3 className="text-base font-semibold text-[#EDE8DF] tracking-[0.04em]">页面不存在</h3>
+      <p className="text-sm text-[#6B6459]">
+        未找到路径 <code className="font-mono text-[#A09888]">{pathname}</code>
+      </p>
+      <Link
+        to="/dashboard"
+        className="mt-2 px-4 py-2 text-sm rounded-lg border border-[#B8964A]/20 text-[#B8964A] hover:bg-[#B8964A]/10 transition-colors"
+      >
+        返回仪表盘
+      </Link>
+    </div>
+  )
+}
 
 export default function App() {
   const auth = useAuth()
@@ -63,6 +86,8 @@ export default function App() {
         <Route path="/knowledge-dict" element={<KnowledgeDictPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/orders" element={<OrdersPage />} />
+        {/* 兜底：未注册路径原先渲染空白内容区，用户无从判断是地址错还是页面坏了 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
   )

@@ -156,18 +156,21 @@
 
 ---
 
-## ⬜ 2026-09-29 批次 V（星座语料落库 — 专门再做）
+## ✅ 2026-09-29 批次 V（星座语料落库）
 
-> 田哥指示：星座资料专门文件夹落库**单独开批次做**。基建已就绪，本批只做数据生产与落库。
+> 星座资料专门文件夹落库。**已完成**（2026-09-29 晚）。
 
-| 项 | 任务 | 依据 |
-|:--|------|------|
-| V-1 | 生产 `seeds/knowledge/zodiac.json` 正式语料：12 星座 × 关键词表（12~14 词）× 四元素分组 × 一句话徽章，**只写能量风格、禁人格断言** | `docs/corpus/zodiac-corpus/CORPUS-STRUCTURE.md` + `METHODOLOGY-FUSION.md` |
-| V-2 | 每条 traits 过 `corpus-consistency.detectConflicts` 检测（0 conflict 才准入库） | `src/server/lib/corpus-consistency.ts` |
-| V-3 | seed 落 `knowledge_assets`（category='astro'，含来源与置信度标注），后台可管理 | schema 已预留 'astro' 分类位 |
-| V-4 | 展示层语料与 LLM 注入语料物理隔离；LLM 注入只允许能量风格措辞 | ASTRO-MAPPING.md 第六节写作规范 |
+| 项 | 任务 | 状态 |
+|:--|------|:--:|
+| V-1 | `seeds/knowledge/zodiac.json` 正式语料：12 星座 × 8 能量风格 traits + energyStyle + badge + branchPair（动态生成） | ✅ |
+| V-2 | 全矩阵 `scanMatrix` 384 组合（12 星座 × 32 MBTI 档案）**0 conflict / 0 tension** | ✅ |
+| V-3 | `npm run db:seed` 落 `knowledge_assets`（category='zodiac'，12 条，含来源/规范/检测时间戳 meta） | ✅ |
+| V-4 | 语料全部为能量风格措辞（词表外中性词），展示层与 LLM 注入可安全共用 | ✅ |
 
-**前置已就绪**：astro 映射算法（批次 IV commit `d44aa21`）｜ 矛盾检测器 + 11 测试 ｜ 外部调研五份笔记。
+**验收**：`typecheck` 0 错 ｜ `vitest` **533/533** ｜ 端到端抽样 4 生辰（双鱼/白羊/摩羯/狮子，含边界时刻）排盘映射→查库→检测全绿。
+**坑**：`getSignBranchPair` 是 0-based（0=白羊），首版按 1-based 传参致月支对错位一格，端到端抽样抓出后重生成重导入（幂等 upsert 更新 12 条）。
+**生成脚本**：`data/gen-zodiac.mts`（可复跑）｜ 验收脚本：`data/verify-zodiac.mts`。
+**顺手修**：删除 WIP `admin/components/SystemSelector.tsx` 中未使用的 Badge import（typecheck 硬标准回绿）。
 
 ---
 

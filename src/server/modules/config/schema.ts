@@ -33,6 +33,17 @@ export const moduleSettingsSchema = z.object({
     /** 语言 */              language:         z.enum(['zh-CN', 'zh-TW', 'en']).default('zh-CN'),
     /** 显示高级选项 */      showAdvanced:     z.boolean().default(false),
   }).prefault({}),
+
+  /**
+   * [ADR-011] 体系（应用）选择 —— 后台「选定应用」的落点
+   * 后端真值来自 systems/registry.ts；这里只管「默认哪个 + 放行哪几个」。
+   */
+  systems: z.object({
+    /** 默认体系：C 端未显式指定 system 时使用；必须已注册且已启用 */
+    defaultSystem:   z.string().default('bazi'),
+    /** 启用的体系 id 列表；不在列表内的体系对 C 端不可见 */
+    enabledSystems:  z.array(z.string()).default(['bazi']),
+  }).prefault({}),
 })
 
 export type ModuleSettings = z.infer<typeof moduleSettingsSchema>

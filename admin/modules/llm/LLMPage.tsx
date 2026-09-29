@@ -526,6 +526,22 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
     await fetchProviders()
   }, [apiHeaders, fetchProviders, selectedId])
 
+  /**
+   * ── 指定应用场景（模型分级）──
+   * 让管理员在列表上**一键选定**这个模型用于哪个应用，不必进编辑弹窗：
+   *   对话 → role='fast'（AI 对话 / 意图路由 / Multi-Agent）
+   *   命书 → role='deep'（命书 Step1 性格 / Step2 运势）
+   * 再次点击已选项 = 取消该用途；同一用途只保留一个供应商（后端自动顶掉旧的）。
+   */
+  const handleSetRole = useCallback(async (id: number, role: 'fast' | 'deep' | null) => {
+    await fetch(`/api/v1/admin/llm/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...apiHeaders() },
+      body: JSON.stringify({ role }),
+    })
+    await fetchProviders()
+  }, [apiHeaders, fetchProviders])
+
   // ── 设为默认 ──
   const handleSetDefault = useCallback(async (id: number) => {
     await fetch(`/api/v1/admin/llm/${id}`, {
@@ -780,6 +796,36 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       <Wrench size={9} />
                       <span>{p.supportedTools?.length ?? 0} 工具</span>
                       <span className="ml-auto text-[#A09888] font-mono">T={p.temperature?.toFixed(1)}</span>
+                    </div>
+
+                    {/* ── 应用选择按钮组：一键指定这个模型用于哪个场景 ── */}
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/[0.04]">
+                      <span className="text-sm text-[#4A4540] shrink-0">应用</span>
+                      {(['fast', 'deep'] as const).map(role => {
+                        const active = p.role === role
+                        const label = role === 'fast' ? '对话' : '命书'
+                        return (
+                          <button
+                            key={role}
+                            onClick={(e) => { e.stopPropagation(); handleSetRole(p.id, active ? null : role) }}
+                            title={active
+                              ? `点击取消：不再用于${label}`
+                              : `指定此模型用于${label}（${role === 'fast' ? 'AI 对话 / 意图路由' : '命书性格 / 运势生成'}）`}
+                            className={`px-1.5 py-1 rounded text-sm font-medium transition-colors ${
+                              active
+                                ? (role === 'fast'
+                                    ? 'text-[#0F1420] bg-[#5B8C5A]'
+                                    : 'text-[#0F1420] bg-[#B8964A]')
+                                : 'text-[#6B6459] bg-white/[0.04] hover:text-[#EDE8DF] hover:bg-white/[0.10]'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                      {!p.role && (
+                        <span className="ml-auto text-sm text-[#4A4540]">未指定</span>
+                      )}
                     </div>
 
                     {/* 操作按钮栏 — 始终可见 */}

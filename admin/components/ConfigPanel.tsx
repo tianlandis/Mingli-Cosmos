@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, RotateCcw, Plus, Trash2, Database, FileWarning } from 'lucide-react'
+import { Settings, RotateCcw, Plus, Trash2, Database, FileWarning, AlertTriangle, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +14,8 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import SystemSelector from './SystemSelector'
+import { api } from '../lib/api'
 
 const CONFIG_DESCRIPTIONS: Record<string, string> = {
   'default_llm_provider': '当前全局激活的 AI 大模型后端标识（数据存储于 SQLite app_configs 表）。所有未指定 Provider 的 AI 调用均使用此项',
@@ -45,6 +47,8 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
   const [newKey, setNewKey] = useState('')
   const [newValue, setNewValue] = useState('')
   const [status, setStatus] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/v1/admin/config', { headers: apiHeaders() })
@@ -56,12 +60,23 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
   useEffect(() => { load() }, [load])
 
   const handleAdd = async () => {
-    if (!newKey || !newValue) return
-    await fetch('/api/v1/admin/config', {
-      method: 'POST',
-      headers: apiHeaders(),
-      body: JSON.stringify({ key: newKey, value: newValue, displayName: newKey }),
+    // 修复：原先字段为空时静默 return（用户无任何反馈），且保存成功与否一律提示「已保存」
+    if (!newKey.trim() || !newValue.trim()) {
+      setError('配置键与配置值均为必填')
+      return
+    }
+    setError('')
+    setSaving(true)
+    const res = await api.post('/api/v1/admin/config', {
+      key: newKey.trim(),
+      value: newValue,
+      displayName: newKey.trim(),
     })
+    setSaving(false)
+    if (!res.success) {
+      setError(res.error?.message ?? '保存失败')
+      return
+    }
     setNewKey('')
     setNewValue('')
     setStatus('已保存')
@@ -76,9 +91,26 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
     load()
   }
 
+  /**
+   * 删除配置项。修复：原先无二次确认，可一键删掉 `jwt_secret` / `admin_password_hash`
+   * 这类关键配置；敏感键在此追加二次确认。
+   */
   const handleDelete = async (key: string) => {
-    await fetch(`/api/v1/admin/config/${key}`, { method: 'DELETE', headers: apiHeaders() })
+    const sensitive = ['jwt_secret', 'admin_password_hash']
+    const warning = sensitive.includes(key)
+      ? `⚠️「${key}」属于安全关键配置，删除后需重新初始化才能恢复。确认删除？`
+      : `确认删除配置项「${key}」？`
+    if (!window.confirm(warning)) return
+
+    setError('')
+    const res = await api.delete(`/api/v1/admin/config/${key}`)
+    if (!res.success) {
+      setError(res.error?.message ?? '删除失败')
+      return
+    }
+    setStatus(`已删除 ${key}`)
     load()
+    setTimeout(() => setStatus(''), 2000)
   }
 
   return (
@@ -123,6 +155,17 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
         </div>
       )}
 
+      {/* Error toast */}
+      {error && (
+        <div className="px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-1.5">
+          <AlertTriangle size={13} className="shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* 默认应用（体系）选择 —— ADR-011 */}
+      <SystemSelector />
+
       {/* Add form */}
       <Card className="bg-[#1A1F2E] border-white/[0.06] max-w-3xl">
         <CardHeader className="pb-3">
@@ -162,9 +205,11 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
             </div>
             <Button
               onClick={handleAdd}
-              className="px-5 py-2 bg-[#C04030] hover:bg-[#A03024] text-[#EDE8DF] text-sm font-medium rounded-lg shrink-0 self-end"
+              disabled={saving}
+              className="px-5 py-2 bg-[#C04030] hover:bg-[#A03024] text-[#EDE8DF] text-sm font-medium rounded-lg shrink-0 self-end disabled:opacity-60"
             >
-              保存
+              {saving ? <Loader2 size={13} className="mr-1.5 animate-spin inline" /> : null}
+              {saving ? '保存中' : '保存'}
             </Button>
           </div>
         </CardContent>

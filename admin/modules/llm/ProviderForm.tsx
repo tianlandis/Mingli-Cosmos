@@ -115,7 +115,21 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
         maxTokens: initialData.maxTokens ?? 2048,
         role: (initialData as any).role ?? null,
       })
+      return
     }
+    // 修复：原先只在有 initialData 时同步 —— 先「编辑」再点「新增」会残留上一次编辑的值。
+    setForm({
+      provider: 'siliconflow',
+      label: '',
+      apiKey: '',
+      baseUrl: '',
+      model: '',
+      temperature: 0.7,
+      maxTokens: 2048,
+      role: null,
+    })
+    setFetchedModels([])
+    setFetchError('')
   }, [initialData])
 
   function handleProviderChange(value: string) {
@@ -192,8 +206,14 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
     e.preventDefault()
     setError('')
 
-    if (!form.label.trim() || !form.apiKey.trim()) {
-      setError('Provider 名称和 API Key 为必填项')
+    // 修复：编辑态下 API Key 无条件必填 —— 与表单「留空则保留原 Key」的提示矛盾，
+    // 导致管理员不重填密钥就永远无法保存（后端也明确支持省略以保留原值）。
+    if (!form.label.trim()) {
+      setError('Provider 名称为必填项')
+      return
+    }
+    if (!isEdit && !form.apiKey.trim()) {
+      setError('新建供应商时 API Key 为必填项')
       return
     }
 

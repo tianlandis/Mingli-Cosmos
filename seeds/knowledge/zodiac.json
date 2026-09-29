@@ -1,0 +1,473 @@
+{
+  "category": "zodiac",
+  "items": [
+    {
+      "key": "aries",
+      "description": "白羊座 | 03-21 ~ 04-19 | fire象/cardinal | 月支跨 卯/辰",
+      "sortOrder": 10,
+      "value": {
+        "nameZh": "白羊座",
+        "nameEn": "Aries",
+        "dateRange": "03-21 ~ 04-19",
+        "element": "fire",
+        "quality": "cardinal",
+        "ruling": "Mars",
+        "branchPair": [
+          "卯",
+          "辰"
+        ],
+        "traits": [
+          "开局的冲劲",
+          "说干就干的节奏",
+          "直来直去的表达",
+          "竞争场景的兴奋感",
+          "快速启动",
+          "先动手再复盘",
+          "短平快的推进",
+          "点燃气氛的能量"
+        ],
+        "energyStyle": "开局即冲的点火型能量：行动先于盘算，启动快、燃点低，适合打头阵的节奏。",
+        "badge": [
+          "开局即燃",
+          "直球节奏",
+          "点火引擎"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "taurus",
+      "description": "金牛座 | 04-20 ~ 05-20 | earth象/fixed | 月支跨 辰/巳",
+      "sortOrder": 20,
+      "value": {
+        "nameZh": "金牛座",
+        "nameEn": "Taurus",
+        "dateRange": "04-20 ~ 05-20",
+        "element": "earth",
+        "quality": "fixed",
+        "ruling": "Venus",
+        "branchPair": [
+          "辰",
+          "巳"
+        ],
+        "traits": [
+          "持续的耐力",
+          "稳扎稳打的节奏",
+          "感官体验的沉浸",
+          "慢热但持久的投入",
+          "积累式推进",
+          "稳定环境的偏好",
+          "细水长流的输出",
+          "久久为功的定力"
+        ],
+        "energyStyle": "低速高扭的持久型能量：起步慢、惯性大，一旦进入节奏便细水长流、持续输出。",
+        "badge": [
+          "低速高扭",
+          "细水长流",
+          "复利体质"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "gemini",
+      "description": "双子座 | 05-21 ~ 06-21 | air象/mutable | 月支跨 巳/午",
+      "sortOrder": 30,
+      "value": {
+        "nameZh": "双子座",
+        "nameEn": "Gemini",
+        "dateRange": "05-21 ~ 06-21",
+        "element": "air",
+        "quality": "mutable",
+        "ruling": "Mercury",
+        "branchPair": [
+          "巳",
+          "午"
+        ],
+        "traits": [
+          "信息切换的灵活",
+          "多线程的节奏",
+          "语言表达的敏捷",
+          "好奇心的驱动",
+          "快速学习的状态",
+          "场景切换自如",
+          "轻快的交流感",
+          "多角度切入"
+        ],
+        "energyStyle": "高频切换的风型能量：多线程并行，信息吞吐快，节奏轻、转向灵。",
+        "badge": [
+          "多线程",
+          "信息风口",
+          "灵活切换"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "cancer",
+      "description": "巨蟹座 | 06-22 ~ 07-22 | water象/cardinal | 月支跨 午/未",
+      "sortOrder": 40,
+      "value": {
+        "nameZh": "巨蟹座",
+        "nameEn": "Cancer",
+        "dateRange": "06-22 ~ 07-22",
+        "element": "water",
+        "quality": "cardinal",
+        "ruling": "Moon",
+        "branchPair": [
+          "午",
+          "未"
+        ],
+        "traits": [
+          "情绪潮汐的感知",
+          "护巢式的照护能量",
+          "记忆与情感的联结",
+          "慢热升温的节奏",
+          "安全感的营造",
+          "蓄力—释放的周期循环",
+          "滋养型投入",
+          "感受先行的场景"
+        ],
+        "energyStyle": "潮汐式的水型能量：随情绪周期蓄力与释放，慢热升温，营造安全场后才全量投入。",
+        "badge": [
+          "潮汐节律",
+          "护巢能量",
+          "慢热升温"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "leo",
+      "description": "狮子座 | 07-23 ~ 08-22 | fire象/fixed | 月支跨 未/申",
+      "sortOrder": 50,
+      "value": {
+        "nameZh": "狮子座",
+        "nameEn": "Leo",
+        "dateRange": "07-23 ~ 08-22",
+        "element": "fire",
+        "quality": "fixed",
+        "ruling": "Sun",
+        "branchPair": [
+          "未",
+          "申"
+        ],
+        "traits": [
+          "高能输出的时段",
+          "外放型表达",
+          "创造欲的驱动",
+          "持续发光的节奏",
+          "仪式感的需求",
+          "组织协调的气场",
+          "舞台能量的聚拢",
+          "正向基调的感染力"
+        ],
+        "energyStyle": "恒亮型的光源能量：持续高位输出，气场外放，自带聚光与点火的双重节奏。",
+        "badge": [
+          "恒亮光源",
+          "自带聚光",
+          "高能续航"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "virgo",
+      "description": "处女座 | 08-23 ~ 09-22 | earth象/mutable | 月支跨 申/酉",
+      "sortOrder": 60,
+      "value": {
+        "nameZh": "处女座",
+        "nameEn": "Virgo",
+        "dateRange": "08-23 ~ 09-22",
+        "element": "earth",
+        "quality": "mutable",
+        "ruling": "Mercury",
+        "branchPair": [
+          "申",
+          "酉"
+        ],
+        "traits": [
+          "精细打磨的节奏",
+          "流程优化的本能",
+          "观察入微的感知",
+          "有序推进的偏好",
+          "服务型投入",
+          "迭代修正的习惯",
+          "分析驱动的状态",
+          "持续精进的张力"
+        ],
+        "energyStyle": "精密仪器的校准型能量：以迭代与打磨为节奏，边走边修，越调越准。",
+        "badge": [
+          "精密校准",
+          "迭代打磨",
+          "越调越准"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "libra",
+      "description": "天秤座 | 09-23 ~ 10-23 | air象/cardinal | 月支跨 酉/戌",
+      "sortOrder": 70,
+      "value": {
+        "nameZh": "天秤座",
+        "nameEn": "Libra",
+        "dateRange": "09-23 ~ 10-23",
+        "element": "air",
+        "quality": "cardinal",
+        "ruling": "Venus",
+        "branchPair": [
+          "酉",
+          "戌"
+        ],
+        "traits": [
+          "关系场里的调节能量",
+          "审美的张力",
+          "权衡的思考节奏",
+          "协调各方的亲和场",
+          "优雅的表达节拍",
+          "共生协作的倾向",
+          "平衡感的牵引",
+          "氛围拿捏的分寸"
+        ],
+        "energyStyle": "天平式的均衡型能量：在多方之间找支点，以审美与分寸感调节关系场。",
+        "badge": [
+          "均衡支点",
+          "氛围调音",
+          "审美张力"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "scorpio",
+      "description": "天蝎座 | 10-24 ~ 11-22 | water象/fixed | 月支跨 戌/亥",
+      "sortOrder": 80,
+      "value": {
+        "nameZh": "天蝎座",
+        "nameEn": "Scorpio",
+        "dateRange": "10-24 ~ 11-22",
+        "element": "water",
+        "quality": "fixed",
+        "ruling": "Pluto/Mars",
+        "branchPair": [
+          "戌",
+          "亥"
+        ],
+        "traits": [
+          "深潜式的专注",
+          "意志的聚拢",
+          "洞察暗流的感知",
+          "全量投入的节奏",
+          "蜕变与再生的循环",
+          "深度联结的引力",
+          "蓄力爆发的节拍",
+          "穿透表象的直觉"
+        ],
+        "energyStyle": "深水潜航型能量：低耗静默地深潜，锁定目标后全量投入，在蜕变中再生。",
+        "badge": [
+          "深水潜航",
+          "锁定聚能",
+          "蜕变再生"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "sagittarius",
+      "description": "射手座 | 11-23 ~ 12-21 | fire象/mutable | 月支跨 亥/子",
+      "sortOrder": 90,
+      "value": {
+        "nameZh": "射手座",
+        "nameEn": "Sagittarius",
+        "dateRange": "11-23 ~ 12-21",
+        "element": "fire",
+        "quality": "mutable",
+        "ruling": "Jupiter",
+        "branchPair": [
+          "亥",
+          "子"
+        ],
+        "traits": [
+          "远方与旷野的引力",
+          "意义感的追寻节奏",
+          "乐观基调的能量场",
+          "跳跃式的探索",
+          "自由度的需求",
+          "跨界扩展的势头",
+          "豁达的消化力",
+          "见闻驱动的成长"
+        ],
+        "energyStyle": "箭在弦上的远行型能量：以探索与扩展为节奏，乐观外扩，越开阔越来劲。",
+        "badge": [
+          "箭指远方",
+          "乐观外扩",
+          "探索引擎"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "capricorn",
+      "description": "摩羯座 | 12-22 ~ 01-19 | earth象/cardinal | 月支跨 子/丑",
+      "sortOrder": 100,
+      "value": {
+        "nameZh": "摩羯座",
+        "nameEn": "Capricorn",
+        "dateRange": "12-22 ~ 01-19",
+        "element": "earth",
+        "quality": "cardinal",
+        "ruling": "Saturn",
+        "branchPair": [
+          "子",
+          "丑"
+        ],
+        "traits": [
+          "长坡厚雪的耐力",
+          "阶梯式攀登的节奏",
+          "目标导向的聚能",
+          "延迟满足的定力",
+          "结构化推进",
+          "责任承载的能量",
+          "克制蓄积的节拍",
+          "时间复利的信仰"
+        ],
+        "energyStyle": "登山者的负重攀登型能量：以长周期为标尺，结构化蓄力，把时间变成复利。",
+        "badge": [
+          "长坡厚雪",
+          "阶梯攀登",
+          "复利信仰"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "aquarius",
+      "description": "水瓶座 | 01-20 ~ 02-18 | air象/fixed | 月支跨 丑/寅",
+      "sortOrder": 110,
+      "value": {
+        "nameZh": "水瓶座",
+        "nameEn": "Aquarius",
+        "dateRange": "01-20 ~ 02-18",
+        "element": "air",
+        "quality": "fixed",
+        "ruling": "Uranus/Saturn",
+        "branchPair": [
+          "丑",
+          "寅"
+        ],
+        "traits": [
+          "跳出框架的思维",
+          "群体场域的疏离与联结",
+          "理念驱动的能量",
+          "革新的节奏感",
+          "系统化视野",
+          "超然观察的姿态",
+          "非常规路径的偏好",
+          "未来向的引力"
+        ],
+        "energyStyle": "高频振荡的革新型能量：站在系统外围看全局，以理念和革新为节拍前推。",
+        "badge": [
+          "跳出框架",
+          "系统外围",
+          "革新节拍"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    },
+    {
+      "key": "pisces",
+      "description": "双鱼座 | 02-19 ~ 03-20 | water象/mutable | 月支跨 寅/卯",
+      "sortOrder": 120,
+      "value": {
+        "nameZh": "双鱼座",
+        "nameEn": "Pisces",
+        "dateRange": "02-19 ~ 03-20",
+        "element": "water",
+        "quality": "mutable",
+        "ruling": "Neptune/Jupiter",
+        "branchPair": [
+          "寅",
+          "卯"
+        ],
+        "traits": [
+          "边界消融的感受力",
+          "梦境与想象的浸润",
+          "共情潮汐的涨落",
+          "艺术化表达的出口",
+          "流动不居的节奏",
+          "灵性层面的吸纳",
+          "柔和弥散的能量场",
+          "诗意化的解读"
+        ],
+        "energyStyle": "弥散流动的水雾型能量：边界柔软、随境赋形，以感受力和想象为节拍。",
+        "badge": [
+          "随境赋形",
+          "共情潮汐",
+          "诗意滤芯"
+        ],
+        "meta": {
+          "source": "editorial-v1",
+          "guideline": "docs/arch/ASTRO-MAPPING.md 第六节（能量风格措辞，禁人格断言）",
+          "consistencyCheck": "scanMatrix 384 组合 0 conflict / 0 tension @2026-09-29",
+          "dateRangeNote": "展示用惯用区间；精确分界以 getSolarSign 中气时刻为准"
+        }
+      }
+    }
+  ]
+}

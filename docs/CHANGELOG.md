@@ -2,6 +2,57 @@
 
 ---
 
+## 未发布 — 🚀 批次 IV：命书止血 + 双人合盘 + astro/mbti 体系（已部署内网）(2026-09-29)
+
+> 目标：堵成本黑洞、做第二个付费点、填实多体系骨架。零 schema 变更。已部署内网 `192.168.2.10`（备份 `mingli-20260929-1436.db`）。
+
+### 新增
+- **批次 A 命书止血**（276c975）：报告接口鉴权（未登录 401）+ `chart_hash` TTL 缓存 + 幂等额度（cost 5）+ 失败退款。
+- **批次 B 双人合盘**（e762f49）：规则引擎五维加权（零 LLM，11 种关系）+ `POST /synastry`（cost 20）+ `SynastryPage`。
+- **批次 C astro / mbti 体系**（d44aa21）：`SystemEngine` 实现太阳星座（中气时刻分界）/ MBTI（从命盘批注提升，非问卷）+ 注册；前端体系 id `zodiac`→`astro` 对齐。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**505/505（31 文件）** ｜ `vite build` ✓ ｜ 本地 + 内网 `npm run smoke` **42/42**。
+- 内网实测：合盘扣费/缓存/三体系全绿；`system=astro`→金牛座（中气分界）、`system=mbti`→四柱+画像、`bazi` 正常。
+
+---
+
+## 未发布 — 🧩 批次 II：多体系注册表泛化 + 生产上线（ADR-011 阶段 1~3）(2026-09-29)
+
+> 目标：把「八字专用垂直实现」升级为「多体系注册表」骨架（引擎零侵入），并完成生产上线与计算权威灰度。
+
+### 变更
+- **阶段1**：`sessions` 加 `system` 列（`ALTER TABLE ... DEFAULT 'bazi'` 在线回填）+ 索引。
+- **阶段2**：`SystemEngine` 接口 + `bazi` 薄适配器（包住封版引擎，`engine/` 零改动）+ 注册表。
+- **阶段3**：`resolveContext` 泛化 + prompt 按体系路由（`buildSystemPromptFor`，行为等价）。
+- **可插拔性回归**：`systems/__tests__/registry.test.ts`（注册 mock 体系即插即用 + 八字 prompt 逐字等价）。
+- **生产上线**：备份 → `docker compose up -d --build` → 深度健康检查（生产新 `38a526b`，`sessions.system` 迁移已回填）。
+- **`chart_verify_mode` → `warn`**：后台接口置 `warn`，实测触发 `CHART_MISMATCH_WARN`（回退仅需改回 `off`）。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**417/417（24 文件）** ｜ `vite build` ✓ ｜ 本地 + 生产 `smoke` **42/42**。
+- 安全锚点：tag `pre-system-registry-20260929` / `deploy-20260929-adr011`；生产库备份 `mingli-20260928-132939.db`。
+
+---
+
+## 未发布 — 📱 批次 I：C 端应用骨架 + 数据域分层 + 扩展指南（ADR-012）(2026-09-29)
+
+> 目标：把「单页工具」升级成「有结构的应用」，并把"以后加模块/扩功能"的路铺好。
+
+### 新增
+- **C 端应用骨架**（a20f45a）：路由（`/`、`/my`）+ `lib/shell.ts` 跨路由状态 + 底部 Tab + 应用外壳。
+- **「我的」用户中心**：账户/额度/订阅/订单/退出（复用已有接口，零后端改动）。
+- **首屏/结果区精修**：卡片化表单 + loading 态；L2 Tab WCAG 键盘导航。
+- **人格画像前置**：L1 强调卡 + L2 独立 Tab（复用 `analyzeMBTI()`，零后端）。
+- **数据层缺口表**：`birth_profiles` + `obs_llm_call_logs`（含 PII 接入 + chat 三路径写入）。
+- **知识资产种子通道**：`seeds/` + `npm run db:seed`（离线 ETL → 种子文件 → 导入）。
+- **扩展开发者指南** `docs/arch/EXTENDING.md` + 数据域操作手册 `DATA-DOMAINS.md`。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run`（Node 26）**406/406** ｜ `vite build` ✓ ｜ `npm run smoke` **42/42** ｜ 真机自检零控制台错误。
+
+---
+
 ## 未发布 — 👤 注册收录生辰 · 登录免重复排盘（真实用户闭环）(2026-09-29)
 
 > **背景**：`birth_profiles` 表与仓储层（ADR-012 用户身份域）早已存在，但**没有任何 API 路由**，
