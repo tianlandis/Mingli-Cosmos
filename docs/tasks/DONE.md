@@ -4,6 +4,73 @@
 
 ---
 
+## 2026-09-29 — 🧠 批次 VI：LLM 模型分级 + 降级链路 + thinking 适配 ✅
+
+> 起因：田哥确认「AI 墨白对话用本机 ollama 实测可用」，指示补完此前搁置的 LLM 部分。
+
+### 问题
+
+所有 LLM 调用共用一个全局配置，无法按场景分配模型：对话被迫用贵模型，
+命书被迫用快模型。且 `fast` 常配本地模型，本机一关机就全线失败，**没有任何降级**。
+
+### 落点
+
+| 文件 | 改动 |
+|------|------|
+| `src/server/db/schema.ts` + `migrate.ts` | `api_keys` 加 `role` 列（safeAlter 增量迁移） |
+| `src/server/db/repositories/api-keys.ts` | `getApiKeyByRole(role)` |
+| `src/server/config/index.ts` | `getAppConfigByRole(role)` + role 维度 60s 缓存 + `reloadConfig` 清缓存 |
+| `src/server/lib/llm.ts` | `loadConfig(role)` / `resolveRoutes()` / `pickAvailableRoute()` / `isThinkingModel()` / reasoning-aware fetch |
+| `src/server/api/chat.ts` | 对话 + Multi-Agent → fast，生成前探测降级 |
+| `src/server/workflows/step-personality.ts` / `step-luck.ts` | deep 候选链 for 循环，失败换下一个重跑 |
+| `src/server/agents/router-agent.ts` | fast |
+| `src/server/modules/llm/index.ts` | zod 声明 `role`（**不声明会被静默剥离**）+ 同 role 抢占 |
+| `admin/modules/llm/ProviderForm.tsx` / `LLMPage.tsx` | 「模型用途（分级）」下拉、FAST/DEEP 徽章、initialData 透传 |
+| `docs/arch/LLM-ROUTING.md` | 新建：分级模型 / 降级策略 / 配置方法 / 实测数据 |
+
+### 关键设计
+
+1. **不配置 = 完全兼容旧行为**：未配 role 时自动回落全局默认，与改造前逐字等价。
+2. **两段式降级**：流式（对话）在生成**前**并发探测 `GET <baseUrl>/models`（2.5s 超时）筛出可达端点 —— 流一旦开始无法回退；非流式（命书）在**失败后**换候选重跑 —— 省掉每次探测开销。
+3. **失败暴露原则**：全部不可达时返回首选，让原始错误原样抛出，不包装成「降级失败」。
+4. **thinking 模型只改非流式**：SSE 逐 chunk 改写各家长格式不一，风险高于收益，文档建议流式场景改用非思考型模型。
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **533/533**（32 文件，新增 `llm-routing.test.ts` **28 项**）｜ `build` ✓ ｜ 内网 `smoke` **42/42**。
+
+实测：
+- 分级生效 —— fast 命中本机 ollama `qwen2.5:7b`，输出 54 字符，无串台
+- 降级生效 —— fast 端点改 `127.0.0.1:1/v1`，日志 `首选端点不可达，已降级 → provider=local model=qwen2.5:7b`，仍生成成功（58 字符 / 2.1s）
+- 内网迁移 —— `role` 列 safeAlter 生效；创建 / 持久化 / 同 role 抢占（保持 1 个）/ 清理全绿
+
+提交 `7826226`，已 push 并部署内网 `192.168.2.10`（备份 `mingli-20260929-211927.db`，520KB）。
+
+---
+
+## 2026-09-29 — 📱 批次 I：C 端应用骨架 + 数据域分层 + 扩展指南（ADR-012） ✅
+
+> 目标：把「单页工具」升级成「有结构的应用」，并把"以后加模块/扩功能"的路铺好。验收：`tsc -b` 0 错 ｜ `vitest` 406/406 ｜ `build` ✓ ｜ `smoke` 42/42。
+
+- **C 端应用骨架**（a20f45a）：路由（`/`、`/my`）+ `lib/shell.ts` 跨路由状态 + 底部 Tab + 应用外壳。
+- **「我的」用户中心**：账户/额度/订阅/订单/退出（复用已有接口，零后端改动）。
+- **首屏/结果区精修**：卡片化表单 + loading 态；L2 Tab WCAG 键盘导航。
+- **人格画像前置**：L1 强调卡 + L2 独立 Tab（复用 `analyzeMBTI()`）。
+- **数据层缺口表**：`birth_profiles` + `obs_llm_call_logs`（PII 接入 + chat 三路径写入）。
+- **知识资产种子通道**：`seeds/` + `npm run db:seed`。
+- **扩展指南** `docs/arch/EXTENDING.md` + `DATA-DOMAINS.md`。
+
+## 2026-09-29 — 🧩 批次 II：多体系注册表泛化 + 上线（ADR-011 阶段 1~3） ✅
+
+> 目标：八字专用 → 多体系注册表骨架（引擎零侵入）+ 生产上线 + 计算权威灰度。验收：`tsc -b` 0 错 ｜ `vitest` 417/417（24 文件）｜ `build` ✓ ｜ `smoke` 42/42。
+
+- **阶段1**：`sessions` 加 `system` 列（在线回填）+ 索引。
+- **阶段2**：`SystemEngine` 接口 + `bazi` 薄适配器 + 注册表。
+- **阶段3**：`resolveContext` 泛化 + prompt 按体系路由（行为等价）。
+- **可插拔性回归**：`systems/__tests__/registry.test.ts`。
+- **生产上线**：备份 → `compose up -d --build` → 深度健康检查（`38a526b`）。
+- **`chart_verify_mode` → `warn`**（实测触发 `CHART_MISMATCH_WARN`）。
+
 ## 2026-09-29 — 🚀 批次 IV：命书止血 + 双人合盘 + astro/mbti 体系（已部署内网） ✅
 
 > 目标：把「成本黑洞」堵上、把「第二个付费点」做出来、把「多体系骨架」填实。

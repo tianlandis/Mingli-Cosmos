@@ -156,6 +156,46 @@
 
 ---
 
+## ⬜ 2026-09-29 批次 V（星座语料落库 — 专门再做）
+
+> 田哥指示：星座资料专门文件夹落库**单独开批次做**。基建已就绪，本批只做数据生产与落库。
+
+| 项 | 任务 | 依据 |
+|:--|------|------|
+| V-1 | 生产 `seeds/knowledge/zodiac.json` 正式语料：12 星座 × 关键词表（12~14 词）× 四元素分组 × 一句话徽章，**只写能量风格、禁人格断言** | `docs/corpus/zodiac-corpus/CORPUS-STRUCTURE.md` + `METHODOLOGY-FUSION.md` |
+| V-2 | 每条 traits 过 `corpus-consistency.detectConflicts` 检测（0 conflict 才准入库） | `src/server/lib/corpus-consistency.ts` |
+| V-3 | seed 落 `knowledge_assets`（category='astro'，含来源与置信度标注），后台可管理 | schema 已预留 'astro' 分类位 |
+| V-4 | 展示层语料与 LLM 注入语料物理隔离；LLM 注入只允许能量风格措辞 | ASTRO-MAPPING.md 第六节写作规范 |
+
+**前置已就绪**：astro 映射算法（批次 IV commit `d44aa21`）｜ 矛盾检测器 + 11 测试 ｜ 外部调研五份笔记。
+
+---
+
+## ✅ 2026-09-29 批次 VI（LLM 模型分级 + 降级 + thinking 适配）
+
+> 起因：田哥确认「AI 墨白对话用本机 ollama 实测可用」，指示补完此前搁置的 LLM 部分。
+> 架构文档：`docs/arch/LLM-ROUTING.md`
+
+| 项 | 任务 | 落点 |
+|:--|------|------|
+| 27 | **模型分级**：`api_keys` 加 `role` 列（fast/deep/NULL）+ `loadConfig(role)` 三级解析 | `schema.ts` / `migrate.ts` / `config/index.ts` / `lib/llm.ts` |
+| 28 | **分级应用**：chat 对话 + Multi-Agent + router-agent → `fast`；step-personality + step-luck → `deep` | 5 个调用点 |
+| 29 | **降级链路**：流式（对话）生成前探测可达性；非流式（命书）失败后换候选重跑 | `resolveRoutes` / `pickAvailableRoute` |
+| 30 | **thinking 适配**：`reasoning_content` → `content` 回填（非流式），`isThinkingModel()` 识别 | `lib/llm.ts` |
+| 31 | **后台 UI**：「模型用途（分级）」下拉 + FAST/DEEP 徽章 + 同 role 抢占 | `admin/modules/llm/*` |
+| 32 | **内网部署 + 验收**：备份 → pull → `up -d --build` → smoke 42/42 + 分级实测 | `192.168.2.10` |
+
+**本批验收**：`typecheck` 0 错 ｜ `vitest` **533/533**（32 文件，新增 `llm-routing.test.ts` 28 项）｜ `build` ✓ ｜ 内网 `smoke` **42/42** ｜ 内网分级实测全绿。
+
+**实测数据**：
+- 分级生效：fast → 本机 ollama `qwen2.5:7b`（54 字符，口语化 + 免责声明，无串台）
+- 降级生效：fast 端点改不可达 → 日志「首选端点不可达，已降级」→ 仍生成成功（58 字符，2.1s）
+- 内网迁移：`role` 列 safeAlter 生效，创建/持久化/同 role 抢占/清理全绿
+
+**⚠️ 待田哥操作**：本机 ollama 默认只监听 `127.0.0.1`，内网容器访问需设 `OLLAMA_HOST=0.0.0.0` 后重启（实测从 `192.168.2.10` 访问 `192.168.2.197:11434` 返回 `HTTP=000`）。配好后填 `http://192.168.2.197:11434/v1` 即可。
+
+---
+
 ## ⬜ 待开始（按优先级排序）
 
 ### 🏛️ Phase 5 · 商业化闭环（骨架先行 — 决定系统形态，建议先做）
@@ -276,6 +316,7 @@
 | 2026-09-29 批次 II（多体系泛化+上线） | 6 (6 done ✅) |
 | 2026-09-29 批次 III（真实用户闭环） | 4 (4 done ✅) |
 | 2026-09-29 批次 IV（止血/合盘/多体系） | 6 (6 done ✅) |
+| 2026-09-29 批次 VI（LLM 分级/降级/适配） | 6 (6 done ✅) |
 | Phase 5-6 封存 | 8 |
 | Phase 3 上线收尾 (D-4~D-6) | 3 ⏸️ 待 VPS/域名 |
 | UI S1 品质提升 | 3 (2 done，1 待公网) |
