@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { api } from '../../lib/api'
 import OperationsOverview from './OperationsOverview'
 import {
   Server,
@@ -80,10 +81,6 @@ interface RecentActivity {
   operator: string
   createdAt: string
   detail?: string
-}
-
-interface DashboardPageProps {
-  apiHeaders: () => Record<string, string>
 }
 
 // ═══════════════════════════════════════
@@ -207,38 +204,29 @@ const QUICK_ACTIONS = [
 
 const REFRESH_INTERVAL = 15_000
 
-export default function DashboardPage({ apiHeaders }: DashboardPageProps) {
+export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activities, setActivities] = useState<RecentActivity[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    try {
-      const headers = apiHeaders()
-      // 并行拉取统计 + 最近活动
-      const [statsRes, auditRes] = await Promise.all([
-        fetch('/api/v1/admin/dashboard/stats', { headers }),
-        fetch('/api/v1/admin/audit?limit=8', { headers }),
-      ])
+    // 走统一客户端：自动带 token + 401 全局拦截；并行拉取统计 + 最近活动
+    const [statsRes, auditRes] = await Promise.all([
+      api.get<DashboardStats>('/api/v1/admin/dashboard/stats'),
+      api.get<RecentActivity[]>('/api/v1/admin/audit?limit=8'),
+    ])
 
-      if (!statsRes.ok) throw new Error('获取统计数据失败')
-      const statsJson = await statsRes.json()
-      if (!statsJson.success) throw new Error(statsJson.error?.message || '未知错误')
-      setStats(statsJson.data as DashboardStats)
-
-      if (auditRes.ok) {
-        const auditJson = await auditRes.json()
-        setActivities(auditJson.data || [])
-      }
-
-      setError(null)
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
+    if (!statsRes.success) {
+      setError(statsRes.error?.message ?? '获取统计数据失败')
       setLoading(false)
+      return
     }
-  }, [apiHeaders])
+    setStats(statsRes.data as DashboardStats)
+    if (auditRes.success) setActivities(auditRes.data || [])
+    setError(null)
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     load()

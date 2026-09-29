@@ -77,12 +77,12 @@ export default function App() {
     <Layout onLogout={auth.logout}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage apiHeaders={auth.apiHeaders} />} />
-        <Route path="/config" element={<ConfigPanel apiHeaders={auth.apiHeaders} />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/config" element={<ConfigPanel />} />
         <Route path="/prompts" element={<PromptEditor />} />
         <Route path="/guardrails" element={<GuardPanel />} />
-        <Route path="/audit" element={<AuditLog apiHeaders={auth.apiHeaders} />} />
-        <Route path="/llm" element={<LLMPage apiHeaders={auth.apiHeaders} />} />
+        <Route path="/audit" element={<AuditLog />} />
+        <Route path="/llm" element={<LLMPage />} />
         <Route path="/knowledge-dict" element={<KnowledgeDictPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/orders" element={<OrdersPage />} />

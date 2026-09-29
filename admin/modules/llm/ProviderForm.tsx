@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { api } from '../../lib/api'
 
 // ═══════════════════════════════════════
 // 类型
@@ -46,7 +47,6 @@ interface ProviderFormProps {
   onClose: () => void
   onSave: (data: ProviderFormData) => Promise<void>
   initialData?: ProviderFormData & { id?: number }
-  apiHeaders: () => Record<string, string>
 }
 
 // ═══════════════════════════════════════
@@ -79,7 +79,7 @@ const PROVIDER_OPTIONS = [
 // 组件
 // ═══════════════════════════════════════
 
-export default function ProviderForm({ open, onClose, onSave, initialData, apiHeaders }: ProviderFormProps) {
+export default function ProviderForm({ open, onClose, onSave, initialData }: ProviderFormProps) {
   const [form, setForm] = useState<ProviderFormData>({
     provider: initialData?.provider ?? 'siliconflow',
     label: initialData?.label ?? '',
@@ -183,20 +183,13 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
         payload.providerId = providerId
       }
 
-      const res = await fetch('/api/v1/admin/llm/fetch-models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (data?.success && data.data?.models?.length > 0) {
-        setFetchedModels(data.data.models)
+      const data = await api.post<{ models?: string[] }>('/api/v1/admin/llm/fetch-models', payload)
+      if (data?.success && (data.data?.models?.length ?? 0) > 0) {
+        setFetchedModels(data.data!.models!)
         setModelSelectMode('select')
       } else {
         setFetchError(data?.error?.message ?? '未获取到模型列表，请检查 API Key 和 Base URL')
       }
-    } catch (err: any) {
-      setFetchError(err?.message ?? '网络请求失败')
     } finally {
       setFetchingModels(false)
     }

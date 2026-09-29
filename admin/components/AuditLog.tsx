@@ -12,6 +12,7 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { api } from '../lib/api'
 
 interface AuditRow {
   id: number
@@ -45,7 +46,7 @@ function getActionStyle(action: string): string {
   return map[action] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
 }
 
-export default function AuditLog({ apiHeaders }: { apiHeaders: () => Record<string, string> }) {
+export default function AuditLog() {
   const [logs, setLogs] = useState<AuditRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -53,17 +54,15 @@ export default function AuditLog({ apiHeaders }: { apiHeaders: () => Record<stri
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
-    try {
-      const res = await fetch('/api/v1/admin/audit', { headers: apiHeaders() })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      setLogs(data.data || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
+    // 走统一客户端：自动带 token + 401 全局拦截
+    const res = await api.get<AuditRow[]>('/api/v1/admin/audit')
+    if (res.success) {
+      setLogs(res.data || [])
+    } else {
+      setError(res.error?.message ?? '加载失败')
     }
-  }, [apiHeaders])
+    setLoading(false)
+  }, [])
 
   useEffect(() => { load() }, [load])
 

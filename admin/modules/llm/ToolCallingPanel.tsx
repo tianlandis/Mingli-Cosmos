@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
+import { api } from '../../lib/api'
 
 // ═══════════════════════════════════════
 // Tool Calling 工具定义（Agent 逻辑未来实现）
@@ -73,7 +74,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 interface ToolCallingPanelProps {
   providerId: number | null
   activeTools: string[]
-  apiHeaders: () => Record<string, string>
   onSaved?: () => void
 }
 
@@ -107,7 +107,6 @@ function normalizeToolsArray(raw: unknown): string[] {
 export default function ToolCallingPanel({
   providerId,
   activeTools: initialActiveTools,
-  apiHeaders,
   onSaved,
 }: ToolCallingPanelProps) {
   const [localActive, setLocalActive] = useState<Set<string>>(new Set(initialActiveTools))
@@ -143,13 +142,7 @@ export default function ToolCallingPanel({
     // 3. 即时 PUT API
     try {
       const toolsArr = Array.from(newActive)
-      const res = await fetch(`/api/v1/admin/llm/${providerId}/tool-calling`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-        body: JSON.stringify({ tools: toolsArr }),
-      })
-
-      const result = await res.json()
+      const result = await api.put(`/api/v1/admin/llm/${providerId}/tool-calling`, { tools: toolsArr })
 
       if (!result.success) {
         // 回滚本地状态
@@ -186,7 +179,7 @@ export default function ToolCallingPanel({
         return next
       })
     }
-  }, [localActive, providerId, apiHeaders, onSaved])
+  }, [localActive, providerId, onSaved])
 
   if (providerId === null) {
     return (

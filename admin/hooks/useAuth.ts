@@ -63,10 +63,7 @@ export function useAuth() {
     setVerifying(false)
   }, [])
 
-  const apiHeaders = useCallback(() => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${auth.token}`,
-  }), [auth.token])
-
-  return { ...auth, verifying, login, logout, apiHeaders }
+  // 注意：原先导出 apiHeaders() 供各处手工拼 Authorization，
+  // 已全部收口到 `admin/lib/api.ts`（自动带 token + 401 全局拦截），故移除。
+  return { ...auth, verifying, login, logout }
 }

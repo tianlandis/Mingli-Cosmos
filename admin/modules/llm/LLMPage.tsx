@@ -41,6 +41,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import ProviderForm, { type ProviderFormData } from './ProviderForm'
 import SkillsPanel from './SkillsPanel'
 import ToolCallingPanel from './ToolCallingPanel'
+import { api } from '../../lib/api'
 
 // ═══════════════════════════════════════
 // 类型
@@ -67,10 +68,6 @@ interface Provider {
   testLatency?: number | null
   createdAt: string
   updatedAt: string
-}
-
-interface LLMPageProps {
-  apiHeaders: () => Record<string, string>
 }
 
 // ═══════════════════════════════════════
@@ -234,12 +231,10 @@ const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
 function TuningPanel({
   provider,
   onSave,
-  apiHeaders,
 }: {
   provider: Provider
   onSave: () => void
   saving: boolean
-  apiHeaders: () => Record<string, string>
 }) {
   const [temp, setTemp] = useState(provider.temperature ?? 0.7)
   const [topP, setTopP] = useState(provider.topP ?? 1.0)
@@ -273,28 +268,19 @@ function TuningPanel({
 
   const handleSave = async () => {
     setStatus('saving')
-    try {
-      const res = await fetch(`/api/v1/admin/llm/${provider.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-        body: JSON.stringify({
-          temperature: temp,
-          topP,
-          frequencyPenalty: freqPenalty,
-          maxTokens,
-          streamEnabled: stream ? 1 : 0,
-        }),
-      })
-      const data = await res.json()
-      if (data?.success) {
-        setStatus('ok')
-        setDirty(false)
-        onSave()
-        setTimeout(() => setStatus('idle'), 1500)
-      } else {
-        setStatus('err')
-      }
-    } catch {
+    const data = await api.put(`/api/v1/admin/llm/${provider.id}`, {
+      temperature: temp,
+      topP,
+      frequencyPenalty: freqPenalty,
+      maxTokens,
+      streamEnabled: stream ? 1 : 0,
+    })
+    if (data?.success) {
+      setStatus('ok')
+      setDirty(false)
+      onSave()
+      setTimeout(() => setStatus('idle'), 1500)
+    } else {
       setStatus('err')
     }
   }
@@ -449,7 +435,7 @@ function TuningPanel({
 // 主组件
 // ═══════════════════════════════════════
 
-export default function LLMPage({ apiHeaders }: LLMPageProps) {
+export default function LLMPage() {
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -468,63 +454,51 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
   // 拉取 Provider 列表
   // ═══════════════════════════════
   const fetchProviders = useCallback(async () => {
-    try {
-      const res = await fetch('/api/v1/admin/llm', { headers: apiHeaders() })
-      const data = await res.json()
-      if (data?.success) {
-        // ── 归一化：确保 tools / supportedTools 为纯数组（防御 DB JSON 字符串未解析）──
-        const normalized = (data.data as any[]).map((p: any) => ({
-          ...p,
-          tools: normalizeToolsField(p.tools),
-          supportedTools: normalizeToolsField(p.supportedTools),
-        }))
-        setProviders(normalized)
-        if (selectedId && !normalized.find((p: Provider) => p.id === selectedId)) {
-          setSelectedId(normalized[0]?.id ?? null)
-        } else if (!selectedId && normalized.length > 0) {
-          setSelectedId(normalized[0].id)
-        }
+    // 走统一客户端：自动带 token + 401 全局拦截
+    const data = await api.get<Provider[]>('/api/v1/admin/llm')
+    if (data?.success && Array.isArray(data.data)) {
+      // ── 归一化：确保 tools / supportedTools 为纯数组（防御 DB JSON 字符串未解析）──
+      const normalized = (data.data as Provider[]).map((p) => ({
+        ...p,
+        tools: normalizeToolsField(p.tools),
+        supportedTools: normalizeToolsField(p.supportedTools),
+      }))
+      setProviders(normalized)
+      if (selectedId && !normalized.find((p: Provider) => p.id === selectedId)) {
+        setSelectedId(normalized[0]?.id ?? null)
+      } else if (!selectedId && normalized.length > 0) {
+        setSelectedId(normalized[0].id)
       }
-    } catch {
-      setError('加载失败，请检查网络连接')
-    } finally {
-      setLoading(false)
+      setError('')
+    } else {
+      setError(data?.error?.message ?? '加载失败，请检查网络连接')
     }
-  }, [apiHeaders, selectedId])
+    setLoading(false)
+  }, [selectedId])
 
   useEffect(() => { fetchProviders() }, [])
 
   // ═══════════════════════════════
   const handleCreate = useCallback(async (data: ProviderFormData) => {
-    const res = await fetch('/api/v1/admin/llm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-      body: JSON.stringify(data),
-    })
-    const result = await res.json()
+    const result = await api.post('/api/v1/admin/llm', data)
     if (!result.success) throw new Error(result?.error?.message ?? '创建失败')
     await fetchProviders()
-  }, [apiHeaders, fetchProviders])
+  }, [fetchProviders])
 
   const handleUpdate = useCallback(async (data: ProviderFormData) => {
     if (!editTarget) return
-    const res = await fetch(`/api/v1/admin/llm/${editTarget.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-      body: JSON.stringify(data),
-    })
-    const result = await res.json()
+    const result = await api.put(`/api/v1/admin/llm/${editTarget.id}`, data)
     if (!result.success) throw new Error(result?.error?.message ?? '更新失败')
     setEditTarget(null)
     await fetchProviders()
-  }, [editTarget, apiHeaders, fetchProviders])
+  }, [editTarget, fetchProviders])
 
   const handleDelete = useCallback(async (id: number) => {
     if (!confirm('确认删除此 Provider？此操作不可撤销。')) return
-    await fetch(`/api/v1/admin/llm/${id}`, { method: 'DELETE', headers: apiHeaders() })
+    await api.delete(`/api/v1/admin/llm/${id}`)
     if (selectedId === id) setSelectedId(null)
     await fetchProviders()
-  }, [apiHeaders, fetchProviders, selectedId])
+  }, [fetchProviders, selectedId])
 
   /**
    * ── 指定应用场景（模型分级）──
@@ -534,67 +508,47 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
    * 再次点击已选项 = 取消该用途；同一用途只保留一个供应商（后端自动顶掉旧的）。
    */
   const handleSetRole = useCallback(async (id: number, role: 'fast' | 'deep' | null) => {
-    await fetch(`/api/v1/admin/llm/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-      body: JSON.stringify({ role }),
-    })
+    await api.put(`/api/v1/admin/llm/${id}`, { role })
     await fetchProviders()
-  }, [apiHeaders, fetchProviders])
+  }, [fetchProviders])
 
   // ── 设为默认 ──
   const handleSetDefault = useCallback(async (id: number) => {
-    await fetch(`/api/v1/admin/llm/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-      body: JSON.stringify({ isDefault: 1 }),
-    })
+    await api.put(`/api/v1/admin/llm/${id}`, { isDefault: 1 })
     await fetchProviders()
-  }, [apiHeaders, fetchProviders])
+  }, [fetchProviders])
 
   // ── 导出配置 ──
   const handleExport = useCallback(async () => {
-    try {
-      const res = await fetch('/api/v1/admin/llm/export', { headers: apiHeaders() })
-      const data = await res.json()
-      if (data?.success) {
-        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `llm-providers-export-${new Date().toISOString().slice(0, 10)}.json`
-        a.click()
-        URL.revokeObjectURL(url)
-      }
-    } catch {
+    const data = await api.get('/api/v1/admin/llm/export')
+    if (data?.success) {
+      const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `llm-providers-export-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } else {
       alert('导出失败')
     }
-  }, [apiHeaders])
+  }, [])
 
   // ── 测速 ──
   const handlePing = useCallback(async (id: number) => {
     setPinging(prev => ({ ...prev, [id]: true }))
-    try {
-      const res = await fetch(`/api/v1/admin/llm/${id}/ping`, {
-        method: 'POST',
-        headers: apiHeaders(),
-      })
-      const data = await res.json()
-      setPings(prev => ({
-        ...prev,
-        [id]: {
-          status: data?.success ? 'ok' : 'failed',
-          latency: data?.data?.latency ?? null,
-        },
-      }))
-    } catch {
-      setPings(prev => ({ ...prev, [id]: { status: 'failed', latency: null } }))
-    } finally {
-      setPinging(prev => ({ ...prev, [id]: false }))
-      // 测速后刷新列表以获取最新 testStatus
-      setTimeout(() => fetchProviders(), 500)
-    }
-  }, [apiHeaders, fetchProviders])
+    const data = await api.post<{ latency?: number | null }>(`/api/v1/admin/llm/${id}/ping`)
+    setPings(prev => ({
+      ...prev,
+      [id]: {
+        status: data?.success ? 'ok' : 'failed',
+        latency: data?.data?.latency ?? null,
+      },
+    }))
+    setPinging(prev => ({ ...prev, [id]: false }))
+    // 测速后刷新列表以获取最新 testStatus
+    setTimeout(() => fetchProviders(), 500)
+  }, [fetchProviders])
 
   const selected = providers.find(p => p.id === selectedId) ?? null
 
@@ -645,24 +599,15 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
             onClick={async () => {
               setMigrating(true)
               setMigrateMsg('')
-              try {
-                const res = await fetch('/api/v1/admin/llm/migrate', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-                })
-                const data = await res.json()
-                if (data?.success) {
-                  setMigrateMsg(`✅ ${data.message || '导入成功'}`)
-                  fetchProviders()
-                } else {
-                  setMigrateMsg(`⚠️ ${data?.error?.message || '无需导入'}`)
-                }
-              } catch {
-                setMigrateMsg('❌ 请求失败')
-              } finally {
-                setMigrating(false)
-                setTimeout(() => setMigrateMsg(''), 5000)
+              const data = await api.post<unknown>('/api/v1/admin/llm/migrate')
+              if (data?.success) {
+                setMigrateMsg(`✅ ${data.message || '导入成功'}`)
+                fetchProviders()
+              } else {
+                setMigrateMsg(`⚠️ ${data?.error?.message || '无需导入'}`)
               }
+              setMigrating(false)
+              setTimeout(() => setMigrateMsg(''), 5000)
             }}
             disabled={migrating}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#A09888] hover:text-[#EDE8DF] bg-[#1A1F2E] hover:bg-[#222839] border border-white/[0.06] hover:border-white/[0.10] rounded-md transition-all"
@@ -841,11 +786,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                         onClick={async (e) => {
                           e.stopPropagation()
                           const newActive = isOnline ? 0 : 1
-                          await fetch(`/api/v1/admin/llm/${p.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-                            body: JSON.stringify({ isActive: newActive }),
-                          })
+                          await api.put(`/api/v1/admin/llm/${p.id}`, { isActive: newActive })
                           fetchProviders()
                         }}
                         className={`flex items-center gap-1 px-1.5 py-1 rounded text-sm transition-colors ${
@@ -935,7 +876,6 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                   provider={selected}
                   onSave={fetchProviders}
                   saving={saving}
-                  apiHeaders={apiHeaders}
                 />
 
                 {/* 高级智能体引擎 (Agent Tool Calling) — 视觉 C 位，即时保存 */}
@@ -950,7 +890,6 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                     <ToolCallingPanel
                       providerId={selectedId}
                       activeTools={selected?.tools ?? []}
-                      apiHeaders={apiHeaders}
                       onSaved={fetchProviders}
                     />
                   </div>
@@ -969,7 +908,6 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                     <SkillsPanel
                       providerId={selectedId}
                       activeTools={selected?.supportedTools ?? []}
-                      apiHeaders={apiHeaders}
                       onSaved={fetchProviders}
                     />
                   </div>
@@ -993,7 +931,6 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditTarget(null) }}
         onSave={editTarget ? handleUpdate : handleCreate}
-        apiHeaders={apiHeaders}
         initialData={
           editTarget
             ? {

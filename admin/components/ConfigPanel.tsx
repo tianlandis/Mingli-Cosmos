@@ -41,7 +41,7 @@ interface ConfigRow {
   description: string | null
 }
 
-export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<string, string> }) {
+export default function ConfigPanel() {
   const [configs, setConfigs] = useState<ConfigRow[]>([])
   const [usingDb, setUsingDb] = useState(false)
   const [newKey, setNewKey] = useState('')
@@ -51,11 +51,15 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/v1/admin/config', { headers: apiHeaders() })
-    const data = await res.json()
-    setConfigs(data.data?.configs || [])
-    setUsingDb(data.data?.usingDb || false)
-  }, [apiHeaders])
+    // 走统一客户端：自动带 token + 401 全局拦截
+    const res = await api.get<{ configs: ConfigRow[]; usingDb: boolean }>('/api/v1/admin/config')
+    if (!res.success) {
+      setError(res.error?.message ?? '配置加载失败')
+      return
+    }
+    setConfigs(res.data?.configs ?? [])
+    setUsingDb(res.data?.usingDb ?? false)
+  }, [])
 
   useEffect(() => { load() }, [load])
 
@@ -85,9 +89,12 @@ export default function ConfigPanel({ apiHeaders }: { apiHeaders: () => Record<s
   }
 
   const handleReload = async () => {
-    const res = await fetch('/api/v1/admin/config/reload', { method: 'POST', headers: apiHeaders() })
-    const data = await res.json()
-    setStatus(`配置已刷新，来源: ${data.data?.source || data.source || 'unknown'}`)
+    const res = await api.post<{ source?: string }>('/api/v1/admin/config/reload')
+    if (!res.success) {
+      setError(res.error?.message ?? '刷新失败')
+      return
+    }
+    setStatus(`配置已刷新，来源: ${res.data?.source || 'unknown'}`)
     load()
   }
 

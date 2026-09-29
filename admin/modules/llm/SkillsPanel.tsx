@@ -18,6 +18,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
+import { api } from '../../lib/api'
 
 // ═══════════════════════════════════════
 // 类型定义
@@ -36,8 +37,6 @@ interface SkillsPanelProps {
   providerId: number | null
   /** Provider 当前已激活的工具 Key 列表 */
   activeTools: string[]
-  /** API 请求头工厂（含 JWT） */
-  apiHeaders: () => Record<string, string>
   /** 保存成功后回调 */
   onSaved?: () => void
 }
@@ -103,7 +102,6 @@ const CATEGORY_STYLE: Record<string, {
 export default function SkillsPanel({
   providerId,
   activeTools: initialActiveTools,
-  apiHeaders,
   onSaved,
 }: SkillsPanelProps) {
   // ── Layer 1: 工具注册表（从后端拉取）──
@@ -130,20 +128,18 @@ export default function SkillsPanel({
     let cancelled = false
     setRegistryLoading(true)
 
-    fetch('/api/v1/admin/llm/tools', { headers: apiHeaders() })
-      .then(r => r.json())
+    api.get<ToolDefinition[]>('/api/v1/admin/llm/tools')
       .then(data => {
         if (!cancelled && data?.success && Array.isArray(data.data)) {
           setRegistry(data.data)
         }
       })
-      .catch(() => {})
       .finally(() => {
         if (!cancelled) setRegistryLoading(false)
       })
 
     return () => { cancelled = true }
-  }, [apiHeaders])
+  }, [])
 
   // ── Switch 切换处理 ──
   const toggleTool = useCallback((toolId: string) => {
@@ -169,33 +165,24 @@ export default function SkillsPanel({
     setError('')
     setSuccessMsg('')
 
-    try {
-      const toolsArr = Array.from(localActive)
-      const res = await fetch(`/api/v1/admin/llm/${providerId}/tools`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
-        body: JSON.stringify({ supportedTools: toolsArr }),
-      })
+    const toolsArr = Array.from(localActive)
+    const result = await api.put(`/api/v1/admin/llm/${providerId}/tools`, { supportedTools: toolsArr })
 
-      const result = await res.json()
-
-      if (!result.success) {
-        setError(result?.error?.message ?? '保存失败')
-        if (result?.error?.details?.invalidKeys?.length) {
-          setError(`保存失败：工具 Key [${result.error.details.invalidKeys.join(', ')}] 未在注册表中`)
-        }
-        return
+    if (!result.success) {
+      setError(result?.error?.message ?? '保存失败')
+      const invalidKeys = (result.error as unknown as { details?: { invalidKeys?: string[] } })?.details?.invalidKeys
+      if (invalidKeys?.length) {
+        setError(`保存失败：工具 Key [${invalidKeys.join(', ')}] 未在注册表中`)
       }
-
-      setDirty(false)
-      setSuccessMsg(`已保存 ${toolsArr.length} 个工具配置`)
-      onSaved?.()
-    } catch {
-      setError('网络异常，请检查连接后重试')
-    } finally {
       setSaving(false)
+      return
     }
-  }, [providerId, dirty, localActive, apiHeaders, onSaved])
+
+    setDirty(false)
+    setSuccessMsg(`已保存 ${toolsArr.length} 个工具配置`)
+    setSaving(false)
+    onSaved?.()
+  }, [providerId, dirty, localActive, onSaved])
 
   // ── 未选择 Provider ──
   if (providerId === null) {
