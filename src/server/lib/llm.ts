@@ -315,8 +315,17 @@ export async function pickAvailableRoute(routes: LLMRoute[]): Promise<LLMRoute> 
   return routes[idx]
 }
 
+/** 单步 LLM 默认超时（30s）。本地小模型跑命书多步推理会超，用 `LLM_TIMEOUT_MS` 覆盖。 */
+const DEFAULT_LLM_TIMEOUT_MS = 30_000
+
+/** 读取超时配置（函数内读 env，避免模块顶层读 process.env） */
+function llmTimeoutMs(): number {
+  const raw = Number(process.env.LLM_TIMEOUT_MS)
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_LLM_TIMEOUT_MS
+}
+
 /**
- * 带重试 + 30s 超时的 LLM 调用包装器
+ * 带重试 + 超时的 LLM 调用包装器
  * 失败后返回 Try<T>.ok = false，由上游流水线短路
  */
 export async function withRetry<T>(
@@ -329,13 +338,15 @@ export async function withRetry<T>(
       const result = await Promise.race([
         fn(),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('LLM_TIMEOUT')), 30_000),
+          setTimeout(() => reject(new Error('LLM_TIMEOUT')), llmTimeoutMs()),
         ),
       ])
       return { ok: true, data: result }
     } catch (e) {
-      if (attempt === maxRetries) {
-        return { ok: false, error: String(e), step }
+      const msg = String(e)
+      // 超时多为模型本身慢，重试只会再等一整个超时窗口 → 直接失败
+      if (msg.includes('LLM_TIMEOUT') || attempt === maxRetries) {
+        return { ok: false, error: msg, step }
       }
       console.warn(`[LLM] retry ${attempt + 1}/${maxRetries} for ${step}`)
     }
