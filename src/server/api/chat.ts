@@ -13,7 +13,7 @@ import type { ChatRequest, ChatMessage } from '../lib/types'
 import { buildSystemPrompt } from '../prompts/system'
 import { validateResponse } from '../lib/guardrail'
 import { detectPaipanAttempt, buildBlockSSE } from '../lib/anti-hallucination'
-import { createModel, loadConfig } from '../lib/llm'
+import { createModel, loadConfig, SELF_TALK_STOP, findSelfTalkIndex } from '../lib/llm'
 import { getEnabledTools } from '../modules/llm/tools-executor'
 import { getActiveApiKeys, isDbReady, getConfig } from '../db/index'
 import {
@@ -235,6 +235,8 @@ chatRoute.post('/api/chat', async (c) => {
       messages: trimmedMessages,
       tools: Object.keys(tools).length > 0 ? tools : undefined,
       maxSteps: MAX_TOOL_STEPS,
+      // [护栏 L1] 防止模型答完后替用户编造下一轮对话（本地小模型尤其明显）
+      stopSequences: SELF_TALK_STOP,
       onFinish: ({ text }: { text: string }) => {
         if (text) {
           const guard = validateResponse(text)
@@ -269,6 +271,8 @@ chatRoute.post('/api/chat', async (c) => {
   const encoder = new TextEncoder()
   let toolCallCount = 0
   let fullText = ''
+  // [Guardrail L1.5] 自言自语兜底：命中后后续 delta 一律丢弃
+  let selfTalkTrimmed = false
   // [P5-4] 记录流内错误（如上游 402/429/5xx），用于"失败不计费"判定
   let streamError: { message?: string } | null = null
   // [ADR-012] 捕获 finish chunk 的 usage（token 统计用；字段名跨版本兼容）
@@ -282,6 +286,31 @@ chatRoute.post('/api/chat', async (c) => {
             case 'text-delta': {
               const delta = (chunk as any).textDelta
               if (typeof delta === 'string' && delta.length > 0) {
+                // [Guardrail L1.5] stopSequences 是精确匹配，模型换写法可能绕过。
+                // 这里在结果层再兜一道：累计文本一旦出现第二轮对话的角色标签，
+                // 就从该处截断、后续 delta 全部丢弃，保证落库历史干净。
+                if (!selfTalkTrimmed) {
+                  const probe = fullText + delta
+                  const idx = findSelfTalkIndex(probe)
+                  if (idx >= 0) {
+                    selfTalkTrimmed = true
+                    const clean = probe.slice(0, idx).trimEnd()
+                    const tail = clean.slice(fullText.length)
+                    fullText = clean
+                    if (tail.length > 0) {
+                      controller.enqueue(
+                        encoder.encode(
+                          `data: ${JSON.stringify({ type: 'text-delta', textDelta: tail })}\n\n`,
+                        ),
+                      )
+                    }
+                    console.warn('[Guardrail] 检测到模型自言自语，已截断')
+                    break
+                  }
+                } else {
+                  break
+                }
+
                 fullText += delta
                 controller.enqueue(
                   encoder.encode(
@@ -579,6 +608,8 @@ function createSSEStream(
     messages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     maxSteps: MAX_TOOL_STEPS,
+    // [护栏 L1] 同上，Multi-Agent 路径同样需要刹车
+    stopSequences: SELF_TALK_STOP,
     onFinish: ({ text }: { text: string }) => {
       if (text) {
         const guard = validateResponse(text)
@@ -591,6 +622,8 @@ function createSSEStream(
   const encoder = new TextEncoder()
   let toolCallCount = 0
   let fullText = ''
+  // [Guardrail L1.5] 自言自语兜底：命中后后续 delta 一律丢弃
+  let selfTalkTrimmed = false
 
   const sseStream = new ReadableStream({
     async start(controller) {
@@ -618,6 +651,31 @@ function createSSEStream(
             case 'text-delta': {
               const delta = (chunk as any).textDelta
               if (typeof delta === 'string' && delta.length > 0) {
+                // [Guardrail L1.5] stopSequences 是精确匹配，模型换写法可能绕过。
+                // 这里在结果层再兜一道：累计文本一旦出现第二轮对话的角色标签，
+                // 就从该处截断、后续 delta 全部丢弃，保证落库历史干净。
+                if (!selfTalkTrimmed) {
+                  const probe = fullText + delta
+                  const idx = findSelfTalkIndex(probe)
+                  if (idx >= 0) {
+                    selfTalkTrimmed = true
+                    const clean = probe.slice(0, idx).trimEnd()
+                    const tail = clean.slice(fullText.length)
+                    fullText = clean
+                    if (tail.length > 0) {
+                      controller.enqueue(
+                        encoder.encode(
+                          `data: ${JSON.stringify({ type: 'text-delta', textDelta: tail })}\n\n`,
+                        ),
+                      )
+                    }
+                    console.warn('[Guardrail] 检测到模型自言自语，已截断')
+                    break
+                  }
+                } else {
+                  break
+                }
+
                 fullText += delta
                 controller.enqueue(
                   encoder.encode(

@@ -5,7 +5,7 @@
 import { generateText } from 'ai'
 import type { AnnotationResult } from '../../engine/index'
 import type { Try, PersonalityOutput } from '../lib/types'
-import { createModel, loadConfig, withRetry } from '../lib/llm'
+import { createModel, loadConfig, withRetry, SELF_TALK_STOP } from '../lib/llm'
 import { buildPersonalityPrompt } from '../prompts/personality'
 import { buildMbtiAnchorBlock, resolveMbtiExpression } from './mbti-expression'
 
@@ -36,6 +36,8 @@ export async function generatePersonality(
       prompt,
       temperature: config.temperature,
       maxOutputTokens: config.maxTokens,
+      // [护栏 L1] 防止本地小模型答完后自行续写下一轮对话
+      stopSequences: SELF_TALK_STOP,
     })
 
     return parsePersonalityOutput(text)

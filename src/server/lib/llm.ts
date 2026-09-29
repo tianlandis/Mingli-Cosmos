@@ -28,6 +28,67 @@ function getDefaultBaseUrl(provider: ModelProvider): string {
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// [护栏 L1] 自言自语刹车 —— 防止模型编造后续对话
+// ════════════════════════════════════════════════════════════
+//
+// 背景：LLM 本质是「续写机器」。训练语料里满是 Human/AI 交替的多轮对话，
+//       答完一轮后，模型概率上最顺手的延续就是开启下一轮。
+//       官方对齐的模型会输出收尾符（EOS）自然停下，但未经充分对齐的
+//       微调版本（如 xxx-un / base-like）这层刹车很弱 ——
+//       它不认为自己「说完了」，于是替用户问下一个问题，再自己回答，
+//       一路续写到 token 上限（实测 61 秒 / 6552 字符）。
+//
+// 为什么不能只靠 system prompt：软约束只能降低概率，压不住采样随机性；
+//       必须在解码层做硬切断 —— 这就是 stopSequences 的作用。
+//
+// 为什么不能只靠 maxTokens：那是止损不是刹车，用户会白等几十秒，
+//       且输出里仍然夹着垃圾内容。两者必须叠加（L1 切断 + L2 兜底）。
+//
+// 注意：本表对所有 Provider 无害 —— 对齐良好的模型本就会输出 EOS，
+//       命中不了这些序列；对小模型 / 本地模型则是必需的刹车。
+export const SELF_TALK_STOP: string[] = [
+  // 角色标签（中英各种写法）
+  'Assistant:', 'AI:', 'User:', 'Human:', 'System:',
+  '\nAssistant:', '\nAI:', '\nUser:', '\nHuman:', '\nSystem:',
+  '\n\nAssistant', '\n\nAI', '\n\nUser', '\n\nHuman', '\n\nSystem',
+  // Qwen / ChatML 模板边界
+  '<|im_start|>', '<|im_end|>', '<|endoftext|>',
+  // 常见的自言自语起手式
+  '根据上面这个对话历史', '请按照要求写出', '你给出的回答是否符合规则',
+]
+
+// ════════════════════════════════════════════════════════════
+// [护栏 L1.5] 结果级兜底 —— 截断已经混进来的自言自语
+// ════════════════════════════════════════════════════════════
+//
+// stopSequences（L1）在解码层切断，但它只认精确匹配。
+// 模型换种写法（比如中文全角冒号、或先输出一个空行再编）就可能绕过。
+// 因此这里再做一道「结果级」清洗：已生成的文本里一旦出现第二轮对话的
+// 角色标签，就从那里截断，保证落库的会话历史与护栏看到的始终是干净的。
+//
+// 只在「换行 + 角色标签」的组合上命中，避免误伤正常行文中提到 AI/助手。
+const SELF_TALK_RE =
+  /\n\s*(?:Human|Assistant|User|AI|System|用户|助手|提问|客户|问)\s*[:：]/
+
+/**
+ * 找出自言自语污染的起始下标。
+ * @returns 污染起始下标；返回 -1 表示文本干净
+ */
+export function findSelfTalkIndex(text: string): number {
+  const m = SELF_TALK_RE.exec(text)
+  return m ? m.index : -1
+}
+
+/**
+ * 截断自言自语污染（幂等，干净文本原样返回）。
+ * @returns { text, trimmed } —— trimmed 为 true 表示发生了截断
+ */
+export function truncateSelfTalk(text: string): { text: string; trimmed: boolean } {
+  const idx = findSelfTalkIndex(text)
+  if (idx < 0) return { text, trimmed: false }
+  return { text: text.slice(0, idx).trimEnd(), trimmed: true }
+}
 /**
  * 创建模型实例
  * 通过 @ai-sdk/openai 的 createOpenAI() 实现多 Provider 兼容

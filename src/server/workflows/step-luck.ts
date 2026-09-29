@@ -5,7 +5,7 @@
 import { generateText } from 'ai'
 import type { AnnotationResult } from '../../engine/index'
 import type { Try, LuckOutput } from '../lib/types'
-import { createModel, loadConfig, withRetry } from '../lib/llm'
+import { createModel, loadConfig, withRetry, SELF_TALK_STOP } from '../lib/llm'
 import { buildLuckPrompt } from '../prompts/luck'
 
 const MODEL_OVERRIDE = {
@@ -33,6 +33,8 @@ export async function generateLuck(
       prompt,
       temperature: config.temperature,
       maxOutputTokens: config.maxTokens,
+      // [护栏 L1] 同上
+      stopSequences: SELF_TALK_STOP,
     })
 
     return parseLuckOutput(text)

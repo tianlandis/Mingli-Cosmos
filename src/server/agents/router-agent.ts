@@ -6,7 +6,7 @@
 // ============================================================
 
 import { generateText } from 'ai'
-import { createModel, loadConfig } from '../lib/llm'
+import { createModel, loadConfig, SELF_TALK_STOP } from '../lib/llm'
 import { ROUTER_SYSTEM_PROMPT, AGENTS, type AgentIdentity } from './prompts'
 
 /** 路由决策结果 */
@@ -51,6 +51,8 @@ export async function classifyIntent(question: string): Promise<RouteDecision> {
       prompt: `用户提问：「${question}」\n请给出分类结果（只输出 JSON，不要任何其他文字）。`,
       temperature: 0.1,
       maxOutputTokens: 128,
+      // [护栏 L1] 分类器只需 JSON，撞到任何角色标签立即切断
+      stopSequences: SELF_TALK_STOP,
     })
 
     const text = result.text.trim()
