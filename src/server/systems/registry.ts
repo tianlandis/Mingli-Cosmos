@@ -8,6 +8,8 @@
 
 import type { AnySystemEngine, SystemEngine } from './types'
 import { baziEngine } from './bazi'
+import { astroEngine } from './astro'
+import { mbtiEngine } from './mbti'
 
 const REGISTRY = new Map<string, AnySystemEngine>()
 
@@ -63,3 +65,5 @@ export type { SystemEngine }
 
 // ── 内置体系注册（新体系在此追加一行即可）──
 registerSystem(baziEngine)
+registerSystem(astroEngine)
+registerSystem(mbtiEngine)

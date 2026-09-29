@@ -65,10 +65,10 @@ route.post('/', optionalUserAuth, async (c) => {
   }
   const engine = requireSystemEngine(system)
 
-  let bundle: BaziBundle
+  let bundle: unknown
   try {
     // 计算委托体系引擎（bazi 引擎内部即 calculateBazi*/calculateBaziFromLunar + generateAnnotation）
-    bundle = (await engine.compute({
+    bundle = await engine.compute({
       year: d.year,
       month: d.month,
       day: d.day,
@@ -77,7 +77,7 @@ route.post('/', optionalUserAuth, async (c) => {
       gender: d.gender,
       calendarType: d.calendarType,
       isLeapMonth: d.isLeapMonth,
-    })) as BaziBundle
+    })
   } catch (e) {
     return c.json({
       success: false,
@@ -88,7 +88,14 @@ route.post('/', optionalUserAuth, async (c) => {
     }, 400)
   }
 
-  const { chart, annotation } = bundle
+  // [ADR-011] 八字体系沿用既有 chart / annotation 契约（前端已依赖此形状）；
+  // 其他体系的产物形状各不相同（星座是 sign、MBTI 是 profile），
+  // 统一以**整个 bundle 作为 payload** 落库 —— 读路径先看 system 再解析，
+  // 绝不按列名猜语义。
+  const isBazi = system === DEFAULT_SYSTEM
+  const baziBundle = isBazi ? (bundle as BaziBundle) : null
+  const chart = baziBundle ? baziBundle.chart : bundle
+  const annotation = baziBundle ? baziBundle.annotation : {}
   const hash = engine.hash(bundle)
   const sessionId = d.sessionId ?? `sess_${newTraceId()}_${randomUUID().slice(0, 8)}`
   const current = c.get('currentUser')
@@ -111,8 +118,8 @@ route.post('/', optionalUserAuth, async (c) => {
       chartHash: hash,
       engineVersion: engine.version,
       system,
-      chart,
-      annotation,
+      // 八字返回 chart/annotation（既有契约）；其他体系返回 payload
+      ...(isBazi ? { chart, annotation } : { payload: bundle }),
     },
   })
 })
