@@ -33,6 +33,7 @@ import {
 import { orchestrate } from '../agents/orchestrate'
 import { extractBearerToken, verifyUserToken } from '../core/middleware/user-auth'
 import { resolveChartSource } from '../lib/chart-source'
+import { readQuotaCost } from '../lib/billing'
 import { newTraceId, currentTraceId } from '../lib/trace'
 
 /** 滑动窗口：最多保留最近 N 条消息 */
@@ -156,7 +157,7 @@ function reserveChatQuota(c: any, refKey?: string): {
   const res = reserveQuota({
     userId: payload.userId,
     idempotencyKey: key,
-    cost: 1,
+    cost: readQuotaCost('chat'),
     reason: 'chat',
     refKey: refKey ?? null,
   })

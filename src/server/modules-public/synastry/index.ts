@@ -34,6 +34,7 @@ import {
 } from '../../db'
 import { createTtlCache } from '../../lib/ttl-cache'
 import { newTraceId } from '../../lib/trace'
+import { readQuotaCost } from '../../lib/billing'
 import type { BaZiResult, AnnotationResult } from '../../../engine'
 
 export const route = new Hono<UserEnv>()
@@ -41,21 +42,6 @@ export const meta = { prefix: 'synastry' }
 
 /** 合盘结果缓存（同一对命盘 + 同一关系） */
 const cache = createTtlCache(500)
-
-/** 默认消耗额度（可由后台 `synastry_quota_cost` 覆盖） */
-const DEFAULT_COST = 1
-
-/** 读取合盘消耗额度：后台可配，未配或非法值回落 DEFAULT_COST */
-function readCost(): number {
-  if (!isDbReady()) return DEFAULT_COST
-  try {
-    const raw = getConfig('synastry_quota_cost')?.value
-    const n = Number(raw)
-    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_COST
-  } catch {
-    return DEFAULT_COST
-  }
-}
 
 const bodySchema = z.object({
   /** 甲方：档案 id 或现场生辰，二选一 */
@@ -207,7 +193,7 @@ route.post('/', userAuthMiddleware, async (c) => {
     const res = reserveQuota({
       userId: current.userId,
       idempotencyKey: key,
-      cost: readCost(),
+      cost: readQuotaCost('synastry'),
       reason: 'synastry',
       refKey: null,
     })
@@ -217,7 +203,7 @@ route.post('/', userAuthMiddleware, async (c) => {
         error: {
           code: res.reason ?? 'QUOTA_EXHAUSTED',
           message: res.reason === 'QUOTA_EXHAUSTED'
-            ? `合盘需要 ${readCost()} 额度，当前余额不足，请充值或订阅套餐`
+            ? `合盘需要 ${readQuotaCost('synastry')} 额度，当前余额不足，请充值或订阅套餐`
             : '无法完成本次合盘',
         },
         quotaRemaining: res.balanceAfter ?? 0,

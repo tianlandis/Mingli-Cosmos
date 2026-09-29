@@ -35,6 +35,7 @@ import {
   ShieldOff,
   ShieldCheck,
   UserX,
+  Crown,
 } from 'lucide-react'
 
 // ═══════════════════════════════════════
@@ -108,6 +109,14 @@ const VIP_LABEL: Record<string, string> = {
   pro: '专业',
 }
 
+/** ISO 时间 → <input type="datetime-local"> 需要的本地时间字符串 */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 const ORDER_STATUS_LABEL: Record<string, string> = {
   pending: '待支付',
   paid: '已支付',
@@ -135,6 +144,7 @@ export default function UsersPage() {
   // 弹窗目标
   const [detail, setDetail] = useState<UserDetail | null>(null)
   const [quotaTarget, setQuotaTarget] = useState<UserRow | null>(null)
+  const [memberTarget, setMemberTarget] = useState<UserRow | null>(null)
   const [pwdTarget, setPwdTarget] = useState<UserRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null)
   const [busy, setBusy] = useState(false)
@@ -199,6 +209,20 @@ export default function UsersPage() {
       load()
     } else {
       notify('err', res.error?.message || '调整失败')
+    }
+  }
+
+  async function submitMember(vipLevel: string, vipExpiresAt: string | null) {
+    if (!memberTarget) return
+    setBusy(true)
+    const res = await api.patch(`/api/v1/admin/users/${memberTarget.id}`, { vipLevel, vipExpiresAt })
+    setBusy(false)
+    if (res.success) {
+      notify('ok', `已将 ${memberTarget.username} 的会员等级设为「${VIP_LABEL[vipLevel] || vipLevel}」`)
+      setMemberTarget(null)
+      load()
+    } else {
+      notify('err', res.error?.message || '设置失败')
     }
   }
 
@@ -422,6 +446,9 @@ export default function UsersPage() {
                         <IconButton title="查看详情" onClick={() => openDetail(u)}>
                           <UserCog size={13} />
                         </IconButton>
+                        <IconButton title="设置会员等级" onClick={() => setMemberTarget(u)}>
+                          <Crown size={13} />
+                        </IconButton>
                         <IconButton title="调整额度" onClick={() => setQuotaTarget(u)}>
                           <Coins size={13} />
                         </IconButton>
@@ -554,6 +581,14 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ═══ 弹窗：设置会员等级 ═══ */}
+      <MemberDialog
+        user={memberTarget}
+        busy={busy}
+        onCancel={() => setMemberTarget(null)}
+        onSubmit={submitMember}
+      />
+
       {/* ═══ 弹窗：调整额度 ═══ */}
       <QuotaDialog
         user={quotaTarget}
@@ -651,6 +686,77 @@ function IconButton({
     >
       {children}
     </button>
+  )
+}
+
+function MemberDialog({
+  user, busy, onCancel, onSubmit,
+}: {
+  user: UserRow | null
+  busy: boolean
+  onCancel: () => void
+  onSubmit: (vipLevel: string, vipExpiresAt: string | null) => void
+}) {
+  const [level, setLevel] = useState('free')
+  const [expires, setExpires] = useState('')
+
+  // 打开时用该用户当前值回填（避免残留上一个用户的选择）
+  useEffect(() => {
+    if (user) {
+      setLevel(user.vipLevel || 'free')
+      setExpires(user.vipExpiresAt ? toLocalInput(user.vipExpiresAt) : '')
+    }
+  }, [user])
+
+  return (
+    <Dialog open={!!user} onOpenChange={open => !open && onCancel()}>
+      <DialogContent className="bg-[#1A1F2E] border-white/[0.08] text-[#EDE8DF] max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[#EDE8DF]">设置会员等级</DialogTitle>
+          <DialogDescription className="text-[#6B6459]">
+            {user?.username} · 当前等级「{VIP_LABEL[user?.vipLevel || 'free'] || user?.vipLevel}」
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-[11px] text-[#6B6459] mb-1.5 block">会员等级</Label>
+            <Select
+              value={level}
+              onChange={e => setLevel(e.target.value)}
+              className="h-9 bg-[#0A1118] border-white/[0.08]"
+            >
+              <option value="free">免费（free）</option>
+              <option value="basic">会员（basic）</option>
+              <option value="pro">专业（pro）</option>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-[11px] text-[#6B6459] mb-1.5 block">会员到期时间（留空 = 永久）</Label>
+            <Input
+              type="datetime-local"
+              value={expires}
+              onChange={e => setExpires(e.target.value)}
+              className="h-9 bg-[#0A1118] border-white/[0.08] text-[#EDE8DF]"
+            />
+            <p className="text-[11px] text-[#4A4540] mt-1">
+              测试期仅作后台标记，不影响功能门控；正式计费时可据此限制会员权益。
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} className="border-white/[0.08] text-[#A09888]">取消</Button>
+          <Button
+            disabled={busy}
+            onClick={() => onSubmit(level, expires ? new Date(expires).toISOString() : null)}
+            className="bg-[#B8964A] hover:bg-[#D8C08A] text-[#0A1118] font-medium"
+          >
+            {busy ? '提交中...' : '确认设置'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

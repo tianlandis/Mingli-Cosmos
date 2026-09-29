@@ -46,7 +46,8 @@ export function getLedgerByKey(key: string): QuotaLedgerRow | undefined {
 
 /**
  * 预留（消费）额度 —— 幂等
- * @param cost 正整数，默认 1
+ * @param cost 非负整数，默认 1；cost=0 表示「免费」（测试期/免费模式），
+ *             仍写一条 delta=0 的台账以保证幂等语义一致，但不改变用户余额。
  */
 export function reserveQuota(params: {
   userId: number
@@ -56,7 +57,7 @@ export function reserveQuota(params: {
   refKey?: string | null
 }): ReserveResult {
   const cost = params.cost ?? 1
-  if (cost <= 0) throw new Error('cost 必须为正整数')
+  if (!Number.isInteger(cost) || cost < 0) throw new Error('cost 必须为非负整数')
 
   const db = getDb()
   return db.transaction((tx) => {
@@ -87,7 +88,8 @@ export function reserveQuota(params: {
       return { ok: false, reused: false, status: null, balanceAfter: 0, reason: 'ACCOUNT_DISABLED' as ReserveFailReason }
     }
     const remaining = user.quotaTotal - user.quotaUsed
-    if (remaining < cost) {
+    // cost=0（免费）时余额不参与判断，超额账号也应能用免费功能
+    if (cost > 0 && remaining < cost) {
       return { ok: false, reused: false, status: null, balanceAfter: remaining, reason: 'QUOTA_EXHAUSTED' as ReserveFailReason }
     }
 

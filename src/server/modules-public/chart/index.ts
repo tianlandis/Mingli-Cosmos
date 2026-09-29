@@ -14,11 +14,18 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
-import { saveChartSession } from '../../db'
+import {
+  saveChartSession,
+  reserveQuota,
+  commitQuota,
+  refundQuota,
+  type ReserveFailReason,
+} from '../../db'
 import { requireSystemEngine, isKnownSystem, DEFAULT_SYSTEM } from '../../systems/registry'
 import type { BaziBundle } from '../../systems/bazi'
 import { optionalUserAuth, type UserEnv } from '../../core/middleware/user-auth'
 import { newTraceId } from '../../lib/trace'
+import { readQuotaCost } from '../../lib/billing'
 
 export const route = new Hono<UserEnv>()
 
@@ -100,16 +107,52 @@ route.post('/', optionalUserAuth, async (c) => {
   const sessionId = d.sessionId ?? `sess_${newTraceId()}_${randomUUID().slice(0, 8)}`
   const current = c.get('currentUser')
 
+  // ── 排盘额度（后台可配 `chart_quota_cost`，默认 0 = 免费）──
+  // 仅「登录用户 + 成本 > 0」才计费；排盘为纯计算，算完即结算。
+  let chartChargeKey: string | null = null
+  const chartCost = readQuotaCost('chart')
+  if (current?.userId && chartCost > 0) {
+    const key = `chart_${current.userId}_${randomUUID()}`
+    const res = reserveQuota({
+      userId: current.userId,
+      idempotencyKey: key,
+      cost: chartCost,
+      reason: 'chart',
+      refKey: null,
+    })
+    if (!res.ok) {
+      const map: Record<ReserveFailReason, { status: 402 | 403 | 401 | 409; code: string; message: string }> = {
+        QUOTA_EXHAUSTED: { status: 402, code: 'QUOTA_EXHAUSTED', message: `排盘需要 ${chartCost} 额度，当前余额不足` },
+        ACCOUNT_DISABLED: { status: 403, code: 'ACCOUNT_DISABLED', message: '账号已被停用，请联系客服' },
+        USER_NOT_FOUND: { status: 401, code: 'UNAUTHORIZED', message: '登录状态失效，请重新登录' },
+        KEY_REFUNDED: { status: 409, code: 'IDEMPOTENCY_KEY_REFUNDED', message: '请重试' },
+      }
+      const m = map[res.reason ?? 'QUOTA_EXHAUSTED']
+      return c.json({ success: false, error: { code: m.code, message: m.message } }, m.status)
+    }
+    chartChargeKey = key
+  }
+
   // 权威落库（PII 归属用户，供删除权清除）
-  saveChartSession({
-    id: sessionId,
-    chart: JSON.stringify(chart),
-    annotation: JSON.stringify(annotation),
-    chartHash: hash,
-    engineVersion: engine.version,
-    userId: current?.userId ?? null,
-    system,
-  })
+  try {
+    saveChartSession({
+      id: sessionId,
+      chart: JSON.stringify(chart),
+      annotation: JSON.stringify(annotation),
+      chartHash: hash,
+      engineVersion: engine.version,
+      userId: current?.userId ?? null,
+      system,
+    })
+  } catch (e) {
+    // 落库失败 → 退费（用户没拿到 sessionId，等于没有结果）
+    if (chartChargeKey) refundQuota(chartChargeKey)
+    return c.json({
+      success: false,
+      error: { code: 'PERSIST_FAILED', message: e instanceof Error ? e.message : '排盘结果保存失败，请重试' },
+    }, 500)
+  }
+  if (chartChargeKey) commitQuota(chartChargeKey)
 
   return c.json({
     success: true,

@@ -19,23 +19,10 @@ import { extractBearerToken, verifyUserToken } from '../core/middleware/user-aut
 import { isDbReady, getConfig, reserveQuota, commitQuota, refundQuota } from '../db/index'
 import type { ReserveFailReason } from '../db/index'
 import { newTraceId } from '../lib/trace'
+import { readQuotaCost } from '../lib/billing'
 
 /** 命书额度门控配置项（显式 'false' 才关闭；未配置 = 扣费，堵漏洞） */
 const QUOTA_FLAG = 'quota_enforce_report'
-
-/** 命书消耗额度（可由后台 `report_quota_cost` 覆盖） */
-const DEFAULT_COST = 1
-
-function readCost(): number {
-  if (!isDbReady()) return DEFAULT_COST
-  try {
-    const raw = getConfig('report_quota_cost')?.value
-    const n = Number(raw)
-    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_COST
-  } catch {
-    return DEFAULT_COST
-  }
-}
 
 /** 额度门控是否开启（默认开启：未配置也扣费，避免"配置缺失 = 免费"的老问题） */
 function quotaEnforced(): boolean {
@@ -111,7 +98,7 @@ reportRoute.post('/api/report', async (c) => {
         ? headerKey
         : `report_${userId}_${fp}_${newTraceId()}`
 
-      const cost = readCost()
+      const cost = readQuotaCost('report')
       const res = reserveQuota({
         userId,
         idempotencyKey: key,

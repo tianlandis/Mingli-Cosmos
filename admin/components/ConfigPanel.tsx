@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import SystemSelector from './SystemSelector'
+import BillingPanel from './BillingPanel'
 import { api } from '../lib/api'
 
 const CONFIG_DESCRIPTIONS: Record<string, string> = {
@@ -169,6 +170,9 @@ export default function ConfigPanel() {
           {error}
         </div>
       )}
+
+      {/* 计费设置 —— 免费模式 + 各功能额度成本 */}
+      <BillingPanel />
 
       {/* 默认应用（体系）选择 —— ADR-011 */}
       <SystemSelector />
