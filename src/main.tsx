@@ -19,6 +19,7 @@ import './index.css'
 import App from './App.tsx'
 import PaipanPage from './pages/PaipanPage.tsx'
 import DiscoverPage from './pages/DiscoverPage.tsx'
+import SynastryPage from './pages/SynastryPage.tsx'
 import MyPage from './pages/MyPage.tsx'
 
 const router = createBrowserRouter([
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <PaipanPage /> },
       { path: 'discover', element: <DiscoverPage /> },
+      { path: 'synastry', element: <SynastryPage /> },
       { path: 'my', element: <MyPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

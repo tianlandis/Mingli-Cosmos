@@ -23,7 +23,10 @@ import { profileToChartInput } from './lib/birth'
 import type { PaipanInput, ShellContextValue } from './lib/shell'
 
 export default function App() {
-  const { result, annotation, sessionId, loading, error, handleCalculate, loadChart, reset } = useBazi()
+  const {
+    result, annotation, sessionId, systemId, payload,
+    loading, error, handleCalculate, loadChart, reset,
+  } = useBazi()
   const {
     user, subscription, defaultBirthProfile, quotaRemaining, verifying,
     refresh, logout, login, register,
@@ -72,7 +75,7 @@ export default function App() {
     refreshUser: refresh,
     logout,
     openAuth: (mode = 'login') => { setAuthMode(mode); setAuthOpen(true) },
-    result, annotation, sessionId, loading, error,
+    result, annotation, sessionId, systemId, payload, loading, error,
     calculate,
     loadChart,
     showChat,

@@ -39,18 +39,21 @@ export const SYSTEMS: SystemDef[] = [
     inputKind: 'birth',
   },
   {
-    id: 'zodiac',
+    // ⚠️ id 必须与后端 registry 逐字一致（后端注册的是 'astro'，不是 'zodiac'）
+    id: 'astro',
     label: '星座',
-    desc: '太阳月亮上升 · 星盘相位',
-    status: 'planned',
-    inputKind: 'birth-place',
+    // 只做太阳星座（中气分界）；月亮/上升需星历库，未提供前不写进说明
+    desc: '太阳星座 · 中气分界 · 与八字月支互验',
+    status: 'available',
+    inputKind: 'birth',
   },
   {
     id: 'mbti',
     label: 'MBTI',
-    desc: '16 型人格 · 认知功能栈',
-    status: 'planned',
-    inputKind: 'quiz',
+    // 从生辰命盘推导人格倾向，不是问卷测评
+    desc: '由命盘推人格倾向 · 认知功能栈',
+    status: 'available',
+    inputKind: 'birth',
   },
 ]
 

@@ -25,19 +25,26 @@ export interface ChartInput {
   isLeapMonth?: boolean
 }
 
-/** 服务端权威排盘响应（P5-3） */
+/** 服务端权威排盘响应（P5-3）
+ *  [ADR-011] 八字体系返回 chart/annotation；其他体系返回 payload（形状由体系自定）。 */
 interface ChartResponse {
   sessionId: string
   chartHash: string
   engineVersion: string
-  chart: BaZiResult
-  annotation: AnnotationResult
+  system?: string
+  chart?: BaZiResult
+  annotation?: AnnotationResult
+  payload?: unknown
 }
 
 export function useBazi() {
   const [result, setResult] = useState<BaZiResult | null>(null)
   const [annotation, setAnnotation] = useState<AnnotationResult | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  /** 当前命盘所属体系（'bazi' | 'astro' | 'mbti'） */
+  const [systemId, setSystemId] = useState<string>('bazi')
+  /** 非八字体系的产物（形状由体系自定，交给对应展示组件解析） */
+  const [payload, setPayload] = useState<unknown>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -56,31 +63,56 @@ export function useBazi() {
     return { bz, ann }
   }, [])
 
-  /** 排盘：服务端权威优先，失败回退本地引擎 */
-  const handleCalculate = useCallback(async (data: ChartInput) => {
+  /**
+   * 排盘：服务端权威优先；八字体系在本地引擎可用时兜底。
+   * @param system 体系 id（'bazi' | 'astro' | 'mbti'），缺省 bazi
+   */
+  const handleCalculate = useCallback(async (data: ChartInput, system = 'bazi') => {
     setLoading(true)
     setError(null)
+    setSystemId(system)
 
     try {
       // ① 服务端权威计算 + 落库（返回权威 sessionId）
-      const res = await userApi.post<ChartResponse>('/api/v1/app/chart', data)
-      if (res.success && res.data?.chart) {
-        setResult(res.data.chart)
-        setAnnotation(res.data.annotation ?? null)
+      const res = await userApi.post<ChartResponse>('/api/v1/app/chart', { ...data, system })
+      if (res.success && res.data) {
+        const sys = res.data.system ?? system
         setSessionId(res.data.sessionId ?? null)
+        setSystemId(sys)
+
+        if (sys === 'bazi' && res.data.chart) {
+          setResult(res.data.chart)
+          setAnnotation(res.data.annotation ?? null)
+          setPayload(null)
+          return
+        }
+        // 非八字体系：产物形状由体系自定，原样交给展示层
+        setResult(null)
+        setAnnotation(null)
+        setPayload(res.data.payload ?? null)
         return
       }
 
-      // ② 服务端不可用/明确失败 → 本地兜底（行为等价，仅无权威 sessionId）
+      // ② 服务端不可用/明确失败
+      if (system !== 'bazi') {
+        // 星座 / MBTI 的权威实现在服务端（星座依赖中气时刻表，本地未内置）
+        setError((res.error?.message ?? '该体系暂不可用') + '（请稍后重试）')
+        setResult(null)
+        setAnnotation(null)
+        setPayload(null)
+        return
+      }
       const { bz, ann } = await computeLocal(data)
       setResult(bz)
       setAnnotation(ann)
       setSessionId(null)
+      setPayload(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : '计算失败，请检查输入。')
       setResult(null)
       setAnnotation(null)
       setSessionId(null)
+      setPayload(null)
     } finally {
       setLoading(false)
     }
@@ -98,6 +130,8 @@ export function useBazi() {
         setResult(res.data.chart)
         setAnnotation(res.data.annotation ?? null)
         setSessionId(res.data.id)
+        setSystemId('bazi')
+        setPayload(null)
       } else {
         setError(res.error?.message || '命盘载入失败')
       }
@@ -111,8 +145,13 @@ export function useBazi() {
     setResult(null)
     setAnnotation(null)
     setSessionId(null)
+    setSystemId('bazi')
+    setPayload(null)
     setError(null)
   }, [])
 
-  return { result, annotation, sessionId, loading, error, handleCalculate, loadChart, reset }
+  return {
+    result, annotation, sessionId, systemId, payload,
+    loading, error, handleCalculate, loadChart, reset,
+  }
 }

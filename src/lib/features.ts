@@ -38,7 +38,8 @@ export const FEATURES: FeatureDef[] = [
     key: 'synastry',
     title: '双人合盘',
     desc: '夫妻 / 亲子 / 合伙人，按关系评分',
-    status: 'planned',
+    status: 'available',
+    route: '/synastry',
     icon: 'users',
   },
   {
@@ -52,7 +53,9 @@ export const FEATURES: FeatureDef[] = [
     key: 'report',
     title: '命书报告',
     desc: '人格 + 运势完整命书',
-    status: 'planned',
+    // 已实现：排盘结果页底部「生成我的命书」。需先有命盘，故回到排盘页。
+    status: 'available',
+    route: '/',
     icon: 'book',
   },
   {

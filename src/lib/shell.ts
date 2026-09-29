@@ -32,9 +32,14 @@ export interface ShellContextValue {
   annotation: AnnotationResult | null
   /** 服务端权威命盘会话 id（P5-3），对话据此取用权威快照；本地回退时为 null */
   sessionId: string | null
+  /** [ADR-011] 当前命盘所属体系：'bazi' | 'astro' | 'mbti' */
+  systemId: string
+  /** 非八字体系的产物（形状由体系自定，八字时为 null） */
+  payload: unknown
   loading: boolean
   error: string | null
-  calculate: (data: PaipanInput) => Promise<void>
+  /** @param system 体系 id，缺省 'bazi' */
+  calculate: (data: PaipanInput, system?: string) => Promise<void>
   /** 载入一份历史命盘（服务端权威快照） */
   loadChart: (id: string) => Promise<void>
 
