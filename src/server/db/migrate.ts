@@ -102,6 +102,8 @@ export function runMigrations(sqlite: Database.Database) {
   safeAlter(sqlite, 'api_keys', 'tested_at TEXT')
   safeAlter(sqlite, 'api_keys', "test_status TEXT DEFAULT 'untested'")
   safeAlter(sqlite, 'api_keys', 'test_latency INTEGER')
+  // [模型分级] fast=低延迟场景（对话/路由） / deep=高质量场景（命书） / NULL=不参与分级
+  safeAlter(sqlite, 'api_keys', 'role TEXT')
 
   // prompt_templates 扩展
   safeAlter(sqlite, 'prompt_templates', "category TEXT DEFAULT 'custom'")

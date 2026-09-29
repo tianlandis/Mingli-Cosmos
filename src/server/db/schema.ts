@@ -25,6 +25,14 @@ export const apiKeys = sqliteTable('api_keys', {
   maxTokens: integer('max_tokens').default(2048),
   isActive: integer('is_active').default(1),      // 0=禁用, 1=启用
   isDefault: integer('is_default').default(0),     // 0=非默认, 1=全局默认供应商（唯一）
+  /**
+   * [模型分级] 用途角色：'fast' | 'deep' | NULL
+   * - fast：低延迟场景（AI 对话、意图路由）→ 配本地小模型 / 便宜模型
+   * - deep：高质量场景（命书 Step1 性格 / Step2 运势）→ 配强模型
+   * - NULL：未参与分级，仅作为全局默认候选
+   * 解析顺序：role 专属 → isDefault 全局默认 → 首个 isActive
+   */
+  role: text('role'),
   sortOrder: integer('sort_order').default(0),
   // [Phase 4 NEW] Skills/Tools 扩展字段
   supportedTools: text('supported_tools').default('[]'),  // JSON: ["solar_term_calc","calendar_lookup"]

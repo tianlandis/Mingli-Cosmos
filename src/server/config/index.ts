@@ -6,7 +6,18 @@
 // ============================================================
 
 import { getConfigValue, listConfigs } from '../db'
-import { getDefaultApiKey, getDefaultApiKeyFallback } from '../db/repositories/api-keys'
+import {
+  getDefaultApiKey,
+  getDefaultApiKeyFallback,
+  getApiKeyByRole,
+} from '../db/repositories/api-keys'
+
+/**
+ * [模型分级] 用途角色
+ * - fast：低延迟场景（AI 对话、意图路由）→ 本地小模型 / 便宜模型
+ * - deep：高质量场景（命书 Step1 性格 / Step2 运势）→ 强模型
+ */
+export type LLMRole = 'fast' | 'deep'
 
 interface AppConfig {
   /** LLM Provider ('openai' | 'deepseek' | 'claude' | 'local' | 'siliconflow') */
@@ -39,18 +50,29 @@ let cachedConfig: AppConfig | null = null
 let cacheTime = 0
 const CACHE_TTL_MS = 60_000 // 60 秒
 
-/**
- * 【新】从 api_keys 表加载默认供应商配置（isDefault=1）
- * 返回 null 表示没有可用的默认供应商
- */
-function loadFromApiKeys(): { config: AppConfig; source: 'api_keys' } | null {
-  // 第一优先级：isDefault=1 AND isActive=1
-  let row = getDefaultApiKey()
+/** [模型分级] role 维度缓存（与全局缓存同 TTL，各自独立失效） */
+const roleCache = new Map<LLMRole, { config: AppConfig; ts: number }>()
 
-  // 第二优先级：isDefault=1（即使被下线，至少 admin 明确设过）
-  if (!row) {
-    row = getDefaultApiKeyFallback()
-  }
+/**
+ * 【新】从 api_keys 表加载供应商配置
+ *
+ * 解析优先级（role 有值时）：
+ *   1. role 专属供应商（role 匹配 AND isActive=1）
+ *   2. 全局默认 isDefault=1 AND isActive=1
+ *   3. 全局默认 isDefault=1（放宽 Active，避免误下线导致不可用）
+ *
+ * @param role 用途角色；不传则只按全局默认解析
+ * @returns null 表示没有任何可用配置
+ */
+function loadFromApiKeys(role?: LLMRole): { config: AppConfig; source: 'api_keys' } | null {
+  // 第一优先级：role 专属供应商（仅当明确传了 role）
+  let row = role ? getApiKeyByRole(role) : undefined
+
+  // 第二优先级：isDefault=1 AND isActive=1
+  if (!row) row = getDefaultApiKey()
+
+  // 第三优先级：isDefault=1（即使被下线，至少 admin 明确设过）
+  if (!row) row = getDefaultApiKeyFallback()
 
   if (!row) return null
 
@@ -156,7 +178,34 @@ export function getAppConfig(): AppConfig {
 export function reloadConfig(): AppConfig {
   cachedConfig = null
   cacheTime = 0
+  roleCache.clear()
   return getAppConfig()
+}
+
+/**
+ * [模型分级] 按用途角色获取 LLM 配置（带 60s 缓存）
+ *
+ * 后台未给该 role 配专属供应商时，自动回落全局默认 —— 因此
+ * 「不配置」完全等价于旧行为，不会引入破坏性变更。
+ *
+ * @param role 'fast'（对话/路由）| 'deep'（命书生成）
+ */
+export function getAppConfigByRole(role: LLMRole): AppConfig {
+  const now = Date.now()
+  const hit = roleCache.get(role)
+  if (hit && now - hit.ts < CACHE_TTL_MS) {
+    return hit.config
+  }
+
+  const result = loadFromApiKeys(role)
+  // api_keys 里一条都没有 → 走 app_configs / .env 老链路
+  const config = result ? result.config : getAppConfig()
+
+  roleCache.set(role, { config, ts: now })
+  console.log(
+    `[Config] role=${role} → provider=${config.provider} model=${config.model ?? '(default)'} base=${config.baseUrl ?? '(default)'}`,
+  )
+  return config
 }
 
 /**

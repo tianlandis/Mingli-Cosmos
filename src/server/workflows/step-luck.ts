@@ -5,7 +5,7 @@
 import { generateText } from 'ai'
 import type { AnnotationResult } from '../../engine/index'
 import type { Try, LuckOutput } from '../lib/types'
-import { createModel, loadConfig, withRetry, SELF_TALK_STOP } from '../lib/llm'
+import { resolveRoutes, withRetry, SELF_TALK_STOP } from '../lib/llm'
 import { buildLuckPrompt } from '../prompts/luck'
 
 const MODEL_OVERRIDE = {
@@ -21,24 +21,38 @@ export async function generateLuck(
   annotation: AnnotationResult,
   personalitySummary: string,
 ): Promise<Try<LuckOutput>> {
-  const config = { ...loadConfig(), ...MODEL_OVERRIDE }
-  const model = createModel(config)
+  // [模型分级] 命书走 deep 角色；候选链 = [deep 专属 → 全局默认]，逐个降级
+  const routes = resolveRoutes('deep')
+  let lastError = 'UNKNOWN'
 
-  return withRetry(async () => {
-    const { system, prompt } = buildLuckPrompt(annotation, personalitySummary)
+  for (const route of routes) {
+    const config = { ...route.config, ...MODEL_OVERRIDE }
 
-    const { text } = await generateText({
-      model,
-      system,
-      prompt,
-      temperature: config.temperature,
-      maxOutputTokens: config.maxTokens,
-      // [护栏 L1] 同上
-      stopSequences: SELF_TALK_STOP,
-    })
+    const result = await withRetry(async () => {
+      const { system, prompt } = buildLuckPrompt(annotation, personalitySummary)
 
-    return parseLuckOutput(text)
-  }, 'luck')
+      const { text } = await generateText({
+        model: route.model,
+        system,
+        prompt,
+        temperature: config.temperature,
+        maxOutputTokens: config.maxTokens,
+        // [护栏 L1] 同上
+        stopSequences: SELF_TALK_STOP,
+      })
+
+      return parseLuckOutput(text)
+    }, 'luck')
+
+    if (result.ok) return result
+
+    lastError = result.error
+    console.warn(
+      `[Step2] 候选失败（${route.config.provider}/${route.config.model ?? 'default'}）：${result.error}`,
+    )
+  }
+
+  return { ok: false, error: lastError, step: 'luck' }
 }
 
 /** 解析 LLM 输出 → LuckOutput，容错降级 */

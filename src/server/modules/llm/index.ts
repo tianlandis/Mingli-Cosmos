@@ -26,6 +26,12 @@ const providerBodySchema = z.object({
   temperature: z.number().min(0).max(2).optional().default(0.7),
   maxTokens: z.number().int().positive().optional().default(2048),
   isActive: z.number().min(0).max(1).optional().default(1),  // 0=禁用, 1=启用
+  /**
+   * [模型分级] 用途角色：'fast' 低延迟（对话/路由）| 'deep' 高质量（命书）
+   * ⚠️ zod 会剥离未声明的键 —— 不在这里声明，后台传了也会静默失效。
+   * 传 null 表示取消该供应商的分级（退化为普通候选）。
+   */
+  role: z.enum(['fast', 'deep']).nullable().optional(),
   supportedTools: z.array(z.string()).optional().default([]),
   tools: z.array(z.string()).optional().default([]),
 })
@@ -293,6 +299,18 @@ route.put('/:id', async (c) => {
       }
     }
     (data as any).isDefault = 1
+  }
+
+  // ── [模型分级] 设置 role：同一角色只允许一个供应商，避免解析歧义 ──
+  // role: null 表示取消分级，不触发抢占（直接落库为 NULL）
+  const nextRole = (data as any).role
+  if (nextRole === 'fast' || nextRole === 'deep') {
+    const all = listApiKeys()
+    for (const p of all) {
+      if (p.id !== id && (p as any).role === nextRole) {
+        updateApiKey(p.id, { role: null } as any)
+      }
+    }
   }
 
   const result = updateApiKey(id, data as any)

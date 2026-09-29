@@ -7,7 +7,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModel } from 'ai'
 import type { LLMConfig, ModelProvider, Try } from './types'
-import { getAppConfig, isUsingDbConfig } from '../config'
+import { getAppConfig, getAppConfigByRole, isUsingDbConfig, type LLMRole } from '../config'
 
 const PROVIDER_DEFAULTS: Record<ModelProvider, { model: string }> = {
   deepseek:    { model: 'deepseek-chat' },
@@ -98,40 +98,106 @@ export function truncateSelfTalk(text: string): { text: string; trimmed: boolean
  *    三方兼容 API 只支持 Chat Completions (/chat/completions)，
  *    因此显式使用 provider.chat(modelId)
  */
+// ════════════════════════════════════════════════════════════
+// [适配] thinking 模型（reasoning_content）
+// ════════════════════════════════════════════════════════════
+//
+// DeepSeek-R1 / QwQ 这类「思考型」模型，正文写在 `reasoning_content`
+// 字段里，`content` 是空字符串。AI SDK 只读 `content` → 生成结果为空。
+//
+// 解法：给 provider 注入自定义 fetch，把非流式 JSON 响应里的
+// reasoning_content 回填到 content。流式（SSE）不改写 —— 需要逐 chunk
+// 解析且各家长格式不一，风险高于收益；流式场景请改用非思考型模型
+// （实测 ollama 的 qwen2.5:7b 速度最快且天然不串台）。
+const THINKING_MODEL_RE = /(?:^|[^a-z0-9])(?:r1|reasoner|thinking|qwq)(?:[^a-z0-9]|$)/i
+
+/** 判断是否思考型模型（deepseek-r1:7b / qwq / xxx-reasoner 等） */
+export function isThinkingModel(model?: string): boolean {
+  if (!model) return false
+  return THINKING_MODEL_RE.test(model)
+}
+
+/** 构造会把 reasoning_content 回填到 content 的 fetch（只处理非流式 JSON） */
+function createReasoningAwareFetch(): typeof fetch {
+  return async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    const res = await globalThis.fetch(input, init)
+    const contentType = res.headers.get('content-type') ?? ''
+    // 只处理 JSON 响应；SSE(text/event-stream) 原样透传
+    if (!contentType.includes('application/json')) return res
+
+    const text = await res.text()
+    const rebuild = (body: string) =>
+      new Response(body, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: new Headers(res.headers),
+      })
+
+    try {
+      const json = JSON.parse(text) as {
+        choices?: Array<{ message?: { content?: string | null; reasoning_content?: string | null } }>
+      }
+      const msg = json.choices?.[0]?.message
+      const reasoning = msg?.reasoning_content
+      if (msg && !msg.content && reasoning) {
+        msg.content = reasoning
+        console.warn('[LLM] 思考型模型：已从 reasoning_content 回填正文')
+        return rebuild(JSON.stringify(json))
+      }
+      return rebuild(text)
+    } catch {
+      // 解析失败（非预期格式）→ 原样返回，不做任何改写
+      return rebuild(text)
+    }
+  }
+}
+
 export function createModel(config: LLMConfig): LanguageModel {
   const { model: defaultModel } = PROVIDER_DEFAULTS[config.provider]
+  const modelId = config.model ?? defaultModel
 
   const provider = createOpenAI({
     apiKey: config.apiKey,
     baseURL: config.baseUrl ?? getDefaultBaseUrl(config.provider),
+    // 仅思考型模型注入改写 fetch，其余零开销
+    fetch: isThinkingModel(modelId) ? createReasoningAwareFetch() : undefined,
   })
 
   // @ai-sdk/openai v3 的 chat() 返回 LanguageModelV3，可直接被 ai v6 的 generateText/streamText 消费
-  return provider.chat(config.model ?? defaultModel)
+  return provider.chat(modelId)
 }
 
-/** 从环境变量构建 LLMConfig（DB 优先 → .env 回退） */
-export function loadConfig(): LLMConfig {
+/** provider 字符串归一化：已知枚举直接用，未知则按 baseUrl 推断 */
+function resolveProvider(raw: string, baseUrl?: string | null): ModelProvider {
+  if (['deepseek', 'siliconflow', 'claude', 'openai', 'local'].includes(raw)) {
+    return raw as ModelProvider
+  }
+  const url = baseUrl ?? ''
+  if (url.includes('siliconflow')) return 'siliconflow'
+  if (url.includes('deepseek'))   return 'deepseek'
+  if (url.includes('anthropic'))  return 'claude'
+  if (url.includes('localhost'))  return 'local'
+  return 'openai'
+}
+
+/**
+ * 构建 LLMConfig（DB 优先 → .env 回退）
+ *
+ * @param role 用途角色（模型分级）
+ *   - `'fast'`：AI 对话、意图路由等低延迟场景 → 本地小模型 / 便宜模型
+ *   - `'deep'`：命书 Step1 性格 / Step2 运势等高质量场景 → 强模型
+ *   - 不传：全局默认（等价于旧行为）
+ *
+ * 后台没给 role 配专属供应商时，`getAppConfigByRole()` 内部自动回落全局默认，
+ * 因此不配置 = 完全兼容旧行为。
+ */
+export function loadConfig(role?: LLMRole): LLMConfig {
   // 优先使用数据库配置（api_keys > app_configs，60s 缓存，管理后台可热更新）
   if (isUsingDbConfig()) {
-    const db = getAppConfig()
-    // api_keys 表中已包含完整 provider 字符串，直接使用
-    const provider: ModelProvider = (() => {
-      const p = db.provider as string
-      if (['deepseek', 'siliconflow', 'claude', 'openai', 'local'].includes(p)) {
-        return p as ModelProvider
-      }
-      // 未能识别 → 从 baseUrl 推断
-      const url = db.baseUrl ?? ''
-      if (url.includes('siliconflow')) return 'siliconflow'
-      if (url.includes('deepseek'))   return 'deepseek'
-      if (url.includes('anthropic'))  return 'claude'
-      if (url.includes('localhost'))  return 'local'
-      return 'openai'
-    })()
+    const db = role ? getAppConfigByRole(role) : getAppConfig()
 
     return {
-      provider,
+      provider: resolveProvider(db.provider as string, db.baseUrl),
       // api_keys 表提供的 apiKey 是第一优先级，.env 作为兜底
       apiKey: db.apiKey || process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || 'ollama',
       baseUrl: db.baseUrl,
@@ -139,6 +205,11 @@ export function loadConfig(): LLMConfig {
       temperature: db.temperature,
       maxTokens: db.maxTokens,
     }
+  }
+
+  // .env 回退路径没有分级概念 —— role 会被忽略（本地开发场景，不影响生产）
+  if (role) {
+    console.warn(`[LLM] .env 模式不支持模型分级，忽略 role=${role}`)
   }
 
   // 回退到环境变量
@@ -165,6 +236,83 @@ export function loadConfig(): LLMConfig {
     temperature: process.env.LLM_TEMPERATURE ? Number(process.env.LLM_TEMPERATURE) : undefined,
     maxTokens: process.env.LLM_MAX_TOKENS ? Number(process.env.LLM_MAX_TOKENS) : undefined,
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// [模型分级 + 降级] 候选调用链
+// ════════════════════════════════════════════════════════════
+//
+// 场景：fast 角色常配本地模型（ollama / LM Studio）。本机一关机或模型
+//       被卸载，端点立刻不可达 → 对话全线失败。因此需要「首选不可达就
+//       降级到全局默认」的能力。
+//
+// 做法：调用前用一次轻量探测（GET <baseUrl>/models，2.5s 超时）筛出可达
+//       端点。探测只在存在多个候选时发生，单候选零额外开销。
+
+export interface LLMRoute {
+  /** 该候选的角色来源（全局默认候选为 undefined） */
+  role?: LLMRole
+  config: LLMConfig
+  model: LanguageModel
+}
+
+/** 两个候选是否指向同一个端点 + 模型（用于去重） */
+function sameEndpoint(a: LLMConfig, b: LLMConfig): boolean {
+  const baseA = a.baseUrl ?? getDefaultBaseUrl(a.provider)
+  const baseB = b.baseUrl ?? getDefaultBaseUrl(b.provider)
+  return baseA === baseB && (a.model ?? '') === (b.model ?? '')
+}
+
+/**
+ * 构造候选调用链：[role 专属（若有）→ 全局默认]
+ * role 专属与全局默认指向同一端点时会去重，只保留一条。
+ */
+export function resolveRoutes(role?: LLMRole): LLMRoute[] {
+  const primary = loadConfig(role)
+  const routes: LLMRoute[] = [{ role, config: primary, model: createModel(primary) }]
+
+  if (!role) return routes
+
+  const fallback = loadConfig() // 全局默认
+  if (!sameEndpoint(primary, fallback)) {
+    routes.push({ config: fallback, model: createModel(fallback) })
+  }
+  return routes
+}
+
+/** 探测端点可达性：能连上就认为可用（401/403 也算"在"，只是 key 问题） */
+async function probeReachable(config: LLMConfig, timeoutMs = 2500): Promise<boolean> {
+  const base = (config.baseUrl ?? getDefaultBaseUrl(config.provider)).replace(/\/+$/, '')
+  try {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+    const res = await fetch(`${base}/models`, { signal: ctrl.signal })
+    clearTimeout(timer)
+    return res.ok || res.status === 401 || res.status === 403
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 选出第一个可达的候选端点；全部不可达时返回首选（让原始错误原样暴露，
+ * 便于排障，而不是掩盖成"降级失败"）。
+ */
+export async function pickAvailableRoute(routes: LLMRoute[]): Promise<LLMRoute> {
+  if (routes.length <= 1) return routes[0]
+
+  const flags = await Promise.all(routes.map((r) => probeReachable(r.config)))
+  const idx = flags.findIndex(Boolean)
+  if (idx < 0) {
+    console.warn('[LLM] 所有候选端点均不可达，使用首选（错误原样暴露）')
+    return routes[0]
+  }
+  if (idx > 0) {
+    console.warn(
+      `[LLM] 首选端点不可达，已降级 → provider=${routes[idx].config.provider} model=${routes[idx].config.model ?? '(default)'}`,
+    )
+  }
+  return routes[idx]
 }
 
 /**

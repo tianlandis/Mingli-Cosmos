@@ -23,7 +23,23 @@ export interface ProviderFormData {
   model?: string
   temperature?: number
   maxTokens?: number
+  /**
+   * [模型分级] 用途角色
+   * - 'fast'：低延迟场景（AI 对话、意图路由）
+   * - 'deep'：高质量场景（命书 Step1 性格 / Step2 运势）
+   * - null / 不填：不参与分级，仅作全局默认候选
+   */
+  role?: LLMRole | null
 }
+
+/** 模型分级角色 */
+export type LLMRole = 'fast' | 'deep'
+
+export const ROLE_OPTIONS: Array<{ value: '' | LLMRole; label: string; hint: string }> = [
+  { value: '',     label: '不参与分级（默认）', hint: '仅作为全局默认候选，按 isDefault 生效' },
+  { value: 'fast', label: 'fast · 低延迟',     hint: 'AI 对话、意图路由 —— 建议本地小模型或低价模型' },
+  { value: 'deep', label: 'deep · 高质量',     hint: '命书性格/运势生成 —— 建议能力更强的模型' },
+]
 
 interface ProviderFormProps {
   open: boolean
@@ -72,6 +88,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
     model: initialData?.model ?? '',
     temperature: initialData?.temperature ?? 0.7,
     maxTokens: initialData?.maxTokens ?? 2048,
+    role: initialData?.role ?? null,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -96,6 +113,7 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
         model: initialData.model,
         temperature: initialData.temperature ?? 0.7,
         maxTokens: initialData.maxTokens ?? 2048,
+        role: (initialData as any).role ?? null,
       })
     }
   }, [initialData])
@@ -267,6 +285,40 @@ export default function ProviderForm({ open, onClose, onSave, initialData, apiHe
               className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF] placeholder:text-[#4A4540]"
             />
             <p className="text-sm text-[#4A4540]">在后台列表中展示的名称，方便区分不同供应商</p>
+          </div>
+
+          {/* [模型分级] 用途角色 */}
+          <div className="space-y-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Label className="text-[#A09888] text-xs flex items-center gap-1.5 cursor-help">
+                  <Cpu size={12} />
+                  模型用途（分级）
+                  <HelpCircle size={10} className="text-[#4A4540]" />
+                </Label>
+              </TooltipTrigger>
+              <TooltipContent className="bg-[#1A1F2E] border border-[#3A3630] text-[#D8D2C8] max-w-64">
+                <p className="text-xs">
+                  按场景分流：对话/路由走 fast（快而便宜），命书生成走 deep（慢而强）。
+                  同一角色只能有一个供应商，设置新值时会自动顶掉旧的。
+                  所选端点不可达时会**自动降级到全局默认**。
+                </p>
+              </TooltipContent>
+            </Tooltip>
+            <Select
+              value={form.role ?? ''}
+              onChange={e =>
+                setForm(p => ({ ...p, role: (e.target.value || null) as LLMRole | null }))
+              }
+              className="bg-[#12100E] border-[#3A3630] text-[#EDE8DF]"
+            >
+              {ROLE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </Select>
+            <p className="text-sm text-[#4A4540]">
+              {ROLE_OPTIONS.find(o => o.value === (form.role ?? ''))?.hint ?? '在后台列表中展示的名称'}
+            </p>
           </div>
 
           {/* API Key */}

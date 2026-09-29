@@ -47,6 +47,20 @@ export function getDefaultApiKeyFallback(): ApiKeyRow | undefined {
     .get()
 }
 
+/**
+ * [模型分级] 获取某个用途角色的供应商（role 匹配 且 isActive=1）
+ * 同一 role 配多条时按 sortOrder 降序取第一条。
+ * @param role 'fast' | 'deep'
+ */
+export function getApiKeyByRole(role: string): ApiKeyRow | undefined {
+  return getDb()
+    .select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.role, role), eq(apiKeys.isActive, 1)))
+    .orderBy(desc(apiKeys.sortOrder))
+    .get()
+}
+
 export function createApiKey(data: ApiKeyInsert): ApiKeyRow {
   const result = getDb().insert(apiKeys).values(data).returning().get()
   return result

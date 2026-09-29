@@ -59,6 +59,8 @@ interface Provider {
   streamEnabled?: number
   isActive: number
   isDefault?: number
+  /** [模型分级] 'fast' 低延迟（对话/路由）| 'deep' 高质量（命书）| null 不参与 */
+  role?: string | null
   supportedTools: string[]
   tools?: string[]
   testStatus: string
@@ -721,6 +723,23 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <h4 className="text-xs font-medium text-[#EDE8DF] truncate">{p.label}</h4>
+                          {/* [模型分级] 用途角色徽章 */}
+                          {p.role === 'fast' && (
+                            <span
+                              title="低延迟场景（AI 对话 / 意图路由）优先使用；不可达时自动降级到全局默认"
+                              className="shrink-0 px-1 py-px rounded text-sm font-bold text-[#0F1420] bg-[#5B8C5A]"
+                            >
+                              FAST
+                            </span>
+                          )}
+                          {p.role === 'deep' && (
+                            <span
+                              title="高质量场景（命书 Step1 性格 / Step2 运势）优先使用；不可达时自动降级到全局默认"
+                              className="shrink-0 px-1 py-px rounded text-sm font-bold text-[#0F1420] bg-[#B8964A]"
+                            >
+                              DEEP
+                            </span>
+                          )}
                           {p.testStatus === 'ok' ? (
                             <CheckCircle2 size={10} className="text-[#5B8C5A] shrink-0" />
                           ) : p.testStatus === 'failed' ? (
@@ -939,6 +958,7 @@ export default function LLMPage({ apiHeaders }: LLMPageProps) {
                 model: editTarget.model ?? undefined,
                 temperature: editTarget.temperature,
                 maxTokens: editTarget.maxTokens,
+                role: (editTarget as any).role ?? null,
                 id: editTarget.id,
               }
             : undefined

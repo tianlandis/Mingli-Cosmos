@@ -39,8 +39,10 @@ export async function classifyIntent(question: string): Promise<RouteDecision> {
   console.log(`[Router] 🔍 分类意图: "${question.slice(0, 60)}${question.length > 60 ? '...' : ''}"`)
 
   try {
+    // [模型分级] 意图路由走 fast 角色 —— 只需产出几十 token 的 JSON，
+    // 用本地小模型即可，没必要占用 deep 强模型
     const model = createModel({
-      ...loadConfig(),
+      ...loadConfig('fast'),
       temperature: 0.1, // 低温度确保稳定分类
       maxTokens: 128,    // 仅需 JSON，少量 token
     })

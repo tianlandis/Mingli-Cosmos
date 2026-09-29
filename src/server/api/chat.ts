@@ -13,7 +13,14 @@ import type { ChatRequest, ChatMessage } from '../lib/types'
 import { buildSystemPrompt } from '../prompts/system'
 import { validateResponse } from '../lib/guardrail'
 import { detectPaipanAttempt, buildBlockSSE } from '../lib/anti-hallucination'
-import { createModel, loadConfig, SELF_TALK_STOP, findSelfTalkIndex } from '../lib/llm'
+import {
+  createModel,
+  loadConfig,
+  resolveRoutes,
+  pickAvailableRoute,
+  SELF_TALK_STOP,
+  findSelfTalkIndex,
+} from '../lib/llm'
 import { getEnabledTools } from '../modules/llm/tools-executor'
 import { getActiveApiKeys, isDbReady, getConfig } from '../db/index'
 import {
@@ -224,13 +231,15 @@ chatRoute.post('/api/chat', async (c) => {
   const tools = loadActiveTools()
 
   // [P5-4] LLM 初始化失败必须**退回额度**，否则用户为一次失败的调用买单
+  // [模型分级] 对话走 fast 角色（本地快模型），端点不可达时自动降级到全局默认
   // [ADR-012] 保存本次调用口径 + 起始时间，用于 obs_llm_call_logs 记录
-  const llmConfig = loadConfig()
+  const route = await pickAvailableRoute(resolveRoutes('fast'))
+  const llmConfig = route.config
   const llmStart = Date.now()
   let result: ReturnType<typeof streamText>
   try {
     result = streamText({
-      model: createModel(llmConfig),
+      model: route.model,
       system: systemPrompt,
       messages: trimmedMessages,
       tools: Object.keys(tools).length > 0 ? tools : undefined,
@@ -599,7 +608,7 @@ function createSSEStream(
   systemPrompt: string,
   routeAgentId: string,
 ): Response {
-  const model = createModel(loadConfig())
+  const model = createModel(loadConfig('fast'))
   const tools = loadActiveTools()
 
   const result = streamText({
