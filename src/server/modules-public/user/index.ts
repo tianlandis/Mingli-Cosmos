@@ -65,6 +65,8 @@ import {
 } from '../../db'
 import { getActiveSubscription } from '../../db'
 import { trackEvent, type UserRow } from '../../db'
+// [可配] 新用户初始额度：后台「计费设置」页可改（默认 5）
+import { readNewUserQuota } from '../../lib/billing'
 
 export const route = new Hono<UserEnv>()
 
@@ -189,6 +191,7 @@ route.post('/register', async (c) => {
     email: email ?? null,
     nickname: nickname ?? username,
     registerIp: clientIp(c),
+    quotaTotal: readNewUserQuota(), // 后台「计费设置」可配，默认 5
   })
 
   // [ADR-013] 推介绑定：失败**不影响注册**（仅告警）

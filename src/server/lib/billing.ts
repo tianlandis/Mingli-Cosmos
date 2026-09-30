@@ -14,6 +14,7 @@
 //   report_quota_cost    命书（默认 1）
 //   synastry_quota_cost  双人合盘（默认 1）
 //   chat_quota_cost      AI 对话（默认 1）
+//   new_user_quota       新用户注册时的初始额度（默认 5）
 // ============================================================
 
 import { getConfig, isDbReady } from '../db/index'
@@ -38,6 +39,25 @@ export const BILLING_LABELS: Record<BillableFeature, string> = {
 }
 
 export const BILLABLE_FEATURES: BillableFeature[] = ['chart', 'report', 'synastry', 'chat']
+
+/** 新用户初始额度的内置默认值（后台未配置时使用，与 schema 建表默认保持一致） */
+export const NEW_USER_QUOTA_DEFAULT = 5
+
+/**
+ * 读取「新用户注册时获得的初始额度」。
+ * 配置缺失/非法时回落内置默认值 5；配置为 0 表示新用户默认无额度。
+ */
+export function readNewUserQuota(): number {
+  if (!isDbReady()) return NEW_USER_QUOTA_DEFAULT
+  try {
+    const raw = getConfig('new_user_quota')?.value
+    if (raw === undefined || raw === null || raw === '') return NEW_USER_QUOTA_DEFAULT
+    const n = Number(raw)
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : NEW_USER_QUOTA_DEFAULT
+  } catch {
+    return NEW_USER_QUOTA_DEFAULT
+  }
+}
 
 /** 全站免费开关（测试期用）—— 缺省关闭 */
 export function isBillingFree(): boolean {
@@ -83,9 +103,11 @@ export interface BillingSnapshot {
   costs: Record<BillableFeature, number>
   /** **当前实际生效**的成本（免费模式下全为 0） */
   effectiveCosts: Record<BillableFeature, number>
+  /** 新用户注册时获得的初始额度 */
+  newUserQuota: number
 }
 
-/** 后台设置页一次性读取：免费开关 + 配置成本 + 生效成本 */
+/** 后台设置页一次性读取：免费开关 + 配置成本 + 生效成本 + 新用户初始额度 */
 export function getBillingSnapshot(): BillingSnapshot {
   const freeMode = isBillingFree()
   const costs = {} as Record<BillableFeature, number>
@@ -95,5 +117,5 @@ export function getBillingSnapshot(): BillingSnapshot {
     costs[f] = configured
     effectiveCosts[f] = freeMode ? 0 : configured
   }
-  return { freeMode, costs, effectiveCosts }
+  return { freeMode, costs, effectiveCosts, newUserQuota: readNewUserQuota() }
 }

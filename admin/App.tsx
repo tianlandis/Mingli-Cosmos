@@ -18,6 +18,7 @@ import GuardPanel from './modules/prompts/GuardPanel'
 import KnowledgeDictPage from './modules/knowledge-dict/KnowledgeDictPage'
 import UsersPage from './modules/users/UsersPage'
 import OrdersPage from './modules/orders/OrdersPage'
+import AccountPage from './modules/account/AccountPage'
 import ConfigPanel from './components/ConfigPanel'
 import AuditLog from './components/AuditLog'
 import { RefreshCw } from 'lucide-react'
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="/knowledge-dict" element={<KnowledgeDictPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/account" element={<AccountPage onLogout={auth.logout} />} />
         {/* 兜底：未注册路径原先渲染空白内容区，用户无从判断是地址错还是页面坏了 */}
         <Route path="*" element={<NotFound />} />
       </Routes>

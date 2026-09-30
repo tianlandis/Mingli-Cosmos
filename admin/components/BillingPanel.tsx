@@ -29,6 +29,10 @@ interface BillingPayload {
   features: string[]
   labels: Record<string, string>
   defaults: Record<string, number>
+  /** 新用户注册时获得的初始额度 */
+  newUserQuota: number
+  /** 新用户初始额度的内置默认值 */
+  newUserQuotaDefault: number
 }
 
 export default function BillingPanel() {
@@ -37,6 +41,8 @@ export default function BillingPanel() {
   const [effectiveCosts, setEffectiveCosts] = useState<Record<string, number>>({})
   const [features, setFeatures] = useState<string[]>(['chart', 'report', 'synastry', 'chat'])
   const [labels, setLabels] = useState<Record<string, string>>({})
+  const [newUserQuota, setNewUserQuota] = useState(5)
+  const [newUserQuotaDefault, setNewUserQuotaDefault] = useState(5)
   const [baseline, setBaseline] = useState('')      // 判断是否有未保存改动
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -58,13 +64,15 @@ export default function BillingPanel() {
     setEffectiveCosts(d.effectiveCosts ?? {})
     setFeatures(d.features ?? ['chart', 'report', 'synastry', 'chat'])
     setLabels(d.labels ?? {})
-    setBaseline(JSON.stringify([!!d.freeMode, d.costs ?? {}]))
+    setNewUserQuota(d.newUserQuota ?? 5)
+    setNewUserQuotaDefault(d.newUserQuotaDefault ?? 5)
+    setBaseline(JSON.stringify([!!d.freeMode, d.costs ?? {}, d.newUserQuota ?? 5]))
     setLoading(false)
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  const dirty = baseline !== JSON.stringify([freeMode, costs])
+  const dirty = baseline !== JSON.stringify([freeMode, costs, newUserQuota])
 
   const setCost = (f: string, v: string) => {
     const n = v === '' ? 0 : Math.max(0, Math.floor(Number(v)))
@@ -76,7 +84,7 @@ export default function BillingPanel() {
     setSaving(true)
     setError('')
     setStatus('')
-    const res = await api.put<BillingPayload>('/api/v1/admin/billing', { freeMode, costs })
+    const res = await api.put<BillingPayload>('/api/v1/admin/billing', { freeMode, costs, newUserQuota })
     setSaving(false)
     if (!res.success) {
       setError(res.error?.message ?? '保存失败')
@@ -85,6 +93,7 @@ export default function BillingPanel() {
     if (res.data) {
       setCosts(res.data.costs ?? costs)
       setEffectiveCosts(res.data.effectiveCosts ?? {})
+      setNewUserQuota(res.data.newUserQuota ?? newUserQuota)
     }
     setStatus(freeMode ? '已保存：全站免费模式已开启，所有功能不扣额度' : '已保存：计费设置已更新')
     await load()
@@ -188,6 +197,33 @@ export default function BillingPanel() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* ── 新用户初始额度 ── */}
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-[#1A2332]/40 px-4 py-2.5">
+              <div className="min-w-0">
+                <p className="text-[13px] text-[#D8D2C8]">新用户初始额度</p>
+                <p className="text-[10px] text-[#4A4540] font-mono truncate">new_user_quota</p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-[10px] text-[#4A4540] whitespace-nowrap">
+                  内置默认 <span className="font-mono text-[#6B6459]">{newUserQuotaDefault}</span>
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={String(newUserQuota)}
+                    onChange={e => {
+                      const n = e.target.value === '' ? 0 : Math.max(0, Math.floor(Number(e.target.value)))
+                      setNewUserQuota(Number.isFinite(n) ? n : 0)
+                      setStatus('')
+                    }}
+                    className="h-8 w-20 bg-[#0A1118] border-white/[0.08] text-[#EDE8DF] text-right"
+                  />
+                  <span className="text-[11px] text-[#6B6459] whitespace-nowrap">额度</span>
+                </div>
+              </div>
             </div>
 
             <p className="text-[11px] text-[#4A4540] leading-relaxed">

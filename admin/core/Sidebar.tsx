@@ -25,6 +25,10 @@ interface SidebarProps {
   onLogout: () => void
   collapsed: boolean
   onToggleCollapse: () => void
+  /** 是否桌面宽屏：false → 小屏抽屉模式 */
+  isDesktop?: boolean
+  /** 小屏抽屉是否打开（仅 isDesktop=false 时生效） */
+  mobileOpen?: boolean
 }
 
 const activeClass = [
@@ -43,7 +47,13 @@ const disabledClass = [
   'opacity-40',
 ]
 
-export default function Sidebar({ onLogout, collapsed, onToggleCollapse }: SidebarProps) {
+export default function Sidebar({
+  onLogout,
+  collapsed,
+  onToggleCollapse,
+  isDesktop = true,
+  mobileOpen = false,
+}: SidebarProps) {
   return (
     <aside
       className={cn(
@@ -51,7 +61,14 @@ export default function Sidebar({ onLogout, collapsed, onToggleCollapse }: Sideb
         'bg-[#1A2332] text-[#D8D2C8]',
         'border-r border-white/[0.06]',
         'transition-all duration-300 ease-in-out',
-        collapsed ? 'w-[68px]' : 'w-60',
+        isDesktop
+          // 桌面：常驻，宽度随折叠切换
+          ? (collapsed ? 'w-[68px]' : 'w-60')
+          // 小屏：固定抽屉，从左侧滑入/滑出（始终完整宽度）
+          : cn(
+              'fixed inset-y-0 left-0 z-50 w-60 shadow-2xl shadow-black/50',
+              mobileOpen ? 'translate-x-0' : '-translate-x-full',
+            ),
       )}
     >
       {/* ═══ Logo / 品牌区 ═══ */}

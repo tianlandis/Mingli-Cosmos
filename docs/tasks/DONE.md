@@ -4,6 +4,52 @@
 
 ---
 
+## 2026-09-30 — 🎛️ 批次 X：新用户额度可配 + 后台「账户与安全」页 + 侧边栏响应式 ✅
+
+> 起因（田哥）：把三个遗留项落实 —— ①新用户初始额度硬编码 5（改要 migration）；②后台缺改密码/会话管理页；③侧边栏不响应式。
+> 方案取舍：**① 用可配键替代 migration**；**②③ 纯前端补齐（后端接口早已存在）**。
+
+### 一、新用户初始额度改为可配（无需 migration）
+
+| 文件 | 改动 |
+|------|------|
+| `src/server/lib/billing.ts` | 新增 `readNewUserQuota()`（读 `new_user_quota`，默认 5）+ `NEW_USER_QUOTA_DEFAULT`；`BillingSnapshot` 增 `newUserQuota` |
+| `src/server/modules/billing/index.ts` | GET 回传 `newUserQuota`/`newUserQuotaDefault`；PUT 新增可选 `newUserQuota`（zod 声明 + 写 `app_configs` + 审计） |
+| `src/server/modules-public/user/index.ts` | 注册 `createUser({ quotaTotal: readNewUserQuota() })` |
+| `admin/components/BillingPanel.tsx` | 计费页新增「新用户初始额度」输入行 |
+
+**为什么不用 migration**：注册时本就显式传 `quotaTotal`，schema 的 `.default(5)` 只是建表默认；改配置即可，不动库结构、不影响老用户。
+
+### 二、后台「账户与安全」页（改密码 + 会话管理）
+
+> 后端 `PUT /auth/password`、`GET /auth/sessions`、`POST /auth/sessions/revoke` **早已存在**，只是后台没有 UI 入口（与「会员等级」同类问题）。
+
+- 新建 `admin/modules/account/AccountPage.tsx`：修改密码表单（旧/新/确认 + 显隐切换）+ 活跃会话表格（用户/IP/设备/时间 + 强制下线 + 刷新）。
+- `admin/App.tsx` 加路由 `/account`（透传 `onLogout`）；`menu.config.ts` 加「系统 › 账户与安全」；`Layout.tsx` 补面包屑键。
+
+### 三、侧边栏响应式（小屏抽屉）
+
+- `admin/core/Layout.tsx`：`matchMedia('(min-width:1024px)')` 判定桌面；小屏侧边栏变固定抽屉（遮罩 + 汉堡按钮 + 路由切换自动收起）。
+- `admin/core/Sidebar.tsx`：新增 `isDesktop`/`mobileOpen` props，小屏走 `fixed + translate-x` 滑入滑出，隐藏折叠语义改为「关闭」。
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **548/548**（33 文件，计费新增 6 项）｜ `build` ✓ ｜ **本地生产模式实测**全绿：
+
+```
+[2] GET billing   → newUserQuota=5, default=5
+[3] PUT newUserQuota=7 → 200
+[4] GET 复查      → newUserQuota=7（持久化）
+[5] 注册新用户     → quotaTotal=7, quotaRemaining=7（注册路径生效）
+[6] GET sessions  → 200
+[7] /admin、/admin/account、/admin/users → 200 且 admin-root=1
+```
+
+**未做（评估后暂缓）**：知识字典 `KEY_TO_CHINESE`（约 174 行拼音→中文映射）仍硬编码在前端 `KnowledgeDictPage.tsx`。
+改动它需后端提供中文名（涉及知识资产字段设计），会动到 1037 行文件的核心展示逻辑，**回归风险 > 收益**；建议后续随知识资产结构升级一并处理。
+
+---
+
 ## 2026-09-29 — 💰 批次 IX：全站免费模式 + 后台计费设置 + 用户会员等级 ✅
 
 > 起因（田哥）：测试阶段「排盘、命书生成全部免费，最好后台能设置」；后台用户列表缺「手动设置会员等级」入口；

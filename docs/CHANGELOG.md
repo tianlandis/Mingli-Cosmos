@@ -2,6 +2,25 @@
 
 ---
 
+## 未发布 — 🎛️ 批次 X：新用户额度可配 + 后台账户与安全页 + 侧边栏响应式 (2026-09-30)
+
+> 目标：落实三个遗留项 —— 新用户初始额度可配（免 migration）、后台改密码/会话管理页、侧边栏响应式。
+
+### 新增
+- **新用户初始额度可配**：`billing.ts` 新增 `readNewUserQuota()`（读 `new_user_quota`，默认 5）；后台 `GET/PUT /api/v1/admin/billing` 增 `newUserQuota`；注册时 `createUser({ quotaTotal: readNewUserQuota() })`；`BillingPanel.tsx` 增输入行。**无需 migration**（注册本就显式传值）。
+- **后台「账户与安全」页** `admin/modules/account/AccountPage.tsx`（新建）：修改管理员密码（旧/新/确认 + 显隐）+ 活跃会话表格（IP/设备/时间 + 强制下线 + 刷新）。后端 `PUT /auth/password`、`GET /auth/sessions`、`POST /auth/sessions/revoke` 早已存在，此前缺 UI。
+- 菜单新增「系统 › 账户与安全」（`menu.config.ts`）+ 路由 `/account`（`App.tsx`）+ 面包屑键（`Layout.tsx`）。
+
+### 变更
+- **侧边栏响应式**：`Layout.tsx` 用 `matchMedia('(min-width:1024px)')` 判定桌面；小屏侧边栏变固定抽屉（遮罩 + 汉堡按钮 + 路由切换自动收起）。`Sidebar.tsx` 新增 `isDesktop`/`mobileOpen` props。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run` **548/548（33 文件）** ｜ `vite build` ✓。
+- 本地生产模式实测：`GET billing` → `newUserQuota=5`；`PUT newUserQuota=7` → 复查持久化；注册新用户 → `quotaTotal=7`；`GET sessions` 200；`/admin/account` 200 且 `admin-root=1`。
+- **暂缓**：知识字典 `KEY_TO_CHINESE`（约 174 行拼音→中文映射）仍硬编码，需后端提供中文名，改动风险 > 收益，随知识资产结构升级再处理。
+
+---
+
 ## 未发布 — 💰 批次 IX：全站免费模式 + 后台计费设置 + 用户会员等级（已部署内网）(2026-09-29)
 
 > 目标：测试期把排盘/命书等消费改为可配置（默认全免），后台可一键开关；补齐用户会员等级 UI 入口。

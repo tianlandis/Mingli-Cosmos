@@ -19,6 +19,7 @@ import {
   BILLABLE_FEATURES,
   BILLING_LABELS,
   QUOTA_DEFAULTS,
+  NEW_USER_QUOTA_DEFAULT,
   getBillingSnapshot,
 } from '../../lib/billing'
 
@@ -41,6 +42,8 @@ const putBillingSchema = z.object({
     synastry: costField.optional(),
     chat: costField.optional(),
   }).partial().optional(),
+  /** 新用户注册时的初始额度 */
+  newUserQuota: costField.optional(),
 })
 
 // ═══════════════════════════════════════
@@ -57,6 +60,7 @@ route.get('/', (c) => {
       features: BILLABLE_FEATURES,
       labels: BILLING_LABELS,
       defaults: QUOTA_DEFAULTS,
+      newUserQuotaDefault: NEW_USER_QUOTA_DEFAULT,
     },
   })
 })
@@ -79,7 +83,18 @@ route.put('/', async (c) => {
     }, 400)
   }
 
-  const { freeMode, costs } = parsed.data
+  const { freeMode, costs, newUserQuota } = parsed.data
+
+  if (newUserQuota !== undefined) {
+    setConfig(
+      'new_user_quota',
+      String(newUserQuota),
+      '新用户初始额度',
+      '新用户注册时获得的免费额度次数',
+      'number',
+      'general',
+    )
+  }
 
   if (freeMode !== undefined) {
     setConfig(
@@ -114,7 +129,7 @@ route.put('/', async (c) => {
   logAudit(c, {
     action: 'update',
     resource: 'config',
-    detail: `计费设置: freeMode=${freeMode ?? '(不变)'} costs=${JSON.stringify(costs ?? {})}`,
+    detail: `计费设置: freeMode=${freeMode ?? '(不变)'} newUserQuota=${newUserQuota ?? '(不变)'} costs=${JSON.stringify(costs ?? {})}`,
   })
 
   return c.json({ success: true, data: getBillingSnapshot() })

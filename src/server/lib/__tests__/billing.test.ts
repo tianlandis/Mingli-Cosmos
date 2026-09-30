@@ -19,13 +19,16 @@ import {
   isBillingFree,
   readQuotaCost,
   readConfiguredCost,
+  readNewUserQuota,
   getBillingSnapshot,
   QUOTA_DEFAULTS,
   BILLABLE_FEATURES,
+  NEW_USER_QUOTA_DEFAULT,
 } from '@/server/lib/billing'
 
 function cleanup() {
   deleteConfig('free_mode')
+  deleteConfig('new_user_quota')
   for (const f of BILLABLE_FEATURES) deleteConfig(`${f}_quota_cost`)
 }
 
@@ -65,6 +68,47 @@ describe('billing — 成本读取', () => {
     expect(readQuotaCost('report')).toBe(QUOTA_DEFAULTS.report)
     setConfig('synastry_quota_cost', '-5')
     expect(readQuotaCost('synastry')).toBe(QUOTA_DEFAULTS.synastry)
+  })
+})
+
+// ═══════════════════════════════════════
+// A2. 新用户初始额度（可配）
+// ═══════════════════════════════════════
+
+describe('billing — 新用户初始额度', () => {
+  it('未配置时回落内置默认 5', () => {
+    expect(NEW_USER_QUOTA_DEFAULT).toBe(5)
+    expect(readNewUserQuota()).toBe(5)
+  })
+
+  it('后台配置后按配置生效', () => {
+    setConfig('new_user_quota', '10')
+    expect(readNewUserQuota()).toBe(10)
+  })
+
+  it('配置为 0 表示新用户默认无额度', () => {
+    setConfig('new_user_quota', '0')
+    expect(readNewUserQuota()).toBe(0)
+  })
+
+  it('非法配置（非数字 / 负数 / 空）回落默认', () => {
+    setConfig('new_user_quota', 'abc')
+    expect(readNewUserQuota()).toBe(NEW_USER_QUOTA_DEFAULT)
+    setConfig('new_user_quota', '-3')
+    expect(readNewUserQuota()).toBe(NEW_USER_QUOTA_DEFAULT)
+    setConfig('new_user_quota', '')
+    expect(readNewUserQuota()).toBe(NEW_USER_QUOTA_DEFAULT)
+  })
+
+  it('snapshot 携带 newUserQuota', () => {
+    setConfig('new_user_quota', '7')
+    expect(getBillingSnapshot().newUserQuota).toBe(7)
+  })
+
+  it('注册路径：取配置值作为 quotaTotal', () => {
+    setConfig('new_user_quota', '8')
+    const u = createUser({ username: 'newbie-q', passwordHash: 'x', quotaTotal: readNewUserQuota() })
+    expect(getUserById(u.id)!.quotaTotal).toBe(8)
   })
 })
 

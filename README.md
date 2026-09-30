@@ -151,7 +151,7 @@ npm run build
 # 生产启动
 npm run start
 
-# 运行测试 (542 项全量)
+# 运行测试 (548 项全量)
 npm test
 
 # Docker 部署
@@ -173,7 +173,7 @@ docker compose up -d --build
 | 农历计算 | lunar-typescript (6tail) |
 | 规则引擎 | 纯 TypeScript，零外部依赖 |
 | AI 模型 | 分级可配（fast/deep）——测试期本地 Ollama qwen2.5:7b；生产可接 SiliconFlow 等 OpenAI 兼容端点 |
-| 测试框架 | vitest (542 项全量) |
+| 测试框架 | vitest (548 项全量) |
 | 部署 | Docker + docker compose |
 
 ---

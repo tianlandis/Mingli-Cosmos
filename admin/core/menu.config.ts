@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   Library,
   ShieldCheck,
+  KeyRound,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -88,7 +89,17 @@ export const menuGroups: MenuGroup[] = [
         icon: ShoppingCart,
         badge: 'NEW',
       },
-
+    ],
+  },
+  {
+    label: '系统',
+    items: [
+      {
+        key: 'account',
+        label: '账户与安全',
+        icon: KeyRound,
+        badge: 'NEW',
+      },
     ],
   },
 ]
