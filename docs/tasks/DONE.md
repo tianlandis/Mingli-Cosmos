@@ -45,6 +45,8 @@
 [7] /admin、/admin/account、/admin/users → 200 且 admin-root=1
 ```
 
+**已部署内网** `192.168.2.10:3001`：备份 `mingli-20260930095631.db`（827392B）→ `git pull --ff-only`（→ `a787ce8`）→ `docker compose up -d --build` → smoke **42/42**；内网实测登录 200、`GET billing` `freeMode=true`/`newUserQuota=5`、`GET sessions` 200、`/admin/account` 200 且 `admin-root=1`。
+
 ### 四、知识字典：中文名真值回归后端（前端硬编码降级为兜底）
 
 - 探明 `knowledge_assets.description` 的格式约定为 **`中文名 | 出处 | 类型 | 说明`**，**首段即中文名**（如 `chong_map` → "地支六冲"、`hidden_stems` → "地支藏干表"）。

@@ -262,7 +262,7 @@
 | 50 | **侧边栏响应式**：`matchMedia(1024px)` 判定 + 小屏固定抽屉（遮罩/汉堡/路由切换自动收起） | 后台 UI |
 | 51 | **知识字典中文名回归后端**：`description` 首段即中文名 → `assetLabel(a)`；`KEY_TO_CHINESE`（约 174 行）降级为兜底 + 表单提示 | 后台 |
 
-**本批验收**：`typecheck` 0 错 ｜ `vitest` **548/548**（33 文件）｜ `build` ✓ ｜ 本地生产模式实测：billing 读写 newUserQuota 持久化、注册得 7 额度、`/admin/account` 200。
+**本批验收**：`typecheck` 0 错 ｜ `vitest` **548/548**（33 文件）｜ `build` ✓ ｜ 本地生产模式实测：billing 读写 newUserQuota 持久化、注册得 7 额度、`/admin/account` 200 ｜ **已部署内网**（备份 `mingli-20260930095631.db` → `a787ce8` → `up -d --build`）smoke **42/42**。
 
 ---
 
