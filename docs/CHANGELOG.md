@@ -17,7 +17,7 @@
 ### 验证
 - `tsc -b --noEmit` 零错误 ｜ `vitest run` **548/548（33 文件）** ｜ `vite build` ✓。
 - 本地生产模式实测：`GET billing` → `newUserQuota=5`；`PUT newUserQuota=7` → 复查持久化；注册新用户 → `quotaTotal=7`；`GET sessions` 200；`/admin/account` 200 且 `admin-root=1`。
-- **暂缓**：知识字典 `KEY_TO_CHINESE`（约 174 行拼音→中文映射）仍硬编码，需后端提供中文名，改动风险 > 收益，随知识资产结构升级再处理。
+- **知识字典中文名回归后端**：`description` 首段即中文名（格式 `中文名 | 出处 | 类型 | 说明`）；新增 `assetLabel(a)`，列表已存资产的中文名改从后端数据取，`KEY_TO_CHINESE`（约 174 行）降级为「兜底 + 新建表单输入提示」。
 
 ---
 

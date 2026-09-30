@@ -77,8 +77,11 @@ const CATEGORIES: CategoryDef[] = [
 const CAT_LABELS: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.name, c.label]))
 
 // ═══════════════════════════════════════
-// 拼音→中文 映射表（双轨制：底层 Key 为拼音，前端展示中文）
-// 覆盖 5 个分类下常见命名，未匹配到的 Key 回退显示拼音本身
+// 拼音→中文 映射表
+// ⚠️ 用途已降级为「兜底 / 表单输入提示」：
+//   - 列表中**已存资产**的中文名真值来自后端数据（description 首段，见 assetLabel）；
+//   - 本表仅在 description 缺首段时兜底，以及「新建表单」实时预览拼音对应中文用。
+// 新增资产应让 description 首段写中文名，而非改这里。
 // ═══════════════════════════════════════
 const KEY_TO_CHINESE: Record<string, string> = {
   // ── 古籍经典 ──
@@ -256,9 +259,20 @@ const KEY_TO_CHINESE: Record<string, string> = {
   gui_ge_quan_ti: '贵格全题',
 }
 
-/** 根据拼音 Key 获取中文名称，未匹配时返回空字符串 */
+/** 根据拼音 Key 获取中文名称（映射表兜底；未匹配返回空字符串） */
 function getChineseName(key: string): string {
   return KEY_TO_CHINESE[key] || ''
+}
+
+/**
+ * 取资产的展示中文名 —— **真值来自后端数据**。
+ * knowledge_assets.description 的格式约定为 `中文名 | 出处 | 类型 | 说明`，首段即中文名；
+ * 缺失/不合规（空、过长、含标点）时回退 KEY_TO_CHINESE（历史数据兜底）。
+ */
+function assetLabel(a: KnowledgeAsset): string {
+  const first = (a.description ?? '').split('|')[0]?.trim() ?? ''
+  if (first && first.length <= 20 && /^[\u4e00-\u9fa5A-Za-z0-9·]+$/.test(first)) return first
+  return getChineseName(a.key)
 }
 
 // ═══════════════════════════════════════
@@ -812,7 +826,7 @@ export default function KnowledgeDictPage() {
                         <TableCell className="text-xs text-[#4A4540] font-mono">{i + 1}</TableCell>
                         <TableCell>
                           {(() => {
-                            const cn = getChineseName(a.key)
+                            const cn = assetLabel(a)
                             return cn ? (
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-sm text-[#EDE8DF] font-medium leading-tight">{cn}</span>
