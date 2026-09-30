@@ -42,6 +42,10 @@
 > 后端接口与端到端冒烟**早已覆盖**此项：`scripts/smoke-e2e.mjs`（consent 201 + export 校验）+
 > `src/server/modules/__tests__/pii-compliance.test.ts`。本次为**纯前端接线**。
 
+**已部署内网** `192.168.2.10:3001`：备份 `mingli-20260930114431.db` → `git pull`（`a787ce8` → `a153b05`）
+→ `docker compose up -d --build` → 容器 healthy ｜ **冒烟 42/42**。
+内网实测：注册 201 ｜ `/my/data` 200 且 `id="root"`=1 ｜ `GET/POST /user/consent` 200/201 ｜ `data/export` 200。
+
 ---
 
 ## 2026-09-30 — 🎛️ 批次 X：新用户额度可配 + 后台「账户与安全」页 + 侧边栏响应式 ✅

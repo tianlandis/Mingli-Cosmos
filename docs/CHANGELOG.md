@@ -23,6 +23,7 @@
 - `tsc -b --noEmit` 零错误 ｜ `vitest run` **548/548（33 文件）** ｜ `vite build` ✓。
 - 本地生产模式实测：注册→`GET/POST /user/consent` 200/201→`/user/data/export` 200（字段完整）→`/my/data` 200→`DELETE /user/data` 200→删后 token 401 全绿。
 - 冒烟 `smoke-e2e.mjs`（consent/export 已覆盖）+ 单测 `pii-compliance.test.ts` 早已就绪；本次为纯前端接线。
+- **已部署内网** `192.168.2.10:3001`（备份 `mingli-20260930114431.db` → pull `a153b05` → `up -d --build`），容器 healthy，冒烟 **42/42**；内网实测 `/my/data` 200、consent 200/201、export 200。
 
 ---
 
