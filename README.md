@@ -2,7 +2,7 @@
 
 > **正宗子平法命理排盘引擎** — 传统规则为骨，现代 AI 为翼
 
-基于 **React 19 + TypeScript + Vite + Tailwind CSS 4 + Hono** 构建的全栈新中式八字命理 Web 应用。核心引擎以 **Python MCP（tengods）为算法权威参考**，严格遵循传统子平法理论；后端配备 **AI 流式对话、管理后台、知识字典引擎**，已部署至 Linux VPS 生产环境。
+基于 **React 19 + TypeScript + Vite + Tailwind CSS 4 + Hono** 构建的全栈新中式八字命理 Web 应用。核心引擎以 **Python MCP（tengods）为算法权威参考**，严格遵循传统子平法理论；后端配备 **AI 流式对话、管理后台、知识字典引擎**，当前以**内网 / 本地环境**为主进行测试（公网 VPS 已暂停上线）。
 
 ---
 
@@ -17,8 +17,9 @@ Phase 2  [✅] AI 深度集成                    S2 [⏳] 细节打磨与动效
 Phase 3  [✅] Docker 容器化 + 生产日志
 Phase 4a [✅] 管理后台 + 知识字典引擎         ← 2026-06-19 完成
 Phase 4d [✅] 规则字典大闭环 (35/35 项)       ← 2026-06-24 完成
-Phase 4b [⏳] 运营中台持续增强                ← 当前推进
-Phase 5  [ ] 移动端 + 增长
+Phase 4b [✅] 运营中台持续增强 (M-6/M-7/M-8)  ← 2026-09-28 完成
+Phase 4e [✅] 多体系泛化 + 星座/MBTI + 真实用户闭环 ← 2026-09-29 完成
+Phase 5  [~] 移动端 + 增长（PWA/C端骨架/推介/免费模式 已落地，支付/小程序待外部）
 Phase 6  [ ] 高级功能 + 生态
 ```
 
@@ -150,7 +151,7 @@ npm run build
 # 生产启动
 npm run start
 
-# 运行测试 (186 项全量)
+# 运行测试 (542 项全量)
 npm test
 
 # Docker 部署
@@ -171,8 +172,8 @@ docker compose up -d --build
 | 数据库 | SQLite (Drizzle ORM) |
 | 农历计算 | lunar-typescript (6tail) |
 | 规则引擎 | 纯 TypeScript，零外部依赖 |
-| AI 模型 | Qwen3.5-122B-A10B (SiliconFlow) |
-| 测试框架 | vitest (186 项全量) |
+| AI 模型 | 分级可配（fast/deep）——测试期本地 Ollama qwen2.5:7b；生产可接 SiliconFlow 等 OpenAI 兼容端点 |
+| 测试框架 | vitest (542 项全量) |
 | 部署 | Docker + docker compose |
 
 ---

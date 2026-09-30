@@ -4,6 +4,109 @@
 
 ---
 
+## 2026-09-29 — 💰 批次 IX：全站免费模式 + 后台计费设置 + 用户会员等级 ✅
+
+> 起因（田哥）：测试阶段「排盘、命书生成全部免费，最好后台能设置」；后台用户列表缺「手动设置会员等级」入口；
+> 可配的命书/排盘额度；「能用的功能先全上」；**以后公网 VPS 不再上线，直接本地/内网测试**。
+
+### 落点
+
+| 文件 | 改动 |
+|------|------|
+| `src/server/lib/billing.ts`（新建） | **唯一计费入口**：`isBillingFree()` / `readQuotaCost(feature)` / `readConfiguredCost()` / `getBillingSnapshot()` |
+| `src/server/modules/billing/index.ts`（新建） | `GET/PUT /api/v1/admin/billing`（zod + `reloadConfig` 即时生效 + 审计） |
+| `src/server/db/repositories/quota.ts` | `reserveQuota` **放开 `cost=0`**（写 delta=0 台账、不改余额、cost=0 时余额不参与判断） |
+| `src/server/api/report.ts` / `modules-public/synastry/index.ts` / `api/chat.ts` | 三处各自 `readCost` 收敛到 `readQuotaCost` |
+| `src/server/modules-public/chart/index.ts` | 新增可配 `chart_quota_cost`（默认 0），仅登录且 cost>0 才扣 |
+| `admin/components/BillingPanel.tsx`（新建） | 免费总开关 + 4 额度输入（显示配置值 vs 生效值），挂「系统配置」页 |
+| `admin/modules/users/UsersPage.tsx` | 操作列「设置会员等级」（皇冠）→ `free/basic/pro` + 到期；复用**早已存在**的 `PATCH /api/v1/admin/users/:id` |
+| `src/lib/credits.ts` | 前端点券展示对齐（report/synastry → 1） |
+| `src/server/lib/__tests__/billing.test.ts`（新建） | 9 项 |
+
+### 关键设计
+
+1. **免费 = 成本读成 0**：`readQuotaCost` 在免费模式下恒返回 0，`reserve/commit/refund` 三段照跑 → 计费调用点**零改动**。
+2. **免费不毁配置**：`free_mode` 与各 `*_quota_cost` 独立存储，关掉开关立即恢复计费，测试转正式只改一个开关。
+3. **唯一入口**：新增功能只要用 `readQuotaCost('<feature>')` 即自动受免费模式管控。
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **542/542**（33 文件）｜ `build` ✓ ｜ 内网 `smoke` **42/42**。
+
+内网实测：`PUT /billing {freeMode:true}` → `effectiveCosts` 全 0；注册（初始 5）→ 排盘/命书/合盘 **总扣减 0** ✅；`PATCH {vipLevel:'pro'}` 复查 = pro ✅。
+
+提交 `3500180` + 文档 `c27a683`，已部署内网 `192.168.2.10:3001`。
+
+---
+
+## 2026-09-29 — 🧪 批次 VIII：额度统一 1 + LLM 全切本地 Ollama + 超时可配 + 裸 fetch 收口 ✅
+
+> 起因（田哥）：「额度我们现在是测试，全部改成 1 额度」「测试阶段全部使用本地 ollama」。
+
+### 落点（`6af7d64` → `f873358` → `3eb1bbb`）
+
+| 项 | 改动 |
+|:--|------|
+| 额度统一 1 | `report.ts` `DEFAULT_COST 5→1`；`synastry` 从硬编码 20 **改为读 `synastry_quota_cost`**=1；`credits.ts` 展示对齐 |
+| LLM 全本地 | 内网 `api_keys` #1（GLM 网关，上游无健康 provider）**停用**；#4=fast / #5=deep 均 `http://192.168.2.197:11434/v1` `qwen2.5:7b`；`.env` 同步兜底 |
+| 超时可配 | `lib/llm.ts` 超时改读 `LLM_TIMEOUT_MS`（默认 30s 不变），命中 `LLM_TIMEOUT` **不再重试** |
+| fetch 收口 | admin 20 处裸 `fetch` → `admin/lib/api.ts`（自动带 token + 401 拦截），移除 `apiHeaders` prop 链 |
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **533/533** ｜ `build` ✓ ｜ 内网 `smoke` **42/42**。
+
+内网实测：注册→排盘→命书 **200 / 114.3s / 扣 1**（此前 500 超时）；合盘 **200 / 扣 1**（此前必 402）；失败不计费（命书 500 时额度未动）。
+
+**遗留**：命书 114s 偏慢（本地 7B × 多步），可设 `OLLAMA_KEEP_ALIVE=-1` 免冷加载；新用户初始额度仍 5。
+
+---
+
+## 2026-09-29 — 🖥️ 批次 VII：后台界面疏漏排查与修复 ✅
+
+> 起因（田哥）：后台「没有自己可以选定应用的按钮，类似这样的小疏漏继续排查」（澄清后＝**模型用途**选择，非命理体系）。提交 `b3bd03c`。
+
+### 修复清单
+
+| # | 问题 | 处理 |
+|:--:|---|------|
+| 1 | 用户点名：模型用途（对话/命书）只藏在编辑弹窗，列表页看不到也点不到 | LLM 卡片新增 `[对话][命书]` 按钮组，一点即 `PUT /llm/:id {role}`，再点取消，同 role 自动顶替 |
+| 2 | `/admin/*` 无 SPA 兜底 → 刷新子路由**必白屏** | `core/app.ts` 补 `get('/admin/*')` |
+| 3 | 后台无体系感知能力（无 API 无 UI） | 新增 `GET/PUT /api/v1/admin/systems` + 配置页体系卡片 + `systems/meta.ts` 中文名服务端唯一真值 |
+| 4 | ProviderForm 编辑态 API Key 无条件必填（留空保存不了） | 改为仅新建时必填 |
+| 5 | ConfigPanel 新增配置不判响应就提示「已保存」（假成功） | 判 `success` + error toast + saving 态 |
+| 6 | 删除配置项无二次确认（可一键删 `jwt_secret`） | 敏感键二次确认 |
+| 7 | 表单编辑后再新增残留旧值 / 无 404 兜底 / 面包屑缺键 | 逐项修复 |
+
+### 顺手：deep 端点兜底（命书从必失败 → 可用）
+
+GLM 网关上游无健康 provider → deep 无端点、命书必失败。新建 `api_keys #5 = deep`，实测 `/api/report` **200 / 33.4s / 3053 字**。
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **533/533**（32 文件）｜ `build` ✓（含 `dist/admin`）｜ 内网 `smoke` **42/42**；`/admin` 及全部子路由返回 admin html。
+
+---
+
+## 2026-09-29 — 🔭 批次 V：星座语料落库（`knowledge_assets`）✅
+
+> 星座资料专门文件夹落库，为「星座 × 八字 × MBTI」融合铺知识资产。
+
+| 项 | 任务 | 状态 |
+|:--|------|:--:|
+| V-1 | `seeds/knowledge/zodiac.json`：12 星座 × 8 能量风格 traits + energyStyle + badge + branchPair（动态生成） | ✅ |
+| V-2 | 全矩阵 `scanMatrix` 384 组合（12 星座 × 32 MBTI 档案）**0 conflict / 0 tension** | ✅ |
+| V-3 | `npm run db:seed` 落 `knowledge_assets`（category='zodiac'，12 条，含来源/规范/检测时间戳 meta） | ✅ |
+| V-4 | 语料全部为能量风格措辞（词表外中性词），展示层与 LLM 注入可安全共用 | ✅ |
+
+**验收**：`typecheck` 0 错 ｜ `vitest` **533/533** ｜ 端到端抽样 4 生辰（双鱼/白羊/摩羯/狮子，含边界时刻）全绿。
+
+**坑**：`getSignBranchPair` 是 0-based（0=白羊），首版按 1-based 传参致月支错位一格，端到端抽样抓出后重生成重导入（幂等 upsert 更新 12 条）。
+
+**生成脚本** `data/gen-zodiac.mts`（可复跑）｜ **验收脚本** `data/verify-zodiac.mts`。
+
+---
+
 ## 2026-09-29 — 🧠 批次 VI：LLM 模型分级 + 降级链路 + thinking 适配 ✅
 
 > 起因：田哥确认「AI 墨白对话用本机 ollama 实测可用」，指示补完此前搁置的 LLM 部分。

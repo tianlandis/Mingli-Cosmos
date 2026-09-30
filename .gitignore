@@ -52,6 +52,8 @@ docs/contracts/engine-api.md
 *.tmp
 *.temp
 .tmp/data/
+.commit-msg.txt
+build_output.txt
 
 # ── 运行时数据库（SQLite，生产由 docker-compose 挂载 ./data 卷） ──
 data/

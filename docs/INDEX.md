@@ -1,7 +1,8 @@
 # 📋 数字命理推演引擎 — AI 开发索引（AI Development Index）
 
-> **版本**: v4.0.0 | **更新**: 2026-09-29
+> **版本**: v4.1.0 | **更新**: 2026-09-30
 > **用途**: AI 开发助手每次任务必须首先读取本文件，按需加载后续文档。
+> **测试环境**: 内网 `192.168.2.10:3001`（公网 VPS 已暂停上线，仅本地/内网测试）。
 
 ---
 
@@ -42,6 +43,10 @@
 | 开发 Phase 2 AI Agent | `design/PHASE2_AI_AGENT_DESIGN.md` | 设计 |
 | 了解"为什么这么设计"/架构决策 | `adr/README.md` | 决策 |
 | 了解架构评审与长期规划 | `arch/ARCHITECTURE-REVIEW.md` | 架构 |
+| 改 LLM / 了解模型分级与降级 | `arch/LLM-ROUTING.md` | 架构 |
+| 了解星座↔八字映射算法 | `arch/ASTRO-MAPPING.md` | 架构 |
+| 加模块/体系/知识资产 | `arch/EXTENDING.md` + `arch/DATA-DOMAINS.md` | 架构 |
+| 查看近期批次实施与实测报告 | `ops/` | 运维 |
 
 ---
 
@@ -62,8 +67,15 @@ docs/
 │
 ├── arch/                             ← 🏗️ 架构层（工程约束，改代码时必读）
 │   ├── ARCHITECTURE.md               ← 分层架构·核心/外围隔离·数据流·流水线
-│   ├── ARCHITECTURE-FUTURE.md        ← 🆕 Phase 4 未来架构：管理后台+数据库规划
-│   ├── CONFIG-CONTRACT.md            ← 🆕 动态双轨配置契约（DB→.env fallback）
+│   ├── ALGORITHM-AUTHORITY.md        ← 排盘算法权威说明（改引擎前必读）
+│   ├── ARCHITECTURE-REVIEW.md        ← 架构评审与长期规划
+│   ├── ARCHITECTURE-FUTURE.md        ← Phase 4 未来架构：管理后台+数据库规划
+│   ├── CONFIG-CONTRACT.md            ← 动态双轨配置契约（DB→.env fallback）
+│   ├── DATA-DOMAINS.md               ← 数据域分层操作手册（ADR-012）
+│   ├── EXTENDING.md                  ← 扩展开发者指南（加模块/体系/知识资产）
+│   ├── ASTRO-MAPPING.md              ← 星座↔八字映射（中气分界·月支对应）
+│   ├── LLM-ROUTING.md                ← LLM 模型分级(fast/deep)+降级+thinking 适配
+│   ├── PHASE5-PROGRESS.md            ← Phase 5 商业化闭环进度
 │   ├── STACK.md                      ← 技术栈锁定·配色·限制规则
 │   └── CODE-STYLE.md                 ← 代码规范·命名约定·调用约定
 │
@@ -78,7 +90,10 @@ docs/
 │   ├── ADR-007-observability-baseline.md ← 可观测性基线：SLO/指标/追踪
 │   ├── ADR-008-backup-and-dr.md      ← 备份 + 恢复演练 + 版本化迁移链
 │   ├── ADR-009-payment-integration.md ← 真实支付 + 回调幂等
-│   └── ADR-010-api-versioning.md     ← API 版本与弃用策略（/api/admin 退场）
+│   ├── ADR-010-api-versioning.md     ← API 版本与弃用策略（/api/admin 退场）
+│   ├── ADR-011-multi-system-registry.md ← 多体系注册表（八字/星座/MBTI 可插拔）
+│   ├── ADR-012-data-domain-strategy.md ← 数据域策略（逻辑分域，SQLite 不物理拆库）
+│   └── ADR-013-referral-rewards.md   ← 推介奖励（邀请码可逆 + 幂等发奖）
 │
 ├── contracts/                        ← 🔒 契约层（核心←→外围的接口"宪法"）
 │   └── engine-api.md                 ← 引擎对外稳定API·红线·集成模式
@@ -102,6 +117,12 @@ docs/
 ├── tasks/                            ← 📌 执行层（任务状态机）
 │   ├── TODO.md                       ← 当前 Sprint Backlog（优先读取）
 │   └── DONE.md                       ← 已完成记录
+│
+├── ops/                              ← 🔧 运维层（批次实施与内网实测报告）
+│   ├── 2026-09-29-free-mode-billing.md     ← 免费模式 + 计费后台 + 会员等级（批次 IX）
+│   ├── 2026-09-29-test-mode-quota-llm.md   ← 额度统一 1 + LLM 本地 + 超时 + fetch 收口（批次 VIII）
+│   ├── 2026-09-29-admin-ui-fixes.md        ← 后台 UI 疏漏修复（批次 VII）
+│   └── 2026-09-29-llm-fast-online.md       ← LLM fast 上内网（三层连通验证）
 │
 └── ref/                              ← 📚 参考层（外部资料，只读不修改）
     └── bazijichu.md                  ← 原版教材（source of truth）

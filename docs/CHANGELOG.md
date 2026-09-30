@@ -2,6 +2,93 @@
 
 ---
 
+## 未发布 — 💰 批次 IX：全站免费模式 + 后台计费设置 + 用户会员等级（已部署内网）(2026-09-29)
+
+> 目标：测试期把排盘/命书等消费改为可配置（默认全免），后台可一键开关；补齐用户会员等级 UI 入口。
+
+### 新增
+- **唯一计费入口 `src/server/lib/billing.ts`**（新建）：`isBillingFree()` 读 `free_mode`；`readQuotaCost(feature)` 为**计费调用点唯一入口**（免费模式恒 0）；`readConfiguredCost()` 返回配置值；`getBillingSnapshot()` 给「配置值 + 生效值」。原 report/synastry/chat 三处各自 `readCost` 已收敛。
+- **后台计费接口 + UI**：`GET/PUT /api/v1/admin/billing`（`3500180`）+ `admin/components/BillingPanel.tsx`（免费总开关 + 排盘/命书/合盘/对话 四个额度输入，显示配置值 vs 生效值）。
+- **用户会员等级**：`UsersPage` 操作列「设置会员等级」（皇冠）→ `free/basic/pro` + 到期时间；复用**早已存在**的 `PATCH /api/v1/admin/users/:id`（后端一直支持 `vipLevel`/`vipExpiresAt`，此前只是缺 UI）。
+- 配置键：`free_mode`（默认关）/ `chart_quota_cost`（**默认 0**）/ `report_quota_cost`(1) / `synastry_quota_cost`(1) / `chat_quota_cost`(1)。
+- 测试：`src/server/lib/__tests__/billing.test.ts`（9 项）。
+
+### 变更
+- **`reserveQuota` 放开 `cost = 0`**：仍写 `delta=0` 台账（幂等语义不变）、不改余额、cost=0 时余额不参与判断 → 计费调用点零改动。
+- `POST /api/v1/app/chart`（排盘）新增可配额度，默认 0；仅登录且 cost>0 才扣，落库失败自动退款。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run` **542/542（33 文件）** ｜ `vite build` ✓ ｜ 内网 `smoke` **42/42**。
+- 内网实测：`PUT {freeMode:true}` → `effectiveCosts` 全 0；注册（初始 5）→ 排盘/命书/合盘**总扣减 0** ✅；`PATCH {vipLevel:'pro'}` 复查 = pro ✅。
+- 提交 `3500180`，文档 `c27a683`，已部署内网 `192.168.2.10:3001`。
+
+---
+
+## 未发布 — 🧪 批次 VIII：额度统一 1 + LLM 全切本地 Ollama + 超时可配 + 裸 fetch 收口（已部署内网）(2026-09-29)
+
+> 目标：测试期所有消耗统一改 1、LLM 全走内网 ollama，并修掉本地 7B 跑命书超时与后台鉴权绕过。
+
+### 变更
+- **额度统一 1**（`6af7d64`）：`report.ts` DEFAULT_COST 5→1；`synastry` 从硬编码 20 改为读 `synastry_quota_cost`=1；`src/lib/credits.ts` 前端展示对齐。
+- **LLM 全本地**（`6af7d64`）：内网 `api_keys` #1（GLM 网关，上游无健康 provider）停用；#4=fast / #5=deep 均 `http://192.168.2.197:11434/v1` `qwen2.5:7b`；`.env` 同步兜底。
+- **单步超时可配**（`f873358`）：`lib/llm.ts` 超时改读 `LLM_TIMEOUT_MS`（默认 30s 不变），命中 `LLM_TIMEOUT` **不再重试**（原 30s×2 白等）。
+- **裸 fetch 收口**（`3eb1bbb`）：admin 20 处裸 `fetch` → `admin/lib/api.ts`（自动带 token + 401 拦截），移除贯穿组件的 `apiHeaders` prop 链。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run` **533/533** ｜ `vite build` ✓ ｜ 内网 `smoke` **42/42**。
+- 内网实测：注册→排盘→命书 **200 / 114.3s / 扣 1**（此前 500）；合盘 **200 / 扣 1**（此前必 402）；失败不计费。
+
+---
+
+## 未发布 — 🖥️ 批次 VII：后台界面疏漏排查与修复（已部署内网）(2026-09-29)
+
+> 目标：修「模型用途选择无入口」及一批后台结构性疏漏，补体系管理能力。提交 `b3bd03c`。
+
+### 新增
+- **模型「应用」一键选择**：LLM 供应商列表每张卡片 `[对话][命书]` 按钮组，点即 `PUT /llm/:id {role}`，再点取消，同 role 自动顶替（`372...`→`LLMPage.tsx`）。
+- **体系管理**：`GET/PUT /api/v1/admin/systems` + `src/server/systems/meta.ts`（体系中文名**服务端唯一真值**）+ 配置页 `SystemSelector.tsx`；`moduleSettingsSchema.systems.{defaultSystem,enabledSystems}`。
+
+### 修复
+- `/admin/*` 无 SPA 兜底 → 刷新子路由白屏（`core/app.ts` 补 `get('/admin/*')`）。
+- ProviderForm 编辑态 API Key 无条件必填（改为仅新建必填）。
+- ConfigPanel 假成功（不判响应）/ 删除配置无二次确认 / 表单残留旧值 / 无 404 兜底 / 面包屑缺键。
+- **deep 端点兜底**：新建 `api_keys #5 = deep`，命书从必失败 → **200 / 33.4s / 3053 字**。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run` **533/533（32 文件）** ｜ `vite build` ✓（含 `dist/admin`）｜ 内网 `smoke` **42/42**。
+
+---
+
+## 未发布 — 🧠 批次 VI：LLM 模型分级 + 降级链路 + thinking 适配（已部署内网）(2026-09-29)
+
+> 目标：按场景分配模型（对话用快模型、命书用强模型），并给「首选端点不可达」加降级。提交 `7826226`，文档 `docs/arch/LLM-ROUTING.md`。
+
+### 新增
+- **模型分级**：`api_keys` 加 `role` 列（fast/deep/NULL，safeAlter）+ `loadConfig(role)` 三级解析；chat/Multi-Agent/router-agent → `fast`，step-personality/step-luck → `deep`。**未配 role 自动回落全局默认 → 与改造前逐字等价**。
+- **两段式降级**：流式（对话）生成前 `pickAvailableRoute()` 探测 `GET <baseUrl>/models`；非流式（命书）失败后 `resolveRoutes()` 换候选重跑；全不可达返回首选让原始错误暴露。
+- **thinking 适配**：`isThinkingModel()` 识别后注入自定义 fetch，把 `reasoning_content` 回填 `content`（**只改非流式**）。
+- 后台「模型用途（分级）」下拉 + FAST/DEEP 徽章 + 同 role 抢占；`llm-routing.test.ts` 28 项。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run` **533/533（32 文件）** ｜ `vite build` ✓ ｜ 内网 `smoke` **42/42**。
+- 实测：分级命中本机 ollama（54 字符无串台）；降级生效（端点改不可达仍生成成功）。
+
+---
+
+## 未发布 — 🔭 批次 V：星座语料落库（`knowledge_assets`）(2026-09-29)
+
+> 目标：把星座资料落成结构化知识资产，为「星座 × 八字 × MBTI」融合铺路。
+
+### 新增
+- `seeds/knowledge/zodiac.json`：12 星座 × 8 能量风格 traits + energyStyle + badge + branchPair（动态生成）。
+- `npm run db:seed` 落 `knowledge_assets`（category='zodiac'，12 条，含来源/规范/检测时间戳 meta）；生成脚本 `data/gen-zodiac.mts`、验收脚本 `data/verify-zodiac.mts`。
+
+### 验证
+- 全矩阵 `scanMatrix` 384 组合（12 星座 × 32 MBTI 档案）**0 conflict / 0 tension**；端到端抽样 4 生辰（含边界时刻）全绿 ｜ `vitest` **533/533**。
+- 坑：`getSignBranchPair` 0-based（0=白羊），首版 1-based 传参致月支错位一格，端到端抽样抓出后重生成重导入。
+
+---
+
 ## 未发布 — 🚀 批次 IV：命书止血 + 双人合盘 + astro/mbti 体系（已部署内网）(2026-09-29)
 
 > 目标：堵成本黑洞、做第二个付费点、填实多体系骨架。零 schema 变更。已部署内网 `192.168.2.10`（备份 `mingli-20260929-1436.db`）。
