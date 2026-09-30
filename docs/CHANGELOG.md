@@ -2,6 +2,30 @@
 
 ---
 
+## 未发布 — 🛡️ 批次 XI：P5-6 PII 合规底座前端入口 (2026-09-30)
+
+> 目标：把 [ADR-006](adr/) 的合规底座接到 C 端 —— 后端 `consent`/`data/export`/`DELETE data` 三接口早已上线，本次补**前端入口**（此前一个都没有）。
+
+### 新增
+- **`src/pages/DataPage.tsx`（新建）**「账户与数据」合规中心：
+  - **协议与同意**：隐私政策 / 用户协议（展开正文 + 同意留痕 `POST /user/consent` + 状态徽章）；
+  - **数据导出**：拉 `GET /user/data/export` → 生成 JSON Blob 下载（`mingli-data-export-<date>.json`）；
+  - **注销账号**：密码 + 输入 `DELETE` 二次确认弹窗 → `DELETE /user/data`，成功后清登录态并回首页。
+- 路由 `/my/data`（`src/main.tsx`）；`MyPage`「账户操作」区新增「账户与数据」入口。
+
+### 变更
+- `src/lib/user-api.ts`：`del()` 支持可选请求体（注销需 `{confirm,password}`）；未传时行为与旧版一致（向后兼容）。
+
+### 说明
+- 隐私政策/用户协议**正文为测试版占位文案**（前端内置，已标注「正式文本待更新」），正式文本待法务确认；不阻塞流程闭环。
+
+### 验证
+- `tsc -b --noEmit` 零错误 ｜ `vitest run` **548/548（33 文件）** ｜ `vite build` ✓。
+- 本地生产模式实测：注册→`GET/POST /user/consent` 200/201→`/user/data/export` 200（字段完整）→`/my/data` 200→`DELETE /user/data` 200→删后 token 401 全绿。
+- 冒烟 `smoke-e2e.mjs`（consent/export 已覆盖）+ 单测 `pii-compliance.test.ts` 早已就绪；本次为纯前端接线。
+
+---
+
 ## 未发布 — 🎛️ 批次 X：新用户额度可配 + 后台账户与安全页 + 侧边栏响应式 (2026-09-30)
 
 > 目标：落实三个遗留项 —— 新用户初始额度可配（免 migration）、后台改密码/会话管理页、侧边栏响应式。

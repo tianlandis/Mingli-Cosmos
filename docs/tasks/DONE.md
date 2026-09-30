@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-09-30 — 🛡️ 批次 XI：P5-6 PII 合规底座前端入口（账户与数据页）✅
+
+> 起因（田哥）：问「下一步做什么」→ 选定把 [P5-6 / ADR-006] 的**前端入口**补齐。
+> 关键判断：后端 `consent`（同意留痕）/ `data/export`（导出）/ `DELETE data`（注销）**三个接口早已存在并上线**，
+> 只是 C 端一个入口都没有 —— 与「会员等级」「改密码」同类（**后端就绪、前端缺入口**）。
+
+### 新增
+
+| 文件 | 改动 |
+|------|------|
+| `src/pages/DataPage.tsx`（**新建**） | 「账户与数据」合规中心：① 协议与同意（隐私政策/用户协议，展开正文 + 同意留痕 + 状态徽章）② 数据导出（拉 `/data/export` → Blob 下载 JSON）③ 注销账号（密码 + 输入 `DELETE` 二次确认弹窗 → 成功后清登录态回首页）；未登录展示登录引导 |
+| `src/main.tsx` | 新增路由 `/my/data` → `DataPage` |
+| `src/pages/MyPage.tsx` | 「账户操作」区新增「账户与数据」入口（`ShieldCheck` 图标，跳 `/my/data`） |
+| `src/lib/user-api.ts` | `del()` 支持可选请求体（`DELETE /user/data` 需 `{confirm,password}`；未传时行为与旧版一致，向后兼容） |
+
+### 说明
+
+- **协议正文为测试版占位文案**（前端内置，已标注「正式文本待更新」）；正式文本待法务确认后替换，**不阻塞**同意/导出/注销流程闭环。
+- 复用既有设计（`AuthDialog` 风格弹窗 + `line-soft`/`semantic-*` 色板 token），零新增依赖。
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **548/548**（33 文件）｜ `build` ✓（2.97s）｜ **本地生产模式实测**全绿：
+
+```
+[0] health              → 200
+[1] 注册临时用户         → 201（token 255）
+[2] GET  /user/consent  → 200（types=[privacy_policy,user_agreement]，records=[]）
+[3] POST /user/consent  → 201（version=v1.0, agreed=true）
+[4] GET  /user/data/export → 200 且字段完整（consents=1；含 user/birthProfiles/charts/orders/quotaLedger）
+[5] /my/data 页面        → 200 且 id="root"=1（生产 SPA 兜底生效）
+[6] DELETE /user/data   → 200（deleted=true, anonymizedEvents=2, revokedSessions=1）
+[7] 删后同 token 再访问  → 401（登录会话已失效）
+```
+
+> 后端接口与端到端冒烟**早已覆盖**此项：`scripts/smoke-e2e.mjs`（consent 201 + export 校验）+
+> `src/server/modules/__tests__/pii-compliance.test.ts`。本次为**纯前端接线**。
+
+---
+
 ## 2026-09-30 — 🎛️ 批次 X：新用户额度可配 + 后台「账户与安全」页 + 侧边栏响应式 ✅
 
 > 起因（田哥）：把三个遗留项落实 —— ①新用户初始额度硬编码 5（改要 migration）；②后台缺改密码/会话管理页；③侧边栏不响应式。

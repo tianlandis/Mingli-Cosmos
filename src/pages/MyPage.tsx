@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight, BadgeCheck, CalendarDays, Check, CircleUser, Copy, CreditCard, Gift, History, Loader2,
-  LogOut, Receipt, Wallet,
+  LogOut, Receipt, ShieldCheck, Wallet,
 } from 'lucide-react'
 import { userApi } from '../lib/user-api'
 import { useShell } from '../lib/shell'
@@ -680,6 +680,21 @@ export default function MyPage() {
 
       {/* ── 账户操作 ── */}
       <section className="rounded-md border border-line-soft bg-white p-2">
+        {/* 账户与数据（合规中心）：隐私政策/用户协议 · 数据导出 · 注销账号 */}
+        <button
+          type="button"
+          onClick={() => navigate('/my/data')}
+          className="w-full flex items-center justify-between px-3 py-3 rounded-sm text-sm text-fg-secondary hover:bg-surface-muted transition-colors"
+        >
+          <span className="inline-flex items-center gap-2">
+            <ShieldCheck size={15} aria-hidden="true" />
+            账户与数据
+          </span>
+          <ArrowRight size={14} className="text-fg-tertiary" aria-hidden="true" />
+        </button>
+
+        <div className="h-px bg-line-soft mx-3" aria-hidden="true" />
+
         <button
           type="button"
           onClick={() => { void logout() }}

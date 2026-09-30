@@ -71,8 +71,13 @@ export const userApi = {
       method: 'PUT',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
-  del: <T = unknown>(path: string) =>
-    userApiFetch<T>(path, { method: 'DELETE' }),
+  // DELETE 亦支持请求体（如 /user/data 注销需 {confirm,password} 二次确认）；
+  // body 可选，未传时行为与旧版完全一致（向后兼容）。
+  del: <T = unknown>(path: string, body?: unknown) =>
+    userApiFetch<T>(path, {
+      method: 'DELETE',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
 }
 
 // ═══════════════════════════════════════

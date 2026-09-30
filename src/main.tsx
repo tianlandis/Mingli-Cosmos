@@ -21,6 +21,7 @@ import PaipanPage from './pages/PaipanPage.tsx'
 import DiscoverPage from './pages/DiscoverPage.tsx'
 import SynastryPage from './pages/SynastryPage.tsx'
 import MyPage from './pages/MyPage.tsx'
+import DataPage from './pages/DataPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,8 @@ const router = createBrowserRouter([
       { path: 'discover', element: <DiscoverPage /> },
       { path: 'synastry', element: <SynastryPage /> },
       { path: 'my', element: <MyPage /> },
+      // 账户与数据（合规中心）：隐私政策/用户协议同意 · 数据导出 · 注销账号
+      { path: 'my/data', element: <DataPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
