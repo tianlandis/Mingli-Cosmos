@@ -16,7 +16,8 @@
   "typecheck": "tsc -b --noEmit",
   "test": "vitest",
   "db:seed": "tsx scripts/seed-import.mts",
-  "smoke": "node scripts/smoke-e2e.mjs"
+  "smoke": "node scripts/smoke-e2e.mjs",
+  "kb:list": "node scripts/kb-inventory.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.72",
