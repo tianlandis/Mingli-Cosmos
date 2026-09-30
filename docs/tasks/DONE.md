@@ -57,7 +57,7 @@ GET /sw.js → 200 | content-type: application/javascript; charset=utf-8
 判定: {swControlled, precachedHtml, precachedAssets, offlineOpened} 全 true → ✅
 ```
 
-**已部署内网** `192.168.2.10:3001`：备份 → `git pull` → `docker compose up -d --build` → 容器 healthy ｜ 冒烟 **42/42**。
+**已部署内网** `192.168.2.10:3001`：备份 `mingli-20260930120243.db` → `git pull`（`a153b05` → `54ba85c`）→ `docker compose up -d --build` → 容器 **healthy** ｜ 冒烟 **42/42** ｜ 实测 `/sw.js` → 200 + `application/javascript` + `no-cache`。
 
 ---
 
