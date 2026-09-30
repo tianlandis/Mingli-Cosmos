@@ -4,6 +4,63 @@
 
 ---
 
+## 2026-09-30 — 📴 批次 XII：PWA Service Worker 离线缓存 ✅
+
+> 起因（田哥）：问「下一步做什么」→ 选定 **PWA 离线缓存**（manifest + meta 早已上线，独缺 Service Worker）。
+> 目标：离线 / 弱网下仍能打开应用外壳（app shell）。
+
+### 新增 / 改动
+
+| 文件 | 改动 |
+|------|------|
+| `public/sw.js`（**新建**） | Service Worker —— C 端 app shell 离线缓存。版本化缓存名 `mingli-shell-v1` / `mingli-font-v1` |
+| `src/main.tsx` | **仅生产环境**注册 `/sw.js`（`import.meta.env.PROD`；dev 不注册以免干扰 HMR；仅 C 端入口，后台不受影响） |
+| `src/server/core/app.ts` | 新增 `/sw.js` 静态路由：正确 MIME `application/javascript` + `Cache-Control: no-cache` + `Service-Worker-Allowed: /` |
+
+### SW 策略
+
+- **install 预缓存（关键设计）**：固定清单（`/`、`/index.html`、`/manifest.webmanifest`、`/favicon.svg`）
+  **+ 解析 `index.html` 动态取出构建产物**（`/assets/*.js|css` 的 hash 文件名构建期才知道，无法写死）
+  **+ 再解析已缓存 CSS 内的 `url(...)`**（字体/图片）。
+  → 保证「首次访问安装 SW 后」即可离线，**无需用户刷新第二次**。
+- **fetch 分流**：
+  - 导航请求 → **网络优先**，失败回退缓存 `/index.html`（离线可启动）；
+  - 同源静态资源（`/assets/*` 等）→ **缓存优先**；
+  - 跨域 Google Fonts → 缓存优先（离线字体不丢）；
+  - **一律不拦截**：`/api/*`（数据要实时）、`/admin*`（后台敏感 + 独立入口）、`/sw.js` 自身。
+- **activate**：清理非当前版本的 `mingli-shell-*` / `mingli-font-*` 缓存 + `clients.claim()`。
+
+> ⚠️ 服务端必须显式提供 `/sw.js` 路由：它不在 `/assets/*` 白名单内，否则会落到 SPA 兜底返回 HTML，
+> 浏览器因 MIME 不符**拒绝注册 SW**。
+
+### 验收
+
+`typecheck` 0 错 ｜ `vitest` **548/548**（33 文件）｜ `build` ✓ ｜ `dist/sw.js` 产物存在 ｜ `node --check` 语法通过。
+
+**服务端实测**（本地生产模式）：
+
+```
+GET /sw.js → 200 | content-type: application/javascript; charset=utf-8
+                 | cache-control: no-cache | service-worker-allowed: /
+                 内容为 JS 注释（非 <!doctype html>）
+```
+
+**真实浏览器离线验证**（Chrome 154 headless + CDP；`Network.emulateNetworkConditions {offline:true}`）：
+
+```
+[1] SW 控制当前页 (controller != null)  → true
+[2] 预缓存资源数                        → 8（/index.html、main-*.js、main-*.css、
+                                            jsx-runtime-*.js、字体 CSS…）
+[3] 断网后导航 /my/data                 → 导航成功（无 errorText）
+    离线页 title = 八字排盘 | #root 子节点 = 1（React 已渲染）
+    离线页正文 = 「账户与数据」页内容
+判定: {swControlled, precachedHtml, precachedAssets, offlineOpened} 全 true → ✅
+```
+
+**已部署内网** `192.168.2.10:3001`：备份 → `git pull` → `docker compose up -d --build` → 容器 healthy ｜ 冒烟 **42/42**。
+
+---
+
 ## 2026-09-30 — 🛡️ 批次 XI：P5-6 PII 合规底座前端入口（账户与数据页）✅
 
 > 起因（田哥）：问「下一步做什么」→ 选定把 [P5-6 / ADR-006] 的**前端入口**补齐。

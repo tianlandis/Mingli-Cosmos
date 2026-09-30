@@ -151,6 +151,22 @@ export async function createApp(options: AppOptions): Promise<Hono> {
     // Favicon
     app.get('/favicon.svg', serveStatic({ root: distDir }))
 
+    // Service Worker（PWA 离线缓存）
+    // 注意：/sw.js 不在 /assets/* 白名单内，若不显式路由会落到下面的 SPA 兜底
+    // 返回 HTML —— 浏览器因 MIME 不符会拒绝注册 SW。
+    // 另外 SW 脚本不能强缓存（否则浏览器无法检测更新），故 Cache-Control: no-cache。
+    app.get('/sw.js', (c) => {
+      try {
+        const raw = readFileSync(join(distDir, 'sw.js'), 'utf-8')
+        c.header('Content-Type', 'application/javascript; charset=utf-8')
+        c.header('Cache-Control', 'no-cache')
+        c.header('Service-Worker-Allowed', '/')
+        return c.body(raw)
+      } catch {
+        return c.notFound()
+      }
+    })
+
     // PWA manifest
     // 注意：不能交给 serveStatic —— 其 MIME 表未收录 .webmanifest 后缀，
     // 且根级文件不在 /assets/* 白名单内，会落到下面的 SPA 兜底返回 HTML。

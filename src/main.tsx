@@ -44,3 +44,14 @@ createRoot(document.getElementById('root')!).render(
     <RouterProvider router={router} />
   </StrictMode>,
 )
+
+// ── PWA：注册 Service Worker（仅生产环境）──
+// 离线缓存 app shell（见 public/sw.js）。开发环境注册会干扰 HMR，故只在生产注册。
+// 仅 C 端入口注册；管理后台是独立入口（admin/main.tsx），不受影响。
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .catch((err) => console.warn('[PWA] Service Worker 注册失败：', err))
+  })
+}

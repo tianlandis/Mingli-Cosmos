@@ -2,6 +2,28 @@
 
 ---
 
+## 未发布 — 📴 批次 XII：PWA Service Worker 离线缓存 (2026-09-30)
+
+> 目标：manifest + meta 早已上线（「加到主屏」可用），本次补齐**离线能力** —— 断网/弱网下仍能打开 app shell。
+
+### 新增
+- **`public/sw.js`（新建）** Service Worker：
+  - **install 预缓存**：固定清单 + **解析 `index.html` 动态取出构建产物**（`/assets/*` hash 文件名构建期才知）+ 解析 CSS 内 `url(...)`；保证首次访问安装后即可离线；
+  - **fetch 分流**：导航 → 网络优先失败回退 `/index.html`；同源静态 → 缓存优先；跨域 Google Fonts → 缓存优先；**不拦截** `/api/*`、`/admin*`、`/sw.js`；
+  - **activate**：清理旧版本缓存 + `clients.claim()`；缓存名版本化。
+
+### 改动
+- **`src/main.tsx`**：仅生产环境注册 `/sw.js`（dev 不注册以免干扰 HMR）。
+- **`src/server/core/app.ts`**：新增 `/sw.js` 路由（`application/javascript` + `no-cache` + `Service-Worker-Allowed: /`）——
+  否则落 SPA 兜底返回 HTML，浏览器拒绝注册。
+
+### 验证
+- `typecheck` 0 错 ｜ `vitest` **548/548** ｜ `build` ✓ ｜ `dist/sw.js` 产物存在。
+- 本地生产实测 `/sw.js` 响应头正确；**真实 Chrome（CDP）离线验证**：预缓存 8 项、断网后打开 `/my/data` 成功渲染 → ✅。
+- **已部署内网**（smoke 42/42）。
+
+---
+
 ## 未发布 — 🛡️ 批次 XI：P5-6 PII 合规底座前端入口 (2026-09-30)
 
 > 目标：把 [ADR-006](adr/) 的合规底座接到 C 端 —— 后端 `consent`/`data/export`/`DELETE data` 三接口早已上线，本次补**前端入口**（此前一个都没有）。
