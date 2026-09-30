@@ -47,6 +47,7 @@
 | 了解星座↔八字映射算法 | `arch/ASTRO-MAPPING.md` | 架构 |
 | 加模块/体系/知识资产 | `arch/EXTENDING.md` + `arch/DATA-DOMAINS.md` | 架构 |
 | 查看近期批次实施与实测报告 | `ops/` | 运维 |
+| 一眼看懂整个项目目录/文件结构 | `PROJECT-MAP.md` | 总览 |
 
 ---
 
